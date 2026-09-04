@@ -1,0 +1,464 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Activity, 
+  Clock, 
+  CheckCircle2, 
+  Stethoscope, 
+  Pill, 
+  AlertCircle, 
+  ChevronRight, 
+  Thermometer, 
+  Heart, 
+  Wind, 
+  Plus, 
+  X,
+  FileEdit,
+  ShoppingCart,
+  Printer
+} from 'lucide-react';
+import { api } from '../services/api';
+import PrintableOPDRegisterModal from '../components/PrintableOPDRegisterModal';
+
+export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPatient, refreshStats }) {
+  const [visits, setVisits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [isPrintRegisterOpen, setIsPrintRegisterOpen] = useState(false);
+  
+  // Vitals & Consultation Modal
+  const [editingVisit, setEditingVisit] = useState(null);
+  const [vitalsData, setVitalsData] = useState({
+    bp: '',
+    pulse: '',
+    temp: '',
+    resp_rate: '',
+    spo2: '',
+    weight: '',
+    diagnosis: '',
+    doctor_notes: '',
+    triage_priority: 'Standard',
+    consultation_fee: 15.0
+  });
+
+  const currency = settings?.currency_symbol || 'K';
+
+  const fetchQueue = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getTodayVisits();
+      setVisits(res.visits || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQueue();
+  }, []);
+
+  const handleStatusChange = async (visitId, newStatus) => {
+    try {
+      await api.updateVisitStatus(visitId, newStatus);
+      fetchQueue();
+      if (refreshStats) refreshStats();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const openVitalsModal = (visit) => {
+    setEditingVisit(visit);
+    setVitalsData({
+      bp: visit.bp || '',
+      pulse: visit.pulse || '',
+      temp: visit.temp || '',
+      resp_rate: visit.resp_rate || '',
+      spo2: visit.spo2 || '',
+      weight: visit.weight || '',
+      diagnosis: visit.diagnosis || '',
+      doctor_notes: visit.doctor_notes || '',
+      triage_priority: visit.triage_priority || 'Standard',
+      consultation_fee: visit.consultation_fee || 15.0
+    });
+  };
+
+  const handleVitalsSubmit = async (e, proceedToPharmacy = false) => {
+    e.preventDefault();
+    try {
+      await api.updateVisitVitals(editingVisit.id, vitalsData);
+      if (proceedToPharmacy) {
+        await api.updateVisitStatus(editingVisit.id, 'At Pharmacy');
+      }
+      setEditingVisit(null);
+      fetchQueue();
+      if (refreshStats) refreshStats();
+
+      if (proceedToPharmacy) {
+        onOpenDispenseForPatient({
+          id: editingVisit.patient_id,
+          full_name: editingVisit.patient_name,
+          visit_id: editingVisit.id
+        });
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const filteredVisits = visits.filter(v => {
+    if (statusFilter === 'All') return true;
+    return v.status === statusFilter;
+  });
+
+  const priorityBadge = (priority) => {
+    if (priority === 'Emergency') {
+      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white animate-pulse">EMERGENCY</span>;
+    }
+    if (priority === 'Urgent') {
+      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">URGENT</span>;
+    }
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Standard</span>;
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Activity className="w-5 h-5 text-cyan-400" />
+            <span>Today's OPD Queue & Clinical Triage</span>
+          </h2>
+          <p className="text-xs text-slate-400">
+            Real-time outpatient tracker: record clinical vitals, diagnose conditions, and advance triage flow.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsPrintRegisterOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all shadow-glow-cyan cursor-pointer active:scale-95"
+            title="Print today's OPD register and clinical log"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print Daily Register</span>
+          </button>
+          <button
+            onClick={onOpenCheckIn}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Check-in Patient</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {['All', 'Waiting', 'Triage / Vitals', 'In Consultation', 'At Pharmacy', 'Completed'].map((tab) => {
+          const count = tab === 'All' ? visits.length : visits.filter(v => v.status === tab).length;
+          return (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                statusFilter === tab
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <span>{tab}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === tab ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Queue Table */}
+      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                <th className="py-3 px-4">Visit #</th>
+                <th className="py-3 px-4">Patient</th>
+                <th className="py-3 px-4">Chief Complaint / Notes</th>
+                <th className="py-3 px-4">Vitals Summary</th>
+                <th className="py-3 px-4">Priority</th>
+                <th className="py-3 px-4">Current Stage</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-slate-400">Loading today's queue...</td>
+                </tr>
+              ) : filteredVisits.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-slate-400">
+                    No patients currently in this stage.
+                  </td>
+                </tr>
+              ) : (
+                filteredVisits.map((v) => (
+                  <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-cyan-400">
+                      {v.visit_code}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-white text-sm">{v.patient_name}</div>
+                      <div className="text-[10px] text-slate-400">{v.age} Yrs • {v.gender} • <span className="text-cyan-400">{v.patient_code}</span></div>
+                    </td>
+                    <td className="py-3 px-4 max-w-xs">
+                      <p className="text-slate-200 font-medium">{v.reason}</p>
+                      {v.diagnosis && (
+                        <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">Dx: {v.diagnosis}</p>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px]">
+                      {v.bp || v.temp || v.pulse || v.spo2 ? (
+                        <div className="space-y-0.5 text-slate-300">
+                          {v.bp && <div>BP: {v.bp}</div>}
+                          {v.temp && <div>Temp: {v.temp}</div>}
+                          {v.spo2 && <div>SpO2: <span className="text-cyan-400 font-bold">{v.spo2}</span></div>}
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 italic">No vitals recorded</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      {priorityBadge(v.triage_priority)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <select
+                        value={v.status}
+                        onChange={(e) => handleStatusChange(v.id, e.target.value)}
+                        className={`text-xs font-semibold rounded-lg px-2.5 py-1 border focus:outline-none transition-colors ${
+                          v.status === 'Completed'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : v.status === 'At Pharmacy'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            : v.status === 'In Consultation'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        <option value="Waiting">Waiting</option>
+                        <option value="Triage / Vitals">Triage / Vitals</option>
+                        <option value="In Consultation">In Consultation</option>
+                        <option value="At Pharmacy">At Pharmacy</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Record Vitals / Consult */}
+                        <button
+                          onClick={() => openVitalsModal(v)}
+                          title="Record Vitals & Diagnosis"
+                          className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1 transition-all"
+                        >
+                          <FileEdit className="w-3.5 h-3.5" />
+                          <span>Vitals / Notes</span>
+                        </button>
+                        {/* Go to Dispensing */}
+                        {v.status !== 'Completed' && (
+                          <button
+                            onClick={() => onOpenDispenseForPatient({ id: v.patient_id, full_name: v.patient_name, visit_id: v.id })}
+                            title="Dispense Medications"
+                            className="p-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 transition-all"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Vitals & Clinical Examination Modal */}
+      {editingVisit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-[#0F2744] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden my-8 animate-scaleIn">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-900/70">
+              <div>
+                <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider">Clinical Examination</span>
+                <h3 className="text-base font-bold text-white">{editingVisit.patient_name}</h3>
+                <p className="text-xs text-slate-400">Chief Complaint: {editingVisit.reason}</p>
+              </div>
+              <button onClick={() => setEditingVisit(null)} className="p-1.5 text-slate-400 hover:text-white rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => handleVitalsSubmit(e, false)} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Vitals Grid */}
+              <div>
+                <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider mb-2">
+                  Vital Signs (Triage)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Blood Pressure</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 120/80"
+                      value={vitalsData.bp}
+                      onChange={(e) => setVitalsData({ ...vitalsData, bp: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Pulse Rate</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 84 bpm"
+                      value={vitalsData.pulse}
+                      onChange={(e) => setVitalsData({ ...vitalsData, pulse: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Body Temp (°C)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 38.6°C"
+                      value={vitalsData.temp}
+                      onChange={(e) => setVitalsData({ ...vitalsData, temp: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Oxygen Sat (SpO2)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 98%"
+                      value={vitalsData.spo2}
+                      onChange={(e) => setVitalsData({ ...vitalsData, spo2: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Resp. Rate</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 18 /min"
+                      value={vitalsData.resp_rate}
+                      onChange={(e) => setVitalsData({ ...vitalsData, resp_rate: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">Weight (kg)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 68 kg"
+                      value={vitalsData.weight}
+                      onChange={(e) => setVitalsData({ ...vitalsData, weight: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Diagnosis & Notes */}
+              <div className="space-y-3 pt-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Clinical Diagnosis (PNG Protocol)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Falciparum Malaria / Acute Bronchitis / Gastroenteritis"
+                    value={vitalsData.diagnosis}
+                    onChange={(e) => setVitalsData({ ...vitalsData, diagnosis: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Doctor Clinical Observations & Notes</label>
+                  <textarea
+                    rows="3"
+                    placeholder="Physical exam findings, medication recommendations..."
+                    value={vitalsData.doctor_notes}
+                    onChange={(e) => setVitalsData({ ...vitalsData, doctor_notes: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Triage Priority</label>
+                    <select
+                      value={vitalsData.triage_priority}
+                      onChange={(e) => setVitalsData({ ...vitalsData, triage_priority: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="Standard">Standard</option>
+                      <option value="Urgent">Urgent</option>
+                      <option value="Emergency">Emergency</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Consultation Fee ({currency})</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={vitalsData.consultation_fee}
+                      onChange={(e) => setVitalsData({ ...vitalsData, consultation_fee: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-slate-700 flex flex-col sm:flex-row justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingVisit(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs"
+                >
+                  Save Vitals Only
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleVitalsSubmit(e, true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <span>Save & Send to Pharmacy</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Daily OPD Register Modal */}
+      <PrintableOPDRegisterModal
+        isOpen={isPrintRegisterOpen}
+        onClose={() => setIsPrintRegisterOpen(false)}
+        visits={visits}
+        settings={settings}
+      />
+
+    </div>
+  );
+}

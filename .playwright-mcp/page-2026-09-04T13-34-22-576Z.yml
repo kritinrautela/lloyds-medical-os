@@ -1,0 +1,130 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: +
+          - generic [ref=e9]:
+            - heading "LLOYDS HEALTH PNG" [level=1] [ref=e10]:
+              - text: LLOYDS HEALTH
+              - generic [ref=e11]: PNG
+            - paragraph [ref=e12]: Clinic & Pharmacy System
+        - generic [ref=e13]: Wi-Fi Detected
+      - navigation [ref=e23]:
+        - button "Dashboard" [ref=e24] [cursor=pointer]
+        - button "Patients Directory" [ref=e32] [cursor=pointer]
+        - button "OPD Queue & Triage" [ref=e40] [cursor=pointer]
+        - button "Pharmacy Formulary" [ref=e45] [cursor=pointer]
+        - button "Dispense Medicine (POS)" [ref=e51] [cursor=pointer]
+        - button "End-of-Day Closeout" [ref=e58] [cursor=pointer]
+        - button "Encrypted Excel & USB" [ref=e65] [cursor=pointer]
+        - button "Google Cloud Sync" [ref=e71] [cursor=pointer]
+        - button "Hospital Settings" [ref=e76] [cursor=pointer]
+    - generic [ref=e82]:
+      - generic [ref=e83]: Pen Drive / Local SQLite
+      - generic [ref=e87]:
+        - generic [ref=e88]: Version 2.4.0 (PNG)
+        - generic [ref=e89]: Encrypted AES
+  - generic [ref=e90]:
+    - banner [ref=e91]:
+      - generic [ref=e93]:
+        - heading "Lloyds Community Clinic" [level=2] [ref=e94]
+        - paragraph [ref=e95]: Papua New Guinea
+      - textbox "Search patient, phone, village, or drug..." [ref=e97]
+      - generic [ref=e98]:
+        - generic [ref=e99]: 09:34:21 PM
+        - generic [ref=e104]: Medical Officer
+        - button "Check-in" [ref=e110] [cursor=pointer]
+        - button "Dispense" [ref=e113] [cursor=pointer]
+        - button "Excel" [ref=e115] [cursor=pointer]
+    - main [ref=e120]:
+      - generic [ref=e121]:
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]: Offline Clinical Engine Active
+              - generic [ref=e127]: • Papua New Guinea
+            - heading "Lloyds Community Clinic" [level=2] [ref=e128]
+            - paragraph [ref=e129]: Real-time outpatient footfall, malaria/chronic illness tracking, medicine dispensing, and AES-protected Excel data security.
+          - generic [ref=e130]:
+            - button "Check-in Patient" [ref=e131] [cursor=pointer]
+            - button "Dispense Drugs" [ref=e134] [cursor=pointer]
+            - button "Shift Close" [ref=e140] [cursor=pointer]
+        - generic [ref=e142]:
+          - generic [ref=e143] [cursor=pointer]:
+            - generic [ref=e145]:
+              - paragraph [ref=e146]: Today's Footfall
+              - heading "0" [level=3] [ref=e147]
+              - paragraph [ref=e148]: Total OPD visits logged today
+            - generic [ref=e155]:
+              - generic [ref=e156]: Total Patient Base
+              - generic [ref=e157]: 0 Reg
+          - generic [ref=e158] [cursor=pointer]:
+            - generic [ref=e160]:
+              - paragraph [ref=e161]: Active In Queue
+              - heading "0" [level=3] [ref=e162]
+              - paragraph [ref=e163]: 0 completed & discharged
+            - generic [ref=e167]:
+              - generic [ref=e168]: Urgent Cases
+              - generic [ref=e169]: 0 Priority
+          - generic [ref=e170] [cursor=pointer]:
+            - generic [ref=e172]:
+              - paragraph [ref=e173]: Today's Revenue
+              - heading "K 0.00" [level=3] [ref=e174]
+              - paragraph [ref=e175]: "Pharmacy: K 0.00 | OPD: K 0.00"
+            - generic [ref=e179]:
+              - generic [ref=e180]: All-time Sales
+              - generic [ref=e181]: K 0
+          - generic [ref=e182] [cursor=pointer]:
+            - generic [ref=e184]:
+              - paragraph [ref=e185]: Drug Alerts
+              - heading "0 Low" [level=3] [ref=e186]
+              - paragraph [ref=e187]: 0 expiring within 90 days
+            - generic [ref=e191]:
+              - generic [ref=e192]: Inventory Formulary
+              - generic [ref=e193]: Check Stock
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - heading "Today's Outpatient Flow Stages" [level=3] [ref=e197]
+              - paragraph [ref=e201]: Current progression of patients across clinic stations
+            - button "Open Triage Board" [ref=e202] [cursor=pointer]
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e208]: Waiting Room
+              - generic [ref=e209]: "0"
+              - generic [ref=e210]: Patients
+            - generic [ref=e211]:
+              - generic [ref=e212]: Triage / Vitals
+              - generic [ref=e213]: "0"
+              - generic [ref=e214]: Patients
+            - generic [ref=e215]:
+              - generic [ref=e216]: In Consultation
+              - generic [ref=e217]: "0"
+              - generic [ref=e218]: Patients
+            - generic [ref=e219]:
+              - generic [ref=e220]: At Pharmacy
+              - generic [ref=e221]: "0"
+              - generic [ref=e222]: Patients
+            - generic [ref=e223]:
+              - generic [ref=e224]: Completed
+              - generic [ref=e225]: "0"
+              - generic [ref=e226]: Patients
+        - generic [ref=e227]:
+          - generic [ref=e228]:
+            - heading "Top Diagnosed Conditions" [level=3] [ref=e229]
+            - paragraph [ref=e234]: Morbidity patterns recorded in clinic visits
+            - paragraph [ref=e236]: No diagnosis records yet today
+          - generic [ref=e237]:
+            - generic [ref=e238]:
+              - heading "Top Dispensed Formulations" [level=3] [ref=e239]
+              - button "Formulary" [ref=e244] [cursor=pointer]
+            - paragraph [ref=e248]: Most consumed pharmaceuticals in rural OPD
+            - paragraph [ref=e250]: No medications dispensed yet
+        - generic [ref=e251]:
+          - generic [ref=e257]:
+            - heading "Password-Protected Excel & Pen Drive Sync" [level=4] [ref=e258]
+            - paragraph [ref=e259]: All local patient and drug logs are stored in SQLite and can be exported as an AES-encrypted Excel workbook.
+          - generic [ref=e260]:
+            - button "Export Protected Excel" [ref=e261] [cursor=pointer]
+            - button "Cloud / Google Setup" [ref=e262] [cursor=pointer]

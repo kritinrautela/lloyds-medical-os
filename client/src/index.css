@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --lloyds-red: #E31E24;
+    --lloyds-red-dark: #B51217;
+    --lloyds-red-glow: rgba(227, 30, 36, 0.25);
+    --telemetry-cyan: #06B6D4;
+    --telemetry-emerald: #10B981;
+    --telemetry-amber: #F59E0B;
+  }
+
+  body {
+    background-color: #040812;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(227, 30, 36, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 50% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 60%),
+      linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+    background-attachment: fixed;
+    color: #f8fafc;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: 'tnum' on, 'zero' on;
+  }
+}
+
+/* Premium Medical HUD Panels */
+.hud-panel {
+  background: linear-gradient(135deg, rgba(11, 22, 40, 0.82) 0%, rgba(6, 13, 24, 0.92) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 16px 36px -10px rgba(0, 0, 0, 0.6), 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 20px 0 rgba(255, 255, 255, 0.015);
+  border-radius: 1.25rem;
+}
+
+.hud-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 0, 0, 0.7), 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+    0 0 30px -5px rgba(227, 30, 36, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Tile Bezel Refinement */
+.telemetry-tile {
+  background: linear-gradient(145deg, rgba(14, 27, 49, 0.6) 0%, rgba(8, 16, 30, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.telemetry-tile:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 8px 24px -6px rgba(0, 0, 0, 0.5), 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Neon Glow Accents */
+.glow-lloyds-red {
+  box-shadow: 0 0 20px -3px rgba(227, 30, 36, 0.35);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.35);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.35);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.35);
+}
+
+/* Subtle Shimmer & Scanline Overlay for Telemetry Displays */
+.scanline-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline-overlay::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 3px;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+/* Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(4, 8, 18, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(227, 30, 36, 0.6);
+}
+
+/* Micro animations */
+@keyframes heartBeatScale {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.15); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+.animate-heartbeat {
+  animation: heartBeatScale 1.2s ease-in-out infinite;
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar {
+  animation: radarSweep 4s linear infinite;
+}
+
+/* High-Fidelity Clinical Print Engine */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 12mm 12mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide screen-only controls, sidebars, topbars, buttons and modals */
+  .no-print,
+  .no-print *,
+  header,
+  nav,
+  aside,
+  button,
+  .hud-panel:not(.printable-target),
+  .telemetry-tile:not(.printable-target) {
+    display: none !important;
+  }
+
+  /* Unclip modal wrappers so printable content fills the page without clipping or dark backdrop */
+  .printable-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    inset: auto !important;
+    box-shadow: none !important;
+  }
+
+  .printable-modal-card {
+    position: static !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Target printable area */
+  .printable-area {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .printable-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page-break handling */
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}
+
