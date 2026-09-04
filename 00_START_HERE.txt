@@ -1,0 +1,79 @@
+================================================================================
+                    LLOYDS MEDICAL OPERATING SYSTEM (LMOS-PNG)
+      Occupational Health & Community Hospital Platform — Remote Concessions
+================================================================================
+
+WELCOME! This folder contains the complete, 100% offline hospital management
+and clinical telemetry system built for Lloyds Metals & Energy Limited (LMEL)
+remote exploration and mining concessions in Papua New Guinea.
+
+No internet or cloud setup is required. The system runs directly from this
+drive on any Windows PC or Mac laptop.
+
+--------------------------------------------------------------------------------
+1. HOW TO START THE SYSTEM (DOUBLE-CLICK)
+--------------------------------------------------------------------------------
+• ON WINDOWS:
+  Double-click:  Start_Hospital_Windows.bat
+
+• ON MAC:
+  Double-click:  Start_Hospital_Mac.command
+
+Your default web browser (Google Chrome / Edge / Safari) will open automatically
+to: http://localhost:4000
+
+If it does not open automatically, open your web browser and type:
+http://localhost:4000
+
+--------------------------------------------------------------------------------
+2. DEFAULT CLINICAL LOGIN PASSWORDS
+--------------------------------------------------------------------------------
+All default accounts use the password:  lloyds2026
+
+• Chief Medical Officer (Doctor) : Username: doctor        | Password: lloyds2026
+• Senior Triage Nurse            : Username: triage_officer| Password: lloyds2026
+• Registered Pharmacist          : Username: pharmacist    | Password: lloyds2026
+• Master Admin Console           : Username: admin         | Password: lloyds2026
+• Hidden Excel Unlock PIN        : PIN:      lloyds2026
+
+--------------------------------------------------------------------------------
+3. MULTI-DEVICE CLINIC WI-FI (TABLETS & LAPTOPS)
+--------------------------------------------------------------------------------
+To use tablets or multiple laptops in the clinic (Doctor room, Triage desk,
+and Pharmacy):
+1. Connect all computers to the same local Wi-Fi router (No internet needed).
+2. On the main computer running the system, find your IP address (e.g., 192.168.1.50).
+3. On other tablets/laptops, open the browser and navigate to:
+   http://192.168.1.50:4000
+All staff will now access the same live patient records simultaneously.
+
+--------------------------------------------------------------------------------
+4. HOW TO CLOSE SHIFT & SAFELY REMOVE THIS DRIVE
+--------------------------------------------------------------------------------
+At the end of the day or shift:
+1. In the application, go to "Shift Reconciliation" (End-of-Day).
+2. Count physical cash in the clinic safe, confirm 0.00 variance, and close shift.
+3. Print the official A4 Shift Audit Sheet and sign it.
+4. Double-click:
+   • On Windows : Safe_Pen_Drive_Eject.bat
+   • On Mac     : Safe_Pen_Drive_Eject.command
+   This guarantees that all patient records and database journals are flushed
+   cleanly to disk before you unplug the USB drive.
+
+--------------------------------------------------------------------------------
+5. EXECUTIVE MANUAL & DOCUMENTATION
+--------------------------------------------------------------------------------
+• 20-Page Executive PDF Manual:
+  Open: docs/Lloyds_Medical_OS_Executive_Manual.pdf
+  (Also copied to your Desktop for quick sending)
+
+• Complete Technical Blueprint & Schemas:
+  Open: README.md
+
+• Staff Quick Guide:
+  Open: README_HOSPITAL_STAFF.md
+
+================================================================================
+Lloyds Metals & Energy Limited — Mining & Occupational Health Division
+Concession Operations Base • Papua New Guinea • Ref: PNG-MOH-LMEL-2026
+================================================================================
