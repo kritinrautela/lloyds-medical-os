@@ -1,0 +1,53 @@
+name: Lloyds Medical OS CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build & Verify (Node.js)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: client/package-lock.json
+
+    - name: Install Client Dependencies
+      run: |
+        cd client
+        npm ci
+
+    - name: Build Frontend Application
+      run: |
+        cd client
+        npm run build
+
+    - name: Install Server Dependencies
+      run: |
+        cd server
+        npm ci
+
+    - name: Verify SQLite Database Seed Integrity
+      run: |
+        cd server
+        node -e "
+          const sqlite3 = require('sqlite3').verbose();
+          const db = new sqlite3.Database('./data/hospital.db', sqlite3.OPEN_READONLY, (err) => {
+            if (err) { console.error(err); process.exit(1); }
+            console.log('Database file verified and readable.');
+          });
+        "

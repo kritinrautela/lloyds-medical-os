@@ -14,10 +14,12 @@ import {
   X,
   ChevronRight,
   Eye,
-  Trash2
+  Trash2,
+  Printer
 } from 'lucide-react';
 import { api } from '../services/api';
 import PatientCardModal from '../components/PatientCardModal';
+import PrintablePatientRecordModal from '../components/PrintablePatientRecordModal';
 
 export default function Patients({ settings, onCheckInPatient, refreshStats }) {
   const [patients, setPatients] = useState([]);
@@ -29,6 +31,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [selectedPatientForCard, setSelectedPatientForCard] = useState(null);
   const [selectedPatientHistory, setSelectedPatientHistory] = useState(null);
+  const [selectedPatientForRecordPrint, setSelectedPatientForRecordPrint] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // New Patient Form State
@@ -541,20 +544,31 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex justify-between">
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
               <button
                 onClick={() => setSelectedPatientForCard(selectedPatientHistory.patient)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5"
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5"
+                title="Print Patient QR Card"
               >
                 <QrCode className="w-3.5 h-3.5" />
-                <span>Print QR Card</span>
+                <span>QR Card</span>
               </button>
+
+              <button
+                onClick={() => setSelectedPatientForRecordPrint(selectedPatientHistory)}
+                className="px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                title="Print Full Patient Medical File"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Medical File</span>
+              </button>
+
               <button
                 onClick={() => {
                   onCheckInPatient(selectedPatientHistory.patient);
                   setSelectedPatientHistory(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs"
+                className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 transition-all"
               >
                 Check-in Today
               </button>
@@ -569,6 +583,14 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
         onClose={() => setSelectedPatientForCard(null)}
         patient={selectedPatientForCard}
         hospital={settings}
+      />
+
+      {/* Printable Patient Complete Medical File Modal */}
+      <PrintablePatientRecordModal
+        isOpen={!!selectedPatientForRecordPrint}
+        onClose={() => setSelectedPatientForRecordPrint(null)}
+        data={selectedPatientForRecordPrint}
+        settings={settings}
       />
     </div>
   );

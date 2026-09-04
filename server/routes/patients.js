@@ -86,10 +86,24 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Full name, age, and gender are required' });
     }
 
-    // Generate unique Patient Code
-    const countRow = await getQuery('SELECT COUNT(*) as cnt FROM patients');
-    const nextNum = (countRow.cnt + 1).toString().padStart(4, '0');
-    const patient_code = `PAT-PNG-${nextNum}`;
+    // Generate unique Patient Code with Registration Date: LMEL-YYYYMMDD-XXX
+    const todayStr = new Date().toISOString().split('T')[0];
+    const datePart = todayStr.replace(/-/g, '');
+    const prefix = `LMEL-${datePart}-`;
+    const lastPatient = await getQuery(
+      "SELECT patient_code FROM patients WHERE patient_code LIKE ? ORDER BY patient_code DESC LIMIT 1",
+      [`${prefix}%`]
+    );
+    let nextSeqNum = 1;
+    if (lastPatient && lastPatient.patient_code) {
+      const parts = lastPatient.patient_code.split('-');
+      const lastSeq = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSeq)) {
+        nextSeqNum = lastSeq + 1;
+      }
+    }
+    const seq = nextSeqNum.toString().padStart(3, '0');
+    const patient_code = `${prefix}${seq}`;
 
     const result = await runQuery(`
       INSERT INTO patients (
