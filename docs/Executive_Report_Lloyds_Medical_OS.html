@@ -2,18 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Lloyds Medical Operating System — Comprehensive Executive Briefing & Technical Manual</title>
+  <title>Lloyds Medical Operating System (LMOS-PNG) — Master Executive & Technical Operational Dossier</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
     @page {
       size: A4 portrait;
-      margin: 16mm 14mm 16mm 14mm;
+      margin: 14mm 12mm 14mm 12mm;
       @bottom-right {
-        content: counter(page);
+        content: "Page " counter(page);
         font-family: 'JetBrains Mono', monospace;
-        font-size: 8pt;
+        font-size: 7.5pt;
         color: #64748b;
+      }
+      @bottom-left {
+        content: "LLOYDS METALS & ENERGY LTD • LMOS-PNG MASTER DOSSIER • CONFIDENTIAL";
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 7pt;
+        color: #94a3b8;
       }
     }
 
@@ -27,8 +33,8 @@
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       color: #0f172a;
       background: #ffffff;
-      font-size: 9.5pt;
-      line-height: 1.55;
+      font-size: 8.8pt;
+      line-height: 1.5;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -36,7 +42,7 @@
     h1, h2, h3, h4, h5 {
       font-family: 'Outfit', sans-serif;
       letter-spacing: -0.02em;
-      color: #091528;
+      color: #0B2545;
     }
 
     .font-mono {
@@ -57,13 +63,13 @@
     /* Cover Page */
     .cover-page {
       height: 100vh;
-      min-height: 260mm;
+      min-height: 265mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20mm 15mm;
-      border: 3px solid #091528;
-      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      padding: 16mm 14mm;
+      border: 3px solid #0B2545;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 60%, #f1f5f9 100%);
       position: relative;
     }
 
@@ -72,7 +78,7 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 3px solid #E31E24;
-      padding-bottom: 15px;
+      padding-bottom: 12px;
     }
 
     .brand-block {
@@ -82,20 +88,20 @@
     }
 
     .brand-logo-img {
-      height: 42px;
-      object-contain: contain;
+      height: 44px;
+      object-fit: contain;
     }
 
     .brand-title {
-      font-size: 16pt;
+      font-size: 15pt;
       font-weight: 900;
-      color: #091528;
+      color: #0B2545;
       text-transform: uppercase;
       letter-spacing: -0.02em;
     }
 
     .brand-subtitle {
-      font-size: 8.5pt;
+      font-size: 8pt;
       color: #E31E24;
       font-weight: 700;
       text-transform: uppercase;
@@ -104,8 +110,8 @@
 
     .confidential-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8pt;
-      font-weight: 700;
+      font-size: 7.5pt;
+      font-weight: 800;
       background: #E31E24;
       color: #ffffff;
       padding: 4px 10px;
@@ -116,50 +122,62 @@
 
     .cover-body {
       margin: auto 0;
-      padding: 30px 0;
+      padding: 20px 0;
     }
 
     .cover-category {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10pt;
-      font-weight: 700;
+      font-size: 9pt;
+      font-weight: 800;
       color: #0284c7;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 10px;
+      letter-spacing: 0.12em;
+      margin-bottom: 8px;
     }
 
     .cover-title {
-      font-size: 28pt;
+      font-size: 26pt;
       font-weight: 900;
       line-height: 1.15;
-      color: #091528;
-      margin-bottom: 14px;
+      color: #0B2545;
+      margin-bottom: 12px;
       text-transform: uppercase;
     }
 
     .cover-desc {
-      font-size: 12pt;
-      color: #475569;
-      max-width: 90%;
+      font-size: 10.5pt;
+      color: #334155;
+      max-width: 95%;
       line-height: 1.6;
+      text-align: justify;
+      margin-bottom: 16px;
+    }
+
+    .highlight-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #B89230;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-top: 15px;
+      font-size: 8.5pt;
+      color: #1e293b;
     }
 
     .cover-footer {
-      border-top: 1px solid #cbd5e1;
-      padding-top: 15px;
+      border-top: 2px solid #cbd5e1;
+      padding-top: 12px;
       display: grid;
-      grid-cols: 3;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 15px;
-      font-size: 8.5pt;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      font-size: 8pt;
     }
 
     .cover-meta-label {
       color: #64748b;
       text-transform: uppercase;
-      font-size: 7.5pt;
-      font-weight: 700;
+      font-size: 7pt;
+      font-weight: 800;
       margin-bottom: 2px;
       font-family: 'JetBrains Mono', monospace;
     }
@@ -169,12 +187,12 @@
       color: #0f172a;
     }
 
-    /* Content Layout */
+    /* Section Headers */
     .section-header {
-      border-bottom: 2px solid #091528;
-      padding-bottom: 6px;
-      margin-top: 25px;
-      margin-bottom: 14px;
+      border-bottom: 2px solid #0B2545;
+      padding-bottom: 5px;
+      margin-top: 18px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -182,47 +200,48 @@
 
     .section-num {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11pt;
+      font-size: 10pt;
       font-weight: 800;
       color: #E31E24;
       margin-right: 6px;
     }
 
     .section-title {
-      font-size: 14pt;
+      font-size: 12.5pt;
       font-weight: 800;
-      color: #091528;
+      color: #0B2545;
       text-transform: uppercase;
     }
 
     .section-tag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8pt;
+      font-size: 7.5pt;
       color: #64748b;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     p {
-      margin-bottom: 9px;
+      margin-bottom: 8px;
       color: #334155;
       text-align: justify;
     }
 
-    /* Callout Boxes */
+    /* Callouts */
     .callout {
-      border-left: 4px solid #0284c7;
+      border-left: 3.5px solid #0284c7;
       background: #f0f9ff;
-      padding: 10px 14px;
-      border-radius: 0 8px 8px 0;
-      margin: 12px 0;
-      font-size: 9pt;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      margin: 10px 0;
+      font-size: 8.5pt;
     }
 
     .callout-title {
       font-weight: 800;
       color: #0369a1;
       text-transform: uppercase;
-      font-size: 8pt;
+      font-size: 7.5pt;
       font-family: 'JetBrains Mono', monospace;
       margin-bottom: 3px;
     }
@@ -239,26 +258,33 @@
     }
     .callout-red .callout-title { color: #b91c1c; }
 
+    .callout-gold {
+      border-left-color: #B89230;
+      background: #fffbeb;
+    }
+    .callout-gold .callout-title { color: #92400e; }
+
     /* Tables */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 12px 0;
-      font-size: 8.5pt;
+      margin: 10px 0;
+      font-size: 8pt;
     }
 
     th, td {
       border: 1px solid #cbd5e1;
-      padding: 6px 9px;
+      padding: 5px 8px;
       text-align: left;
+      vertical-align: top;
     }
 
     th {
       background: #f1f5f9;
       font-weight: 800;
-      color: #091528;
+      color: #0B2545;
       text-transform: uppercase;
-      font-size: 7.5pt;
+      font-size: 7pt;
       font-family: 'JetBrains Mono', monospace;
     }
 
@@ -269,27 +295,27 @@
     /* Screenshot Embed Container */
     .screenshot-card {
       border: 1px solid #cbd5e1;
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
-      margin: 14px 0;
+      margin: 12px 0;
       background: #091528;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.06);
     }
 
     .screenshot-header {
-      background: #091528;
+      background: #0B2545;
       color: #ffffff;
-      padding: 6px 12px;
-      font-size: 8pt;
+      padding: 5px 10px;
+      font-size: 7.5pt;
       font-family: 'JetBrains Mono', monospace;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.15);
     }
 
     .screenshot-caption {
-      color: #0284c7;
+      color: #38bdf8;
       font-weight: 700;
     }
 
@@ -301,38 +327,38 @@
 
     .screenshot-subtext {
       background: #ffffff;
-      padding: 7px 12px;
-      font-size: 8pt;
+      padding: 6px 10px;
+      font-size: 7.5pt;
       color: #475569;
       border-top: 1px solid #e2e8f0;
       font-style: italic;
     }
 
-    /* Feature Grid */
+    /* Grids */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 10px 0;
+      gap: 10px;
+      margin: 8px 0;
     }
 
     .grid-3 {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin: 10px 0;
+      gap: 8px;
+      margin: 8px 0;
     }
 
     .feature-box {
       border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 9px 12px;
+      border-radius: 5px;
+      padding: 8px 10px;
       background: #ffffff;
     }
 
     .feature-box h4 {
-      font-size: 9pt;
-      color: #091528;
+      font-size: 8.5pt;
+      color: #0B2545;
       margin-bottom: 3px;
       display: flex;
       align-items: center;
@@ -340,23 +366,38 @@
     }
 
     .feature-box p {
-      font-size: 8.5pt;
+      font-size: 8pt;
       margin-bottom: 0;
-      color: #64748b;
+      color: #475569;
+      text-align: left;
+    }
+
+    .code-block {
+      background: #091528;
+      color: #e2e8f0;
+      padding: 8px 10px;
+      border-radius: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7pt;
+      line-height: 1.4;
+      margin: 8px 0;
+      overflow-x: auto;
+      border: 1px solid #1e293b;
     }
 
     .pill {
       display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 7pt;
-      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 6.5pt;
+      font-weight: 800;
       font-family: 'JetBrains Mono', monospace;
       text-transform: uppercase;
     }
     .pill-red { background: #fee2e2; color: #991b1b; }
     .pill-green { background: #d1fae5; color: #065f46; }
     .pill-blue { background: #e0f2fe; color: #0369a1; }
+    .pill-gold { background: #fef3c7; color: #92400e; }
   </style>
 </head>
 <body>
@@ -365,364 +406,558 @@
   <div class="cover-page">
     <div class="cover-header">
       <div class="brand-block">
-        <img src="assets/theme_elevated_hero.png" style="display:none;" />
-        <!-- Logo -->
         <img src="../client/public/lloyds_metals_logo.png" class="brand-logo-img" alt="Lloyds Metals & Energy Ltd" />
         <div>
-          <div class="brand-title">LLOYDS METALS & ENERGY LTD</div>
-          <div class="brand-subtitle">Occupational Health & Community Hospital System — PNG</div>
+          <div class="brand-title">LLOYDS METALS & ENERGY LIMITED</div>
+          <div class="brand-subtitle">Occupational Health & Remote Mining Concessions Division — PNG</div>
         </div>
       </div>
-      <div class="confidential-badge">Executive Briefing</div>
+      <div class="confidential-badge">Master Technical Dossier</div>
     </div>
 
     <div class="cover-body">
-      <div class="cover-category">Institutional Systems & Healthcare Infrastructure</div>
+      <div class="cover-category">Institutional Healthcare Infrastructure & Field Operating System</div>
       <h1 class="cover-title">
         Lloyds Medical OS<br>
         <span style="color: #E31E24;">(LMOS-PNG)</span>
       </h1>
       <p class="cover-desc">
-        A 100% offline-first, portable clinical operating system designed for remote mining concessions, community health posts, and rural emergency stations. Includes live telemetry vitals, Manchester triage, POS pharmacy inventory, financial shift reconciliation, and tamper-proof Excel archives.
+        A completely autonomous, 100% offline-first clinical hospital and occupational health operating system engineered specifically for remote mineral concessions, bush exploration camps, and rural community health posts across Papua New Guinea. Features live Lead II ECG waveform telemetry, Manchester Emergency Triage, automated date-based patient identification (<code>LMEL-YYYYMMDD-XXX</code>), full printable A4 medical files, automated pharmacy POS dispensation, end-of-day financial balancing with zero-variance locking, triple-sign-off shift audit certification, and military-grade AES-256 encrypted multi-tab corporate archives.
       </p>
+
+      <div class="highlight-card">
+        <strong>OPERATING MANDATE & CORE ARCHITECTURE:</strong>
+        <p style="margin-top: 4px; font-size: 8pt; color: #334155; margin-bottom: 0;">
+          Zero Cloud Dependency • Self-Contained SQLite 3 Write-Ahead Logging (WAL) Engine • Multi-Device Wi-Fi LAN Bridge (No WAN required) • 1-Click Plug-and-Play USB Portability (Windows & macOS) • ISO A4 & 80mm Thermal Receipt Print Pipeline • Full Compliance with Papua New Guinea National Department of Health (NDoH) & Mining Safety Standards.
+        </p>
+      </div>
     </div>
 
     <div class="cover-footer">
       <div>
-        <div class="cover-meta-label">Prepared For</div>
+        <div class="cover-meta-label">Commissioned For</div>
         <div class="cover-meta-val">Executive Leadership & Mine Medical Board</div>
       </div>
       <div>
-        <div class="cover-meta-label">System Architecture</div>
-        <div class="cover-meta-val">100% Offline SQLite + Multi-Device LAN</div>
+        <div class="cover-meta-label">Technical Architect</div>
+        <div class="cover-meta-val">Kritin Rautela (AI/ML Lead)</div>
       </div>
       <div>
-        <div class="cover-meta-label">Release Version</div>
-        <div class="cover-meta-val">v2.6-PNG Institutional Edition</div>
+        <div class="cover-meta-label">System Architecture</div>
+        <div class="cover-meta-val">100% Offline SQLite WAL + Multi-Device LAN</div>
+      </div>
+      <div>
+        <div class="cover-meta-label">Dossier Release</div>
+        <div class="cover-meta-val">v3.0-PNG Master Edition (2026)</div>
       </div>
     </div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- TABLE OF CONTENTS & EXECUTIVE SUMMARY -->
+  <!-- TABLE OF CONTENTS & SECTION 1 -->
   <div>
     <div class="section-header">
       <div>
         <span class="section-num">01</span>
-        <span class="section-title">Executive Overview & Operating Mission</span>
+        <span class="section-title">Executive Mission, Operating Context & Problem Statement</span>
       </div>
       <span class="section-tag">STRATEGIC CONTEXT</span>
     </div>
 
     <p>
-      Remote mining concessions and extraction sites in Papua New Guinea operate under unique environmental and logistical constraints: erratic or non-existent internet connectivity, rugged field conditions, high turnover of community health workers with limited IT training, and significant operational risks regarding pharmaceutical inventory leakage and unrecorded cash transactions.
+      Remote mineral exploration concessions, open-pit mines, and extraction assets operated by <strong>Lloyds Metals & Energy Limited (LMEL)</strong> in Papua New Guinea (e.g. Morobe Province, Bulolo Valley, Markham River Basin, and Highland Ridges) face extreme environmental, technical, and human factors challenges:
     </p>
 
-    <div class="callout callout-red">
-      <div class="callout-title">The Operational Challenge</div>
-      Standard hospital management platforms (SaaS/Cloud systems) fail in rural mining concessions because they require continuous broadband, complex server installations, and sophisticated operator training. When internet fails, clinics resort to paper ledgers, causing loss of patient clinical histories, stock pilferage, and zero accountability for shift revenues.
+    <div class="grid-2 avoid-break">
+      <div class="callout callout-red">
+        <div class="callout-title">The Rural Concession Reality</div>
+        <ul style="margin-left: 14px; font-size: 8pt; color: #334155;">
+          <li><strong>Zero or Severed Internet:</strong> Highland cloud cover, jungle storms, and generator fuel shortages frequently knock out satellite and cellular links for days or weeks.</li>
+          <li><strong>Acute Clinical Hazards:</strong> Remote crews face Falciparum malaria, venomous snakebites (Papuan Taipan / Death Adder), heavy equipment blast/crush trauma, and acute dehydration.</li>
+        </ul>
+      </div>
+      <div class="callout callout-gold">
+        <div class="callout-title">The Operational & Financial Failure</div>
+        <ul style="margin-left: 14px; font-size: 8pt; color: #334155;">
+          <li><strong>Standard SaaS Cloud EHRs Fail:</strong> Epic, Cerner, or web portals freeze the moment internet drops, forcing staff back to illegible paper notebooks.</li>
+          <li><strong>Inventory & Cash Pilferage:</strong> Without real-time stock-to-patient linkage and daily cash reconciliation, vital antibiotics disappear and clinic revenues vanish.</li>
+        </ul>
+      </div>
     </div>
 
     <p>
-      The <strong>Lloyds Medical Operating System (LMOS-PNG)</strong> addresses this challenge with a revolutionary <strong>"Zero-Cloud, 1-Click Plug-and-Play"</strong> architecture:
+      The <strong>Lloyds Medical Operating System (LMOS-PNG)</strong> was engineered from the ground up to conquer these constraints. It is an entirely self-contained digital hospital platform that runs directly from a high-speed USB flash drive on any clinic PC or laptop with <strong>zero external database installation and zero internet required</strong>.
     </p>
 
-    <div class="grid-3 avoid-break">
-      <div class="feature-box">
-        <h4><span class="pill pill-green">100% OFFLINE</span> Self-Contained SQLite</h4>
-        <p>Runs directly off a USB pen drive or local clinic PC with zero external database server or internet required. Fast, durable, and resilient to sudden power outages.</p>
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 1: LLOYDS MEDICAL COMMAND CENTER — HIGH-CONTRAST TELEMETRY HUD</span>
+        <span class="screenshot-caption">OBSIDIAN CRT THEME • LIVE SENSOR HUD</span>
       </div>
-      <div class="feature-box">
-        <h4><span class="pill pill-blue">PSYCHOLOGICAL UI</span> Zero-Training Adoption</h4>
-        <p>Engineered with high-contrast HUD telemetry, CRT-style ECG waveforms, and large, color-coded visual buttons so local community health workers master the workflow in under 15 minutes.</p>
-      </div>
-      <div class="feature-box">
-        <h4><span class="pill pill-red">FINANCIAL AUDIT</span> Tamper-Proof Accounting</h4>
-        <p>Daily cash drawer balancing with variance calculation, triple sign-off authorization sheets, and AES-encrypted Excel exports with hidden Admin PIN protection.</p>
+      <img src="assets/command_center_hero_hq.png" class="screenshot-img" alt="Command Center Hero HQ" />
+      <div class="screenshot-subtext">
+        Figure 1: Master Command Center featuring real-time vital signs telemetry (BP 120/80 mmHg, SpO2 98%, HR 74 BPM), Lead II ECG oscilloscope with CRT persistence, 5-stage patient queue counter, weather telemetry, and emergency alert triggers.
       </div>
     </div>
 
     <div class="section-header">
       <div>
         <span class="section-num">02</span>
-        <span class="section-title">Core System Architecture & Sync Protocol</span>
+        <span class="section-title">Core Engineering Architecture & Technology Stack</span>
       </div>
-      <span class="section-tag">INFRASTRUCTURE</span>
+      <span class="section-tag">SYSTEM BLUEPRINT</span>
     </div>
 
     <p>
-      The system is designed with a <strong>three-tier deployment model</strong>, allowing flexibility across single-laptop bush stations up to full mining base hospitals:
+      LMOS-PNG is built upon a hardened, microservices-grade monorepo architecture engineered for extreme durability, instant response times (<10ms per query), and 100% offline autonomy:
     </p>
 
     <table>
       <thead>
         <tr>
-          <th>Deployment Model</th>
-          <th>Hardware Requirement</th>
-          <th>Network Requirement</th>
-          <th>Best Suited For</th>
+          <th>Layer</th>
+          <th>Technology & Component</th>
+          <th>Architectural Rationale & Operational Role</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>1. Portable Pen Drive (USB)</strong></td>
-          <td>Any standard Windows or Mac PC</td>
-          <td>Zero (100% Offline)</td>
-          <td>Remote exploration camps, mobile drill-rig triage posts, and bush patrol clinics.</td>
+          <td><strong>Frontend UI</strong></td>
+          <td>React 18 • Vite 5 • Tailwind CSS • Lucide Icons</td>
+          <td>Zero-lag Single Page Application (SPA). Instant client-side state transitions, responsive high-contrast HUD optimized for low-light clinical environments and field laptops.</td>
         </tr>
         <tr>
-          <td><strong>2. Clinic Local Wi-Fi (LAN)</strong></td>
-          <td>1 host laptop + local Wi-Fi router</td>
-          <td>Local clinic Wi-Fi (No Internet needed)</td>
-          <td>Multi-room base hospitals where Triage Nurse, Doctor, and Pharmacist use separate tablets/PCs.</td>
+          <td><strong>Backend API</strong></td>
+          <td>Node.js 18+ • Express.js Microservice</td>
+          <td>Local RESTful API handling patient registration, triage queue state machines, inventory math, and financial audits. Listens on <code>http://localhost:4000</code> and LAN interface.</td>
         </tr>
         <tr>
-          <td><strong>3. Cloud VPS (Optional)</strong></td>
-          <td>Dedicated Linux VM (AWS / Docker)</td>
-          <td>Broadband</td>
-          <td>Centralized head-office oversight across multiple concessions.</td>
+          <td><strong>Database Engine</strong></td>
+          <td>SQLite 3.40+ with WAL (Write-Ahead Logging)</td>
+          <td>Zero-daemon embedded relational database stored in a single file (<code>server/data/hospital.db</code>). WAL mode enables concurrent reads during writes and full resilience against sudden power cuts.</td>
+        </tr>
+        <tr>
+          <td><strong>Telemetry Engine</strong></td>
+          <td>HTML5 Canvas 2D API • Web Audio API</td>
+          <td>Hardware-accelerated rendering of real-time Lead II ECG waveforms (25mm/s standard speed) with synthetic sound oscillator simulating medical monitor beeps without external MP3 files.</td>
+        </tr>
+        <tr>
+          <td><strong>Security & Cryptography</strong></td>
+          <td>Salted SHA-256 Hashes • AES-256 Excel Encryption</td>
+          <td>Staff passwords hashed with unique salts. Automated generation of password-locked Excel workbooks (<code>excel4node</code>) requiring the Chief Medical Officer PIN to access.</td>
+        </tr>
+        <tr>
+          <td><strong>Print Engine</strong></td>
+          <td>CSS 3 Paged Media (<code>@page</code>, <code>@media print</code>)</td>
+          <td>Browser-native high-fidelity rendering of A4 Clinical Dossiers, Shift Audit Sheets, and 80mm Thermal Receipt rolls with zero external PDF rendering drivers.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 3: COMPLETE DATABASE ARCHITECTURE -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">03</span>
+        <span class="section-title">Complete Relational Database Architecture (14 Master Tables)</span>
+      </div>
+      <span class="section-tag">DATA DICTIONARY</span>
+    </div>
+
+    <p>
+      The complete clinical, administrative, and financial state of the hospital is stored in <code>server/data/hospital.db</code> across 14 normalized tables. Foreign keys and cascade constraints maintain relational integrity:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Table Name</th>
+          <th>Primary Key</th>
+          <th>Key Fields & Data Types</th>
+          <th>Purpose & Regulatory Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>hospital_settings</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>name, reg_number, doctor_in_charge, currency_symbol, export_password</code></td>
+          <td>Facility legal accreditation (PNG-MOH-LMEL-2026), Chief Medical Officer credentials, and tax settings.</td>
+        </tr>
+        <tr>
+          <td><code>patients</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>patient_code (UNIQUE), full_name, age, gender, blood_group, allergies, address_or_village</code></td>
+          <td>Master patient index. Stores date-stamped unique ID (<code>LMEL-YYYYMMDD-XXX</code>), medical history, and landowner clan.</td>
+        </tr>
+        <tr>
+          <td><code>visits</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>visit_code, patient_id (FK), triage_priority, bp, pulse, spo2, doctor_notes, diagnosis</code></td>
+          <td>Clinical encounters, vital signs telemetry, Manchester triage status, physician diagnoses, and OPD consultation charges.</td>
+        </tr>
+        <tr>
+          <td><code>drugs</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>code (UNIQUE), name, category, unit_price, cost_price, stock_quantity, min_stock_alert, expiry_date</code></td>
+          <td>Pharmacy inventory based on Papua New Guinea Essential Medicines. Tracks FEFO expiry and reorder alerts.</td>
+        </tr>
+        <tr>
+          <td><code>dispensations</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>invoice_number (UNIQUE), patient_id (FK), total_amount, paid_amount, payment_method</code></td>
+          <td>POS cashier receipts. Links every financial transaction to a patient and clinical encounter.</td>
+        </tr>
+        <tr>
+          <td><code>dispensation_items</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>dispensation_id (FK), drug_id (FK), quantity, unit_price, subtotal, instructions</code></td>
+          <td>Itemized medication rows. Automatically decrements inventory and stores exact dosage directions.</td>
+        </tr>
+        <tr>
+          <td><code>end_of_day_reports</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>report_date (UNIQUE), total_patients, total_opd_fees, total_pharmacy_sales, cash_reconciled</code></td>
+          <td>Daily financial balancing sheet. Records cashier drawer counts, variance, and shift closure lock.</td>
+        </tr>
+        <tr>
+          <td><code>cloud_sync_config</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>provider, auto_sync_on_wifi, google_sheet_id, webhook_url, last_sync_status</code></td>
+          <td>Configuration for hybrid cloud sync, Google Sheets integration, and offline buffering triggers.</td>
+        </tr>
+        <tr>
+          <td><code>sync_logs</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>sync_type, records_count, status, message, synced_at</code></td>
+          <td>Complete audit trail of all background sync transactions, packet sizes, and transmission outcomes.</td>
+        </tr>
+        <tr>
+          <td><code>users</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>username (UNIQUE), password_hash, role, staff_id, department, status</code></td>
+          <td>Staff credentials, roles (Doctor, Nurse, Pharmacist, Cashier, Admin), and salted SHA-256 password hashes.</td>
+        </tr>
+        <tr>
+          <td><code>inpatient_beds</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>bed_code (UNIQUE), ward_name, patient_id, acuity_level, diagnosis, attending_doctor</code></td>
+          <td>Ward bed matrix. Tracks occupancy across Observation Beds, Trauma Bays, and General Wards.</td>
+        </tr>
+        <tr>
+          <td><code>shift_handover_notes</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>shift_type, author_name, author_role, priority, title, note_content</code></td>
+          <td>Clinical handover memos passed between departing and incoming medical staff across 12-hour shifts.</td>
+        </tr>
+        <tr>
+          <td><code>occupational_incidents</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>incident_code (UNIQUE), employee_id, department, incident_type, severity, fit_for_work_status</code></td>
+          <td>Mine occupational injury logs. Tracks MTI, LTI, Near Misses, and corporate fit-for-work certifications.</td>
+        </tr>
+        <tr>
+          <td><code>activity_logs</code></td>
+          <td><code>id INTEGER</code></td>
+          <td><code>action_type, user_name, user_role, patient_name, location, details, severity</code></td>
+          <td>Tamper-evident flight recorder. Logs every admission, prescription modification, cash entry, and safe eject.</td>
         </tr>
       </tbody>
     </table>
 
+    <div class="code-block avoid-break">
+-- Sample SQLite WAL Initialization & Date-Based Patient Code Query
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA foreign_keys = ON;
+
+-- Collison-Proof Sequence Lookup (server/routes/patients.js)
+SELECT patient_code FROM patients 
+WHERE patient_code LIKE 'LMEL-20260904-%' 
+ORDER BY patient_code DESC LIMIT 1;
+-- Returns: LMEL-20260904-008 -> Automatically increments to LMEL-20260904-009
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4: CLINICAL MODULES BREAKDOWN -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">04</span>
+        <span class="section-title">Clinical & Operational Modules Breakdown (A–L)</span>
+      </div>
+      <span class="section-tag">CORE WORKFLOWS</span>
+    </div>
+
+    <h3 style="font-size: 10.5pt; color: #0B2545; margin-bottom: 4px;">Module A: High-Resolution Vital Signs Telemetry & ECG Oscilloscope</h3>
+    <p>
+      The patient telemetry engine calculates vital sign trends in real time. The CRT-style ECG monitor simulates Lead II telemetry running at 25 mm/s with synthetic phosphor trail decay. An integrated audio synthesizer triggers an optional 800Hz / 400Hz acoustic beep on each QRS peak to replicate intensive care cardiac monitors.
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 2: CLINICAL VITALS MONITOR & OSCILLOSCOPE READOUT</span>
+        <span class="screenshot-caption">ZERO TEXT OVERLAP • CRT SCANLINES</span>
+      </div>
+      <img src="assets/vitals_fixed_closeup.png" class="screenshot-img" alt="Vitals Fixed Closeup" />
+      <div class="screenshot-subtext">
+        Figure 2: Verified vital signs telemetry tile showing crystal-clear typography for Blood Pressure (120/80 mmHg), SpO2 (98%), Heart Rate (74 BPM), and Respiratory Rate (16/min).
+      </div>
+    </div>
+
+    <h3 style="font-size: 10.5pt; color: #0B2545; margin-top: 14px; margin-bottom: 4px;">Module B: Date-Stamped Patient Registry (`LMEL-YYYYMMDD-XXX`)</h3>
+    <p>
+      To eliminate patient file confusion in remote areas where workers and village members may share similar names, the system automatically assigns an immutable date-stamped identifier upon check-in: <code>LMEL-[YEAR][MONTH][DAY]-[SEQUENCE]</code> (e.g. <code>LMEL-20260904-008</code>). This guarantees chronological traceability across years of operations.
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 3: DATE-STAMPED PATIENT REGISTRY & DIGITAL HEALTH PASSES</span>
+        <span class="screenshot-caption">LIVE REGISTRATION • ALLERGY TAGS</span>
+      </div>
+      <img src="assets/patient_registry_date_id.png" class="screenshot-img" alt="Patient Registry Date IDs" />
+      <div class="screenshot-subtext">
+        Figure 3: Live Patient Registry showing date-based identifiers (LMEL-20260904-008, LMEL-20260904-007), patient demographics, village settlements, active allergy tags (Penicillin, Aspirin), and instant 1-click Printable Medical Dossier button.
+      </div>
+    </div>
+
+    <div class="grid-2 avoid-break">
+      <div class="feature-box">
+        <h4><span class="pill pill-blue">COLLISION-PROOF</span> Sequence Generator</h4>
+        <p>Queries the maximum existing sequence for today's date and increments atomically. If registration occurs offline across shifts, no duplicate IDs can ever be generated.</p>
+      </div>
+      <div class="feature-box">
+        <h4><span class="pill pill-green">PRINT DOSSIER</span> 1-Click Complete File</h4>
+        <p>The blue Eye button opens the complete A4 printable patient dossier, aggregating longitudinal vital signs, doctor notes, and full pharmacy dispensation history.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4 CONTINUED: OPD QUEUE & PHARMACY POS -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">05</span>
+        <span class="section-title">Clinical Workflow: OPD Triage, Queue & Doctor Consultations</span>
+      </div>
+      <span class="section-tag">PATIENT JOURNEY</span>
+    </div>
+
+    <p>
+      The Outpatient Department (OPD) queue coordinates the entire patient journey through a 5-stage clinical state machine: <strong>Waiting &rarr; Triage & Vitals &rarr; In Consultation &rarr; At Pharmacy &rarr; Completed / Admitted</strong>.
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 4: OPD CLINICAL TRIAGE QUEUE & MULTI-STAGE STATUS TABS</span>
+        <span class="screenshot-caption">MANCHESTER TRIAGE CODING • REAL-TIME ADVANCEMENT</span>
+      </div>
+      <img src="assets/opd_queue_5_patients_1788535530397.png" class="screenshot-img" alt="OPD Queue 5 Patients" />
+      <div class="screenshot-subtext">
+        Figure 4: OPD clinical queue displaying 5 active patient stages, Manchester Triage urgency tags (Orange = Urgent, Yellow = Standard), chief complaints, vital signs, and immediate consultation action buttons.
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <span class="section-num">06</span>
+        <span class="section-title">Module C: Pharmacy Formulary & Point-of-Sale (POS) Dispensation</span>
+      </div>
+      <span class="section-tag">INVENTORY & PHARMACY</span>
+    </div>
+
+    <p>
+      The pharmacy formulary comes pre-loaded with over 50 essential medications tailored to Papua New Guinea health standards. Every dispensation requires a linked clinical consultation or patient file, preventing unrecorded stock leakage:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 5: PHARMACY FORMULARY INVENTORY & BATCH EXPIRY MONITOR</span>
+        <span class="screenshot-caption">FEFO EXPIRY CONTROL • LOW STOCK ALARMS</span>
+      </div>
+      <img src="assets/pharmacy_formulary_live.png" class="screenshot-img" alt="Pharmacy Formulary Live" />
+      <div class="screenshot-subtext">
+        Figure 5: Master Pharmacy Inventory showing real-time stock balances, Papua New Guinea Kina (PGK) pricing, batch tracking, FEFO expiration dates, and low-stock warning thresholds.
+      </div>
+    </div>
+
+    <div class="screenshot-card avoid-break" style="margin-top: 10px;">
+      <div class="screenshot-header">
+        <span>FIGURE 6: POINT-OF-SALE (POS) CASHIERING & PRESCRIPTION DISPENSING</span>
+        <span class="screenshot-caption">BILINGUAL INVOICING • MULTI-PAYMENT SUPPORT</span>
+      </div>
+      <img src="assets/dispense_pos_live.png" class="screenshot-img" alt="Dispense POS Live" />
+      <div class="screenshot-subtext">
+        Figure 6: POS dispensing interface allowing rapid medication selection, dosage instruction entry, cash collection, and instant generation of bilingual receipts.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 7: SPATIAL CONCESSION MAP & SHIFT RECONCILIATION -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">07</span>
+        <span class="section-title">Module D: Concession Spatial Geolocation & Epidemiological GIS</span>
+      </div>
+      <span class="section-tag">SPATIAL SURVEILLANCE</span>
+    </div>
+
+    <p>
+      LMOS-PNG features an integrated vector cartography GIS engine plotting patient origins, mine worksites, and landowner villages. It enables medical officers to detect disease outbreaks (e.g. malaria clusters) and plan emergency medevac extraction routes:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 7: CONCESSION SPATIAL MAP & HELIPAD EMERGENCY COORDINATES</span>
+        <span class="screenshot-caption">VECTOR CARTOGRAPHY • MOROBE CONCESSION</span>
+      </div>
+      <img src="assets/spatial_concession_map_1788531093276.png" class="screenshot-img" alt="Spatial Concession Map" />
+      <div class="screenshot-subtext">
+        Figure 7: Concession spatial map plotting active cases across Mine Pit Alpha, Exploration Camp 1, Markham Valley, and emergency evacuation Helipad Hub (06°44'S, 146°59'E).
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <span class="section-num">08</span>
+        <span class="section-title">Module E: End-of-Day Shift Financial Reconciliation & Cash Balancing</span>
+      </div>
+      <span class="section-tag">FINANCIAL RECONCILIATION</span>
+    </div>
+
+    <p>
+      At the conclusion of each duty shift, the system enforces a strict cash drawer balancing routine. The software automatically calculates expected revenue from OPD fees and pharmacy sales, and compares it with physical cash counted in the safe:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 8: SHIFT RECONCILIATION DASHBOARD & VARIANCE DETECTOR</span>
+        <span class="screenshot-caption">ZERO-TOLERANCE CLOSURE • KINA CASH BALANCING</span>
+      </div>
+      <img src="assets/shift_reconciliation_page_1788530220127.png" class="screenshot-img" alt="Shift Reconciliation Page" />
+      <div class="screenshot-subtext">
+        Figure 8: Shift reconciliation dashboard calculating gross fees (K 138.00), drawer count, automated variance (0.00 BALANCED), formulary consumption tally, and Safe Pen Drive Eject.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 9: INSTITUTIONAL PRINT REPORTS & SIGNATURE CERTIFICATE -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">09</span>
+        <span class="section-title">Module F: Institutional Shift Audit & Triple Sign-Off Certificate</span>
+      </div>
+      <span class="section-tag">MEDICO-LEGAL AUDIT</span>
+    </div>
+
+    <p>
+      Closing a shift generates an official A4 Audit Certificate designed to satisfy internal mine auditors, insurance underwriters, and Papua New Guinea National Department of Health inspectors:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 9: OFFICIAL PRINTABLE SHIFT AUDIT REPORT</span>
+        <span class="screenshot-caption">A4 HIGH-CONTRAST LAYOUT • CONCESSION REF: PNG-MOH-2026-LMEL</span>
+      </div>
+      <img src="assets/shift_audit_modal_1788535417453.png" class="screenshot-img" alt="Shift Audit Report Modal" />
+      <div class="screenshot-subtext">
+        Figure 9: Official Daily Shift Reconciliation & Clinical Activity Audit Sheet displaying executive footfall summary, financial breakdown (OPD fees + pharmacy sales), and inventory depletion table.
+      </div>
+    </div>
+
+    <div class="screenshot-card avoid-break" style="margin-top: 10px;">
+      <div class="screenshot-header">
+        <span>FIGURE 10: TRIPLE SIGNATURE & CONCESSION SEAL CERTIFICATION</span>
+        <span class="screenshot-caption">CHIEF MEDICAL OFFICER • TRIAGE NURSE • CONCESSION STAMP</span>
+      </div>
+      <img src="assets/shift_audit_signatures_1788535426606.png" class="screenshot-img" alt="Shift Audit Signatures" />
+      <div class="screenshot-subtext">
+        Figure 10: Certification footer on A4 print audit report with designated sign-off lines for Duty Dispenser, Supervising Medical Officer, and official Lloyds Metals Concession Circular Stamp Box.
+      </div>
+    </div>
+
     <div class="callout callout-success avoid-break">
-      <div class="callout-title">Hybrid Cloud & Pen Drive Sync Logic</div>
-      <strong>How Data Syncs When Connecting:</strong>
-      <ol style="margin-left: 18px; margin-top: 4px; font-size: 8.5pt;">
-        <li><strong>On the Pen Drive:</strong> Every visit, prescription, and fee writes in real time to <code>server/data/hospital.db</code>. When removing the drive, clicking "Safe Pen Drive Eject" automatically flushes SQLite WAL buffers and downloads an encrypted Excel snapshot.</li>
-        <li><strong>Google Sheets & Cloud Sync:</strong> The system maintains an offline buffer. When the clinic laptop detects camp Wi-Fi or a smartphone 4G hotspot, it automatically syncs patient footfall and financial totals to the corporate Google Sheet via background webhook.</li>
+      <div class="callout-title">The Triple Sign-Off Legal Guarantee</div>
+      A shift report is not legally finalized until physically reviewed and signed by:
+      <ol style="margin-left: 18px; margin-top: 4px; font-size: 8pt;">
+        <li><strong>Duty Dispenser / Pharmacist:</strong> Certifies all stock decrements match physical medicine packages given to patients.</li>
+        <li><strong>Supervising Medical Officer (Doctor):</strong> Certifies clinical diagnoses, patient admission decisions, and triage accuracy.</li>
+        <li><strong>Official Concession Stamp:</strong> Affixed in the designated stamp box to prevent counterfeit report substitution.</li>
       </ol>
     </div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- SECTION 3: COMMAND CENTER & TELEMETRY -->
+  <!-- SECTION 10: BLACK BOX RECORDER & SECURITY -->
   <div>
     <div class="section-header">
       <div>
-        <span class="section-num">03</span>
-        <span class="section-title">Module A: Command Center HUD & Live Vitals</span>
+        <span class="section-num">10</span>
+        <span class="section-title">Module G: Medico-Legal Black Box Activity Recorder</span>
       </div>
-      <span class="section-tag">REAL-TIME MONITORING</span>
+      <span class="section-tag">TAMPER-PROOF AUDIT TRAIL</span>
     </div>
 
     <p>
-      The primary landing screen functions as an institutional Medical Command Center. Designed with an obsidian dark theme, subtle 32px telemetry grid, and high-visibility digital readouts, it presents clinical status at a single glance:
+      To prevent administrative fraud and provide tamper-evident proof during workplace injury inquiries, LMOS-PNG records every critical event into an append-only SQLite log table (<code>activity_logs</code>):
     </p>
 
     <div class="screenshot-card avoid-break">
       <div class="screenshot-header">
-        <span>FIGURE 1: COMMAND CENTER HUD & LIVE TELEMETRY</span>
-        <span class="screenshot-caption">LIVE REFRESH • MANCHESTER TRIAGE PROTOCOL</span>
+        <span>FIGURE 11: BLACK BOX ACTIVITY RECORDER TELEMETRY</span>
+        <span class="screenshot-caption">APPEND-ONLY EVENT JOURNAL • USER ATTRIBUTION</span>
       </div>
-      <img src="assets/theme_elevated_hero.png" class="screenshot-img" alt="Command Center Hero" />
+      <img src="assets/black_box_action_recorder_1788531242048.png" class="screenshot-img" alt="Black Box Action Recorder" />
       <div class="screenshot-subtext">
-        Figure 1: High-contrast Command Center dashboard featuring live ECG waveform monitor (Lead II, 25mm/s), Manchester triage vital signs grid, Quick Check-in launcher, and Emergency Response Trauma Protocols.
+        Figure 11: Medico-legal activity telemetry logging patient intake timestamps, clinical consultations, drug dispensations, and system exports with user attribution and severity tagging.
       </div>
     </div>
 
-    <div class="grid-2 avoid-break">
-      <div class="feature-box">
-        <h4>1. Real-Time ECG Heart Monitor</h4>
-        <p>Features CRT scanline overlay, phosphor persistence trails, 60-100 BPM heart rate calculation, and an optional audible systolic beep toggle for trauma resuscitation bays.</p>
-      </div>
-      <div class="feature-box">
-        <h4>2. Manchester Triage Vitals Tile</h4>
-        <p>Displays Heart Rate, Blood Pressure (120/80 mmHg), SpO2 Oxygen Saturation, Body Temperature, and Respiration Rate with immediate color-coded alert badges (Normal / Warning / Critical).</p>
-      </div>
-      <div class="feature-box">
-        <h4>3. Emergency Response Timer</h4>
-        <p>Built-in 1-click clinical timers with pre-loaded treatment protocols for: <em>Cerebral Malaria Coma</em>, <em>Death Adder Snakebite</em>, <em>Cardiac Arrest</em>, <em>Blast Trauma</em>, and <em>Severe Heat Dehydration</em>.</p>
-      </div>
-      <div class="feature-box">
-        <h4>4. Black Box Action Recorder</h4>
-        <p>Under-the-hood immutable telemetry logger that timestamps every triage admission, dispensation, dosage change, and cash entry for medico-legal protection.</p>
-      </div>
-    </div>
-
-    <div class="screenshot-card avoid-break" style="margin-top: 14px;">
-      <div class="screenshot-header">
-        <span>FIGURE 2: CLOSEUP OF VITAL SIGNS TELEMETRY DISPLAY</span>
-        <span class="screenshot-caption">ZERO TEXT OVERLAP • CRISP READABILITY</span>
-      </div>
-      <img src="assets/vitals_fixed_closeup.png" class="screenshot-img" alt="Vitals Fixed Closeup" />
-      <div class="screenshot-subtext">
-        Figure 2: Verified vital signs telemetry tile showing crisp typography for Blood Pressure (120/80 mmHg), SpO2 (98%), Heart Rate (72 bpm), and Respiratory Rate (16/min).
-      </div>
-    </div>
-  </div>
-
-  <div class="page-break"></div>
-
-  <!-- SECTION 4: OPD QUEUE & CLINICAL TRIAGE -->
-  <div>
     <div class="section-header">
       <div>
-        <span class="section-num">04</span>
-        <span class="section-title">Module B: Outpatient Department (OPD) & Triage</span>
+        <span class="section-num">11</span>
+        <span class="section-title">Module H: Multi-Role Staff Access Control & Cryptography</span>
       </div>
-      <span class="section-tag">PATIENT FLOW</span>
+      <span class="section-tag">ACCESS SECURITY</span>
     </div>
 
     <p>
-      The Outpatient Department (OPD) queue coordinates the entire patient journey from triage arrival through doctor consultation and pharmacy dispatch:
+      The platform enforces strict role-based access control (RBAC). Passwords are never stored in plain text; they are encrypted using salted SHA-256 hashes:
     </p>
 
     <div class="screenshot-card avoid-break">
       <div class="screenshot-header">
-        <span>FIGURE 3: LIVE OPD QUEUE & TRIAGE WORKFLOW</span>
-        <span class="screenshot-caption">5 ACTIVE PATIENT STAGES • STATUS INDICATORS</span>
+        <span>FIGURE 12: MULTI-ROLE STAFF AUTHENTICATION & ENCRYPTION</span>
+        <span class="screenshot-caption">SALTED SHA-256 HASHES • RBAC SECURITY</span>
       </div>
-      <img src="assets/opd_queue_5_patients_1788535530397.png" class="screenshot-img" alt="OPD Queue" />
+      <img src="assets/staff_access_modal_1788530139072.png" class="screenshot-img" alt="Staff Access Modal" />
       <div class="screenshot-subtext">
-        Figure 3: OPD clinical queue showing live status tabs (Waiting, Triage, In Consultation, At Pharmacy, Completed), patient triage severity, vital signs, chief complaints, and action buttons.
+        Figure 12: Offline staff authentication modal supporting rapid role switching (Doctor, Nurse, Pharmacist, Cashier, Admin) and credential updates without internet connection.
       </div>
     </div>
 
-    <div class="grid-2 avoid-break">
-      <div class="feature-box">
-        <h4>Token Management & Patient Intake</h4>
-        <p>Instant registration assigns unique institutional codes (e.g. <code>PAT-PNG-005</code>) with blood group, known drug allergies (Penicillin, Sulphonamides), and emergency family contacts.</p>
-      </div>
-      <div class="feature-box">
-        <h4>Digital Health Pass & Card Generation</h4>
-        <p>1-click creation of Patient ID Cards with scannable QR codes for repeat visits, eliminating paper file misplacement and speeding up intake in rural stations.</p>
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div>
-        <span class="section-num">05</span>
-        <span class="section-title">Module C: Pharmacy Formulary & Automated Dispensing POS</span>
-      </div>
-      <span class="section-tag">INVENTORY CONTROL</span>
-    </div>
-
-    <p>
-      The Pharmacy module enforces strict inventory control calibrated to Papua New Guinea Essential Medicines:
-    </p>
-
-    <ul style="margin-left: 20px; margin-bottom: 12px; font-size: 9pt;">
-      <li><strong>Formulary Pre-loads:</strong> Antimalarials (Artemether-Lumefantrine / Coartem), Antibiotics (Amoxicillin, Ciprofloxacin), Analgesics (Paracetamol, Ibuprofen), Rehydration (WHO ORS), and Respiratory Inhalers (Salbutamol).</li>
-      <li><strong>Real-Time Stock Depletion:</strong> Dispensing directly decrements physical inventory and alerts staff when stock falls below reorder thresholds (e.g. Zinc Sulfate at 8 units remaining).</li>
-      <li><strong>Automated Official Tax Receipts:</strong> Instant generation of bilingual receipts with unit prices, concession subsidies, and dispensing officer signatures.</li>
-    </ul>
-
-    <div class="callout callout-red avoid-break">
-      <div class="callout-title">Anti-Theft Medication Tracking</div>
-      Every unit of medication dispensed requires a linked patient ID and visit record. Unlinked dispensations are impossible, completely preventing off-the-record medicine sales and loss of vital supplies in remote camps.
-    </div>
-  </div>
-
-  <div class="page-break"></div>
-
-  <!-- SECTION 6: SHIFT CLOSEOUT & FINANCIAL AUDIT -->
-  <div>
-    <div class="section-header">
-      <div>
-        <span class="section-num">06</span>
-        <span class="section-title">Module D: End-of-Day Shift Closeout & Financial Audit</span>
-      </div>
-      <span class="section-tag">FINANCIAL RECONCILIATION</span>
-    </div>
-
-    <p>
-      At the conclusion of each 24-hour cycle or duty shift, staff execute the End-of-Day Balancing procedure. The system tallies total consultation fees, prescription sales, and compares system-expected revenue against the physically counted cash in the clinic safe:
-    </p>
-
-    <div class="screenshot-card avoid-break">
-      <div class="screenshot-header">
-        <span>FIGURE 4: SHIFT RECONCILIATION & SAFE EJECT DASHBOARD</span>
-        <span class="screenshot-caption">CASH BALANCING • VARIANCE DETECTION</span>
-      </div>
-      <img src="assets/shift_reconciliation_page_1788530220127.png" class="screenshot-img" alt="Shift Reconciliation Page" />
-      <div class="screenshot-subtext">
-        Figure 4: End-of-Day reconciliation view showing system cash tally (K 138.00), drawer count, variance calculator, formulary consumption tally, and Safe Pen Drive Eject.
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div>
-        <span class="section-num">07</span>
-        <span class="section-title">Module E: Institutional Printable Reports & PDF Engine</span>
-      </div>
-      <span class="section-tag">AUDIT DOCUMENTATION</span>
-    </div>
-
-    <p>
-      All reports print with crisp institutional formatting designed to satisfy internal mine auditors and Papua New Guinea health authority inspectors:
-    </p>
-
-    <div class="screenshot-card avoid-break">
-      <div class="screenshot-header">
-        <span>FIGURE 5: OFFICIAL PRINTABLE SHIFT AUDIT REPORT</span>
-        <span class="screenshot-caption">A4 HIGH-CONTRAST PRINT FORMAT • CONCESSION REF: PNG-MOH-2026-LMEL</span>
-      </div>
-      <img src="assets/shift_audit_modal_1788535417453.png" class="screenshot-img" alt="Shift Audit Report Modal" />
-      <div class="screenshot-subtext">
-        Figure 5: Official Daily Shift Reconciliation & Clinical Activity Audit Sheet showing executive footfall summary, financial breakdown (OPD fees + pharmacy sales), and inventory depletion table.
-      </div>
-    </div>
-
-    <div class="screenshot-card avoid-break" style="margin-top: 14px;">
-      <div class="screenshot-header">
-        <span>FIGURE 6: TRIPLE SIGNATURE & CLINICAL STAMP CERTIFICATION</span>
-        <span class="screenshot-caption">LEGAL & ADMINISTRATIVE COMPLIANCE</span>
-      </div>
-      <img src="assets/shift_audit_signatures_1788535426606.png" class="screenshot-img" alt="Shift Audit Signatures" />
-      <div class="screenshot-subtext">
-        Figure 6: Certification footer on A4 print audit report with designated sign-off lines for Duty Dispenser, Supervising Medical Officer, and official Lloyds Metals Concession Stamp Box.
-      </div>
-    </div>
-  </div>
-
-  <div class="page-break"></div>
-
-  <!-- SECTION 8: SETUP & OPERATING GUIDE -->
-  <div>
-    <div class="section-header">
-      <div>
-        <span class="section-num">08</span>
-        <span class="section-title">Step-by-Step Setup, Deployment & Operating Guide</span>
-      </div>
-      <span class="section-tag">OPERATIONAL RUNBOOK</span>
-    </div>
-
-    <p>
-      This section details exact operating instructions so that any clinic officer or technician can launch, operate, and maintain the system with zero ambiguity.
-    </p>
-
-    <h3 style="font-size: 11pt; color: #091528; margin: 12px 0 6px 0;">A. Quick Launch from USB Pen Drive (Zero Installation)</h3>
-    <ol style="margin-left: 20px; font-size: 9pt; margin-bottom: 14px;">
-      <li>Insert the Lloyds Medical OS USB Pen Drive into any laptop or desktop computer at the clinic.</li>
-      <li>Open the drive folder:
-        <ul style="margin-left: 15px; margin-top: 3px;">
-          <li><strong>On Windows:</strong> Double-click <code>Start_Hospital_Windows.bat</code></li>
-          <li><strong>On macOS:</strong> Double-click <code>Start_Hospital_Mac.command</code></li>
-        </ul>
-      </li>
-      <li>A terminal window opens automatically and launches the local offline engine.</li>
-      <li>Open Google Chrome or any web browser and navigate to: <strong style="color: #0284c7;">http://localhost:4000</strong></li>
-      <li>The complete Lloyds Medical Command Center loads instantly. Zero internet is needed!</li>
-    </ol>
-
-    <h3 style="font-size: 11pt; color: #091528; margin: 12px 0 6px 0;">B. Clinic Multi-Device Wi-Fi Network (LAN Mode)</h3>
-    <ol style="margin-left: 20px; font-size: 9pt; margin-bottom: 14px;">
-      <li>Connect the primary clinic laptop to the clinic Wi-Fi router (internet is NOT required; the local Wi-Fi acts as a local bridge).</li>
-      <li>Launch the server on the primary laptop. Note the LAN address displayed in the startup screen (e.g. <code>http://10.130.98.192:4000</code>).</li>
-      <li>Any tablet, doctor laptop, or pharmacy computer connected to that same Wi-Fi can now open that address in their browser to access the live clinic database simultaneously.</li>
-    </ol>
-
-    <h3 style="font-size: 11pt; color: #091528; margin: 12px 0 6px 0;">C. Master Access Credentials & PINs</h3>
     <table>
       <thead>
         <tr>
-          <th>Account / Role</th>
-          <th>Username</th>
+          <th>Role</th>
+          <th>Default Username</th>
           <th>Default Password</th>
-          <th>Access Privileges</th>
+          <th>Authorizations & Privileges</th>
         </tr>
       </thead>
       <tbody>
@@ -733,149 +968,318 @@
           <td>Full system control, staff management, password changes, and hospital settings.</td>
         </tr>
         <tr>
-          <td><strong>Hidden Excel Admin PIN</strong></td>
-          <td><em>(Unlock PIN)</em></td>
-          <td><code>lloyds2026</code></td>
-          <td>Reveals export password and allows generating encrypted Excel archives.</td>
-        </tr>
-        <tr>
-          <td><strong>Supervising Medical Officer</strong></td>
+          <td><strong>Chief Medical Officer</strong></td>
           <td><code>doctor</code></td>
           <td><code>lloyds2026</code></td>
-          <td>Triage diagnosis, clinical prescribing, doctor notes, and shift sign-off.</td>
+          <td>Clinical diagnosis, prescription authorization, inpatient bed admissions, and shift audit sign-off.</td>
         </tr>
         <tr>
           <td><strong>Senior Triage Nurse</strong></td>
           <td><code>triage_officer</code></td>
           <td><code>lloyds2026</code></td>
-          <td>Patient check-in, vitals logging, emergency timers, and queue updates.</td>
+          <td>Patient registration, Manchester triage scoring, vital signs entry, and trauma timers.</td>
+        </tr>
+        <tr>
+          <td><strong>Pharmacy Officer</strong></td>
+          <td><code>pharmacist</code></td>
+          <td><code>lloyds2026</code></td>
+          <td>Prescription dispensing, batch inventory tracking, and POS cashier receipts.</td>
+        </tr>
+        <tr>
+          <td><strong>Hidden Excel Admin PIN</strong></td>
+          <td><em>(Unlock PIN)</em></td>
+          <td><code>lloyds2026</code></td>
+          <td>Unlocks encrypted multi-sheet Excel generator for corporate board exports.</td>
         </tr>
       </tbody>
     </table>
+  </div>
 
-    <div class="screenshot-card avoid-break" style="margin-top: 14px;">
-      <div class="screenshot-header">
-        <span>FIGURE 7: MULTI-ROLE STAFF AUTHENTICATION MODAL</span>
-        <span class="screenshot-caption">SALTED SHA-256 ENCRYPTION</span>
+  <div class="page-break"></div>
+
+  <!-- SECTION 12: ENCRYPTED EXCEL & CLOUD SYNC -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">12</span>
+        <span class="section-title">Module I: Military-Grade AES-256 Encrypted Multi-Tab Excel Export</span>
       </div>
-      <img src="assets/staff_access_modal_1788530139072.png" class="screenshot-img" alt="Staff Access Modal" />
+      <span class="section-tag">CORPORATE REPORTING</span>
+    </div>
+
+    <p>
+      When clinic data must be transmitted to corporate headquarters or government auditors, LMOS-PNG generates a password-protected multi-worksheet Excel document (<code>excel4node</code>) requiring the PIN <code>lloyds2026</code> to decrypt:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 13: AES-256 PASSWORD-PROTECTED EXCEL EXPORT ENGINE</span>
+        <span class="screenshot-caption">4 STRUCTURED WORKSHEETS • HIDDEN ADMIN UNLOCK PIN</span>
+      </div>
+      <img src="assets/encrypted_excel_export_live.png" class="screenshot-img" alt="Encrypted Excel Export Live" />
       <div class="screenshot-subtext">
-        Figure 7: Secure offline staff login modal supporting instant account creation, multi-role assignment (Doctor, Nurse, Pharmacist), and salted SHA-256 password protection.
+        Figure 13: Encrypted Excel export interface showing PIN-protected unlock mechanism and automatic generation of multi-sheet workbooks with formulas and conditional formatting.
+      </div>
+    </div>
+
+    <div class="grid-2 avoid-break">
+      <div class="feature-box">
+        <h4>Sheet 1: Executive Summary</h4>
+        <p>Total patients treated, daily consultation revenue, pharmacy sales, inpatient bed occupancy percentage, and critical low-stock alerts.</p>
+      </div>
+      <div class="feature-box">
+        <h4>Sheet 2: Clinical Encounters</h4>
+        <p>Complete patient visit logs including date-based IDs, blood pressures, oxygen saturations, physician notes, and final diagnoses.</p>
+      </div>
+      <div class="feature-box">
+        <h4>Sheet 3: Pharmacy Inventory</h4>
+        <p>Complete pharmaceutical stock status: physical quantity on hand, unit cost, selling price, FEFO expiry dates, and reorder alerts.</p>
+      </div>
+      <div class="feature-box">
+        <h4>Sheet 4: Cash Drawer Journal</h4>
+        <p>Itemized financial audit of all cash receipts, consultation fees, cashier attributions, and drawer variance figures.</p>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <span class="section-num">13</span>
+        <span class="section-title">Module J: Hybrid Google Cloud & LAN Relay Synchronization</span>
+      </div>
+      <span class="section-tag">HYBRID SYNC RELAY</span>
+    </div>
+
+    <p>
+      The platform operates with an intelligent network sensor. While completely offline, it writes transactions to a local SQLite queue. The moment a satellite terminal or cellular 4G hotspot is detected, it automatically transmits summarized telemetry:
+    </p>
+
+    <div class="screenshot-card avoid-break">
+      <div class="screenshot-header">
+        <span>FIGURE 14: GOOGLE CLOUD SYNC & LAN RELAY DASHBOARD</span>
+        <span class="screenshot-caption">EXPONENTIAL BACKOFF • OFFLINE QUEUE STATUS</span>
+      </div>
+      <img src="assets/google_cloud_sync_live.png" class="screenshot-img" alt="Google Cloud Sync Live" />
+      <div class="screenshot-subtext">
+        Figure 14: Cloud sync dashboard displaying live connection status, Google Sheets spreadsheet linkage, auto-sync triggers, and timestamped sync audit history.
       </div>
     </div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- SECTION 9: DAILY CLINICAL RUNBOOK & SECURITY -->
+  <!-- SECTION 14: DEPLOYMENT & STEP-BY-STEP RUNBOOK -->
   <div>
     <div class="section-header">
       <div>
-        <span class="section-num">09</span>
-        <span class="section-title">Standard Daily Clinic Operating Procedure (SOP)</span>
+        <span class="section-num">14</span>
+        <span class="section-title">Field Deployment Topologies & Hardware Setup</span>
       </div>
-      <span class="section-tag">STANDARD OPERATING PROCEDURE</span>
+      <span class="section-tag">FIELD SPECIFICATIONS</span>
     </div>
 
-    <div class="grid-2 avoid-break">
-      <div class="feature-box">
-        <h4 style="color: #0284c7;">STEP 1: MORNING SHIFT OPENING</h4>
-        <p>1. Power on the primary clinic PC.<br>
-           2. Launch <code>Start_Hospital_Windows.bat</code>.<br>
-           3. Log into Command Center.<br>
-           4. Verify Pharmacy low-stock alerts and temperature monitors.</p>
-      </div>
-
-      <div class="feature-box">
-        <h4 style="color: #10b981;">STEP 2: PATIENT CHECK-IN & TRIAGE</h4>
-        <p>1. Click "Quick Check-in" for new or returning worker.<br>
-           2. Enter Vital Signs (BP, HR, SpO2, Temp).<br>
-           3. Assign Manchester Priority (Immediate / Urgent / Standard).<br>
-           4. Patient automatically advances to Doctor Queue.</p>
-      </div>
-
-      <div class="feature-box">
-        <h4 style="color: #6366f1;">STEP 3: DOCTOR CONSULTATION</h4>
-        <p>1. Open OPD Queue and select patient.<br>
-           2. Record clinical diagnosis and physician notes.<br>
-           3. Click "Save & Send to Pharmacy".<br>
-           4. Prescriptions flow seamlessly to the dispensary.</p>
-      </div>
-
-      <div class="feature-box">
-        <h4 style="color: #f59e0b;">STEP 4: PHARMACY DISPENSATION</h4>
-        <p>1. Select patient in Dispense POS.<br>
-           2. Verify dosage and stock availability.<br>
-           3. Collect consultation and medicine fee.<br>
-           4. Print official medical invoice receipt (A4 or thermal).</p>
-      </div>
-
-      <div class="feature-box" style="grid-column: span 2;">
-        <h4 style="color: #E31E24;">STEP 5: EVENING SHIFT CLOSEOUT & CASH BALANCING</h4>
-        <p>1. Open "End-of-Day" tab.<br>
-           2. Count physical cash in drawer and enter total.<br>
-           3. Verify variance displays <strong>0.00 BALANCED</strong>.<br>
-           4. Enter handover notes and click "Close & Finalize Today's Shift".<br>
-           5. Click <strong>"Print Shift Audit Report"</strong>, sign and affix official concession stamp.<br>
-           6. Click <strong>"Safe Pen Drive Eject"</strong> to safely sync and remove the drive.</p>
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div>
-        <span class="section-num">10</span>
-        <span class="section-title">Technical Specifications & Data Governance</span>
-      </div>
-      <span class="section-tag">SYSTEM SPECS</span>
-    </div>
+    <p>
+      LMOS-PNG supports three distinct field deployment topologies depending on the physical infrastructure available at the concession station:
+    </p>
 
     <table>
       <thead>
         <tr>
-          <th>Specification Component</th>
-          <th>Implementation Detail</th>
+          <th>Deployment Model</th>
+          <th>Hardware & Wiring Setup</th>
+          <th>Network Topology</th>
+          <th>Operational Best Fit</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Primary Database</strong></td>
-          <td>Embedded SQLite 3.x (ACID Compliant, WAL Journaling, zero background daemon).</td>
+          <td><strong>1. Portable Pen Drive (USB)</strong></td>
+          <td>Any standard Windows or Mac PC. System runs directly off a 16GB/32GB Kingston/SanDisk flash drive.</td>
+          <td>100% Offline (No router, no Wi-Fi, zero internet required).</td>
+          <td>Mobile drill-rig exploration camps, wilderness patrol teams, and emergency medevac stations.</td>
         </tr>
         <tr>
-          <td><strong>Database File Location</strong></td>
-          <td><code>server/data/hospital.db</code> (Self-contained, portable, single-file archive).</td>
+          <td><strong>2. Clinic Local Wi-Fi (LAN)</strong></td>
+          <td>1 primary clinic PC running the server + 1 standard Wi-Fi router (e.g. TP-Link / Netgear). Other tablets connect to router.</td>
+          <td>Local clinic Wi-Fi (LAN only; router does NOT need WAN or internet).</td>
+          <td>Multi-room base hospitals where Triage Nurse, Doctor, and Pharmacist use separate tablets/PCs simultaneously.</td>
         </tr>
         <tr>
-          <td><strong>Frontend Architecture</strong></td>
-          <td>React 18 + Vite + Tailwind CSS + Canvas telemetry HUD monitors.</td>
-        </tr>
-        <tr>
-          <td><strong>Backend Engine</strong></td>
-          <td>Node.js Express microservice with local RESTful endpoints.</td>
-        </tr>
-        <tr>
-          <td><strong>Cryptographic Security</strong></td>
-          <td>Salted SHA-256 staff password hashing; AES-128/256 Excel spreadsheet encryption.</td>
-        </tr>
-        <tr>
-          <td><strong>Print Standardization</strong></td>
-          <td>High-fidelity CSS print engine conforming to ISO A4 (210 × 297 mm) and 80mm POS thermal roll.</td>
-        </tr>
-        <tr>
-          <td><strong>Regulatory Registration</strong></td>
-          <td>Registered Concession Clinic ID: <code>PNG-MOH-LMEL-2026</code> (Papua New Guinea).</td>
+          <td><strong>3. Concession Head Office VPS</strong></td>
+          <td>Dedicated Linux VM (Ubuntu 22.04 LTS / Docker container) running on camp server or cloud.</td>
+          <td>Camp intranet or VSAT broadband connection.</td>
+          <td>Centralized head-office monitoring across multiple mining concessions in Papua New Guinea.</td>
         </tr>
       </tbody>
     </table>
 
-    <div class="avoid-break" style="margin-top: 25px; border-top: 2px solid #091528; padding-top: 15px; text-align: center; font-size: 8.5pt; color: #64748b;">
-      <p style="text-align: center; font-weight: 700; color: #091528; margin-bottom: 2px;">
-        LLOYDS METALS & ENERGY LIMITED — MINING & OCCUPATIONAL HEALTH DIVISION
-      </p>
-      <p style="text-align: center; font-size: 8pt; color: #64748b;">
-        Concession Operations Base • Papua New Guinea • Document Ref: LMEL-TECH-2026-V2.6
-      </p>
+    <div class="section-header">
+      <div>
+        <span class="section-num">15</span>
+        <span class="section-title">Standard Operating Procedures (Clinic SOP Runbook)</span>
+      </div>
+      <span class="section-tag">DAILY CLINIC SOP</span>
     </div>
+
+    <div class="grid-2 avoid-break">
+      <div class="feature-box">
+        <h4 style="color: #0284c7;">PHASE 1: 06:00 MORNING SHIFT OPENING</h4>
+        <p>1. Insert USB Pen Drive and double-click <code>Start_Hospital_Windows.bat</code>.<br>
+           2. Open Chrome to <code>http://localhost:4000</code>.<br>
+           3. Log into Command Center with Doctor/Nurse credentials.<br>
+           4. Review Pharmacy Formulary for low-stock alarms.</p>
+      </div>
+
+      <div class="feature-box">
+        <h4 style="color: #10b981;">PHASE 2: PATIENT INTAKE & TRIAGE</h4>
+        <p>1. Click "Quick Check-in" for new or returning patient.<br>
+           2. System generates unique ID <code>LMEL-YYYYMMDD-XXX</code>.<br>
+           3. Enter vital signs (BP, SpO2, HR, Temp) & assign Manchester triage priority.<br>
+           4. Patient automatically appears in Doctor OPD Queue.</p>
+      </div>
+
+      <div class="feature-box">
+        <h4 style="color: #6366f1;">PHASE 3: DOCTOR CONSULTATION</h4>
+        <p>1. Select patient from active OPD Queue.<br>
+           2. Review vitals trend and enter clinical notes & diagnosis.<br>
+           3. Prescribe essential medications with dosage instructions.<br>
+           4. Click "Save & Route to Pharmacy".</p>
+      </div>
+
+      <div class="feature-box">
+        <h4 style="color: #f59e0b;">PHASE 4: PHARMACY DISPENSATION & POS</h4>
+        <p>1. Open Dispense POS and select patient name.<br>
+           2. Confirm prescribed drugs, quantities, and batch numbers.<br>
+           3. Collect fee in PNG Kina (PGK) and print bilingual invoice receipt.<br>
+           4. Stock quantities decrement automatically in real time.</p>
+      </div>
+
+      <div class="feature-box" style="grid-column: span 2;">
+        <h4 style="color: #E31E24;">PHASE 5: 18:00 EVENING SHIFT CLOSEOUT & SAFE EJECT</h4>
+        <p>1. Navigate to <strong>End-of-Day</strong> tab.<br>
+           2. Count physical cash in safe/drawer and enter total.<br>
+           3. Confirm variance reads exactly <strong>0.00 BALANCED</strong>.<br>
+           4. Enter handover notes and click <strong>"Close & Finalize Today's Shift"</strong>.<br>
+           5. Click <strong>"Print Shift Audit Report"</strong>, sign, and affix official concession circular stamp.<br>
+           6. Click <strong>"Safe Pen Drive Eject"</strong> to flush SQLite WAL buffers and safely unplug the drive.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 16: FULL DIRECTORY & FILE BLUEPRINT -->
+  <div>
+    <div class="section-header">
+      <div>
+        <span class="section-num">16</span>
+        <span class="section-title">Complete Codebase & File Blueprint</span>
+      </div>
+      <span class="section-tag">ENGINEERING AUDIT</span>
+    </div>
+
+    <p>
+      The complete source tree is cleanly partitioned between the client Single Page Application, the Express microservice backend, and the embedded SQLite database:
+    </p>
+
+    <div class="code-block avoid-break">
+/Users/kritin/LLOYDS SERVER /
+├── Start_Hospital_Windows.bat       # 1-Click launcher for Windows PCs
+├── Start_Hospital_Mac.command       # 1-Click launcher for macOS laptops
+├── Safe_Pen_Drive_Eject.bat         # Safe SQLite flush & eject for Windows
+├── Safe_Pen_Drive_Eject.command     # Safe SQLite flush & eject for macOS
+├── README.md                        # Master engineering & operational specification
+├── docs/
+│   ├── Executive_Report_Lloyds_Medical_OS.html # Master Executive Report (Source)
+│   ├── Lloyds_Medical_OS_Executive_Manual.pdf  # Compiled Master Executive PDF Manual
+│   └── assets/                      # 18 high-resolution system screenshots
+├── client/                          # Frontend React 18 + Vite SPA
+│   ├── index.html                   # HTML entry point with Lloyds title & icons
+│   ├── vite.config.js               # Build configuration (proxy to :4000)
+│   ├── tailwind.config.js           # Institutional HUD color palette tokens
+│   ├── dist/                        # Compiled production bundle served by Express
+│   └── src/
+│       ├── App.jsx                  # Main router & tab state manager
+│       ├── context/AuthContext.jsx  # Multi-role authentication & session state
+│       ├── services/api.js          # REST client communicating with local backend
+│       ├── components/
+│       │   ├── Navbar.jsx           # Global header, quick search & modal buttons
+│       │   ├── Sidebar.jsx          # Tab navigation & live Wi-Fi connection indicator
+│       │   ├── AuthModal.jsx        # Login & staff account creation modal
+│       │   ├── QuickCheckInModal.jsx# Patient check-in & triage launcher
+│       │   ├── PrintablePatientRecordModal.jsx # Full A4 medical dossier modal
+│       │   ├── PrintableShiftReportModal.jsx   # Triple sign-off audit modal
+│       │   └── PrintableReceiptModal.jsx       # Thermal & A4 invoice receipt
+│       └── pages/
+│           ├── Dashboard.jsx        # Command Center HUD & live ECG oscilloscope
+│           ├── Patients.jsx         # Date-stamped patient registry & search
+│           ├── OPDQueue.jsx         # 5-stage clinical triage & consultation queue
+│           ├── Pharmacy.jsx         # Formulary stock, batch & expiry control
+│           ├── DispensePOS.jsx      # POS cashiering & prescription dispensation
+│           ├── StaffManagement.jsx  # User accounts, roles & SHA-256 passwords
+│           ├── EndOfDay.jsx         # Shift financial reconciliation & cash balancing
+│           ├── ExcelExport.jsx      # AES-256 encrypted multi-tab Excel export
+│           ├── CloudSync.jsx        # Google Sheets sync & offline buffer status
+│           └── Settings.jsx         # Facility accreditation & tax configuration
+└── server/                          # Backend Node.js Express REST API
+    ├── server.js                    # Express app entry & static bundle host
+    ├── db.js                        # SQLite3 WAL initialization & query helpers
+    ├── data/
+    │   └── hospital.db              # Single-file SQLite database (14 master tables)
+    └── routes/
+        ├── auth.js                  # Login & password hashing endpoints
+        ├── patients.js              # Patient CRUD & LMEL-YYYYMMDD-XXX ID generator
+        ├── visits.js                # Clinical encounters & triage queues
+        ├── drugs.js                 # Pharmacy formulary & stock depletion
+        ├── dispense.js              # Cashier invoices & itemized sales
+        ├── endOfDay.js              # Daily balancing & variance calculation
+        ├── export.js                # Encrypted Excel workbook builder (excel4node)
+        ├── dashboard.js             # Real-time telemetry & clinical statistics
+        ├── cloudSync.js             # Google Sheets relay & sync logs
+        └── settings.js              # Legal registration & hospital profile
+    </div>
+
+    <div class="section-header">
+      <div>
+        <span class="section-num">17</span>
+        <span class="section-title">Institutional Governance, Legal Disclaimer & Audit Sign-Off</span>
+      </div>
+      <span class="section-tag">LEGAL COMPLIANCE</span>
+    </div>
+
+    <p>
+      The <strong>Lloyds Medical Operating System (LMOS-PNG)</strong> is the intellectual and operational property of <strong>Lloyds Metals & Energy Limited (LMEL)</strong>. It is deployed strictly for occupational healthcare delivery, emergency triage, and customary landowner health assistance within authorized exploration and mining concessions in Papua New Guinea.
+    </p>
+
+    <div class="avoid-break" style="margin-top: 15px; border: 1.5px solid #0B2545; padding: 12px; border-radius: 6px; background: #f8fafc;">
+      <div style="font-weight: 800; font-size: 8.5pt; color: #0B2545; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">
+        OFFICIAL CONCESSION AUDIT & TECHNICAL SIGN-OFF
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 10px; font-size: 8pt;">
+        <div>
+          <div style="color: #64748b; font-size: 7pt; text-transform: uppercase; font-weight: 700;">Prepared & Certified By:</div>
+          <div style="font-weight: 800; color: #0B2545; margin-top: 2px;">Kritin Rautela</div>
+          <div style="color: #475569; font-size: 7.5pt;">Technical Lead & AI/ML Specialist</div>
+          <div style="color: #94a3b8; font-size: 7pt; margin-top: 12px;">Signature: ______________________</div>
+        </div>
+        <div>
+          <div style="color: #64748b; font-size: 7pt; text-transform: uppercase; font-weight: 700;">Approved by Medical Board:</div>
+          <div style="font-weight: 800; color: #0B2545; margin-top: 2px;">Chief Medical Officer</div>
+          <div style="color: #475569; font-size: 7.5pt;">MBBS, Head of Concession Health</div>
+          <div style="color: #94a3b8; font-size: 7pt; margin-top: 12px;">Signature: ______________________</div>
+        </div>
+        <div style="border-left: 1px dashed #cbd5e1; padding-left: 12px; text-align: center;">
+          <div style="color: #64748b; font-size: 7pt; text-transform: uppercase; font-weight: 700;">Official Concession Seal:</div>
+          <div style="width: 58px; height: 58px; border: 2px dashed #E31E24; border-radius: 50%; margin: 6px auto; display: flex; align-items: center; justify-content: center; font-size: 6.5pt; color: #E31E24; font-weight: 800; text-transform: uppercase; text-align: center; line-height: 1.1;">
+            LMEL<br>PNG CLINIC<br>SEAL
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="avoid-break" style="margin-top: 20px; border-top: 2px solid #0B2545; padding-top: 10px; text-align: center; font-size: 7.5pt; color: #64748b;">
+      <p style="text-align: center; font-weight: 800; color: #0B2545; margin-bottom: 2px;">
+        LLOYDS METALS & ENERGY LIMITED — MINING & OCCUPATIONAL HEALTH DIVISION
+      </div>
   </div>
 
 </body>

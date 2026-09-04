@@ -18,7 +18,13 @@ import { api } from './services/api';
 
 function HospitalAppContent() {
   const { currentUser, isAuthModalOpen, setIsAuthModalOpen } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam) return tabParam;
+    }
+    return 'dashboard';
+  });
   const [stats, setStats] = useState(null);
   const [settings, setSettings] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
