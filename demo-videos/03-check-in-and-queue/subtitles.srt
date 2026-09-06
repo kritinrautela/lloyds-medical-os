@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:03,729
+From the top bar, you check a
+patient into the outpatient queue.
+
+2
+00:00:03,729 --> 00:00:08,681
+You select the patient, state the
+presenting complaint, and assign a triage
+priority.
+
+3
+00:00:08,681 --> 00:00:12,993
+In the outpatient queue, clinicians
+monitor waiting times and open visits.
+
+4
+00:00:12,993 --> 00:00:17,654
+You record triage observations including
+blood pressure, pulse, and temperature.
+
+5
+00:00:17,654 --> 00:00:22,199
+The visit moves forward through
+consultation to pharmacy as care is
+delivered.

@@ -1,434 +1,402 @@
-import React, { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
-import { 
-  FileCheck, 
-  DollarSign, 
-  Users, 
-  Pill, 
-  Calendar, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  ShieldCheck,
-  Download,
-  Lock,
-  Cloud,
-  HardDrive,
-  LogOut,
-  Sparkles,
-  Printer
-} from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Loader2, Printer } from 'lucide-react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import PrintableShiftReportModal from '../components/PrintableShiftReportModal';
+import {
+  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, formatDateTime
+} from '../components/ui';
 
-export default function EndOfDay({ settings, onOpenExport, refreshStats }) {
+/*
+ * Closing the day.
+ *
+ * The shape of this page follows what a supervisor has to be able to answer at
+ * the end of a shift: what came in, what is in the drawer, and what left the
+ * shelf for less than it was worth. The counted cash is typed in by hand and is
+ * never pre-filled with the expected figure — a drawer nobody counted must not
+ * be able to produce a perfect reconciliation.
+ */
+
+export default function EndOfDay({ settings, refreshStats }) {
+  const { currentUser } = useAuth();
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
-  
-  // Printable Report state
-  const [isPrintReportOpen, setIsPrintReportOpen] = useState(false);
-  const [reportToPrint, setReportToPrint] = useState(null);
-
-  // Closing form state
-  const [cashierName, setCashierName] = useState('Duty Clinical Officer');
-  const [physicalCash, setPhysicalCash] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [counted, setCounted] = useState('');
   const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ejectedState, setEjectedState] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [printing, setPrinting] = useState(null);
 
   const currency = settings?.currency_symbol || 'K';
 
-  const fetchData = async () => {
+  const load = useCallback(async () => {
     try {
-      setLoading(true);
-      const [todayRes, historyRes] = await Promise.all([
-        api.getEndOfDayToday(),
-        api.getEndOfDayHistory()
-      ]);
-      setData(todayRes);
-      setHistory(historyRes.history || []);
-      if (todayRes.summary) {
-        setPhysicalCash(todayRes.summary.total_revenue.toString());
-      }
+      const [today, past] = await Promise.all([api.getEndOfDayToday(), api.getEndOfDayHistory()]);
+      setData(today);
+      setHistory(past.history || []);
     } catch (err) {
-      console.error(err);
+      setMessage({ tone: 'critical', text: err.message || 'The shift summary could not be loaded.' });
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
-  const handleCloseShift = async (e) => {
-    e.preventDefault();
-    if (!confirm('Are you sure you want to finalize and close today\'s shift reconciliation?')) {
+  useEffect(() => { load(); }, [load]);
+
+  const s = data?.summary;
+  const expected = s?.total_revenue || 0;
+  const countedNumber = counted === '' ? null : parseFloat(counted);
+  const variance = countedNumber === null || Number.isNaN(countedNumber) ? null : countedNumber - expected;
+
+  const exceptions = useMemo(() => {
+    if (!s) return { reduced: [], movements: [], unattributed: 0 };
+    return {
+      reduced: s.reduced_sales || [],
+      movements: s.stock_movements || [],
+      unattributed: s.unattributed_dispensations || 0
+    };
+  }, [s]);
+
+  const close = async () => {
+    setMessage(null);
+    if (countedNumber === null || Number.isNaN(countedNumber)) {
+      setMessage({ tone: 'critical', text: 'Count the cash in the drawer and enter the amount.' });
       return;
     }
-
+    setBusy(true);
     try {
-      setIsSubmitting(true);
-      await api.closeEndOfDay({
-        cashier_name: cashierName,
-        cash_reconciled: parseFloat(physicalCash) || 0,
-        notes: notes
+      const res = await api.closeEndOfDay({
+        cashier_name: currentUser?.full_name || '',
+        cash_reconciled: countedNumber,
+        notes
       });
-
-      // Confetti celebration
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
-
-      fetchData();
-      if (refreshStats) refreshStats();
-      alert('Shift successfully closed! Reconciliation report stored locally.');
+      setMessage({ tone: res.variance && Math.abs(res.variance) >= 0.005 ? 'warn' : 'ok', text: res.message });
+      setCounted('');
+      setNotes('');
+      await load();
+      refreshStats?.();
     } catch (err) {
-      alert('Failed to close shift: ' + err.message);
+      setMessage({ tone: 'critical', text: err.message || 'The shift could not be closed.' });
     } finally {
-      setIsSubmitting(false);
+      setBusy(false);
     }
   };
 
-  const handleSafeEject = () => {
-    setEjectedState(true);
-    // Trigger automated Excel download before eject!
-    const defaultPassword = settings?.export_password || 'png_health_2026';
-    window.location.href = api.getExcelExportUrl(defaultPassword);
-  };
-
-  const summary = data?.summary || {
-    total_patients: 0,
-    completed_consultations: 0,
-    total_prescriptions: 0,
-    total_opd_fees: 0,
-    total_pharmacy_sales: 0,
-    total_revenue: 0,
-    dispensed_medicines: []
-  };
-
-  const cashDifference = (parseFloat(physicalCash || 0) - summary.total_revenue);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-20 text-sm text-ink-3">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        Adding up the day
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <FileCheck className="w-5 h-5 text-emerald-600" />
-            <span>End-of-Day Shift Closeout & Financial Audit</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Reconcile daily cash, tally patient footfall and medicine depletion, and sign off the shift audit log.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => {
-              setReportToPrint(data);
-              setIsPrintReportOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold transition-all shadow-sm cursor-pointer active:scale-95"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Shift Audit Report</span>
-          </button>
-          <button
-            onClick={onOpenExport}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-all shadow-sm cursor-pointer active:scale-95"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Export Encrypted Excel</span>
-          </button>
-          <button
-            onClick={handleSafeEject}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer active:scale-95"
-          >
-            <HardDrive className="w-3.5 h-3.5" />
-            <span>Safe Pen Drive Eject</span>
-          </button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SectionTitle note={data?.report_date}>Shift close</SectionTitle>
+        <div className="flex items-center gap-2">
+          {data?.is_closed ? <Pill tone="ok">Closed for today</Pill> : <Pill tone="warn">Still open</Pill>}
+          {data?.is_closed && data?.existing_report ? (
+            <button type="button" className="btn btn-sm" onClick={() => setPrinting(data.existing_report)}>
+              <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+              Print today's report
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {/* Safe Eject Notice */}
-      {ejectedState && (
-        <div className="p-4 rounded-2xl bg-cyan-50 border border-cyan-200 text-cyan-900 flex items-center justify-between animate-scaleIn">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-cyan-600" />
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">Safe to Remove Pen Drive</h4>
-              <p className="text-xs text-slate-600">
-                Encrypted Excel archive downloaded. SQLite database transaction logs flushed to disk.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setEjectedState(false)}
-            className="text-xs font-semibold underline text-cyan-700 cursor-pointer"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {message ? (
+        <p className={`rounded-md border px-3 py-2 text-xs ${
+          message.tone === 'ok' ? 'border-ok-line bg-ok-wash text-ok'
+          : message.tone === 'warn' ? 'border-warn-line bg-warn-wash text-warn'
+          : 'border-critical-line bg-critical-wash text-critical'
+        }`}>
+          {message.text}
+        </p>
+      ) : null}
 
-      {/* Today's Status Banner */}
-      {data?.is_closed ? (
-        <div className="p-5 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3.5">
-            <div className="p-2.5 rounded-2xl bg-emerald-100 text-emerald-700">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-emerald-900">Shift Successfully Closed & Reconciled</h4>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Reconciled by: <strong className="text-slate-900">{data.existing_report?.cashier_name}</strong> • Cash Reconciled: <strong className="text-emerald-700 font-mono">{currency} {data.existing_report?.cash_reconciled?.toFixed(2)}</strong>
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-            {data.existing_report?.cloud_sync_status || 'Ready for Sync'}
-          </span>
-        </div>
-      ) : (
-        <div className="p-5 rounded-3xl bg-amber-50 border border-amber-200 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 rounded-2xl bg-amber-100 text-amber-700">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-amber-900">Shift Active • Pending End-of-Day Balancing</h4>
-            <p className="text-xs text-slate-600 mt-0.5">
-              When clinical operations conclude for the day, count physical drawer cash and submit the reconciliation below.
+      <MetricStrip columns={5}>
+        <Metric label="Patients seen" value={s?.total_patients || 0} context="Checked in today" tint="1" />
+        <Metric label="Consultations finished" value={s?.completed_consultations || 0} context="Reached the end of the queue" tint="2" />
+        <Metric label="Medicines handed over" value={s?.total_prescriptions || 0} context="Separate dispensing records" tint="3" />
+        <Metric label={`Consultation fees (${currency})`} value={(s?.total_opd_fees || 0).toFixed(2)} context="Recorded against visits" tint="4" />
+        <Metric label={`Pharmacy takings (${currency})`} value={(s?.total_pharmacy_sales || 0).toFixed(2)} context="Collected at the counter" tint="5" />
+      </MetricStrip>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel className="lg:col-span-2">
+          <PanelHead
+            title="Worth a second look"
+            note="Medicine that left for less than its price, and stock that moved with no patient"
+          />
+          {exceptions.unattributed > 0 ? (
+            <p className="border-b border-critical-line bg-critical-wash px-4 py-2 text-xs text-critical">
+              {exceptions.unattributed} dispensing record{exceptions.unattributed === 1 ? '' : 's'} today
+              carr{exceptions.unattributed === 1 ? 'ies' : 'y'} no name. Every hand-over should be
+              recorded by a signed-in member of staff.
             </p>
-          </div>
-        </div>
-      )}
+          ) : null}
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Patients Logged</span>
-          <div className="text-3xl font-black text-slate-900 mt-1.5">{summary.total_patients}</div>
-          <p className="text-xs text-slate-500 mt-1">{summary.completed_consultations} consultations completed</p>
-        </div>
+          {exceptions.reduced.length === 0 && exceptions.movements.length === 0 ? (
+            <EmptyState
+              title="Nothing stands out"
+              detail="Every medicine handed over today was recorded at its full price by a named member of staff, and no stock moved outside a dispensation."
+            />
+          ) : (
+            <div className="space-y-4 px-4 py-3">
+              {exceptions.reduced.length > 0 ? (
+                <div>
+                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-3">
+                    Reduced or unpaid ({exceptions.reduced.length})
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Invoice</th>
+                          <th>Patient</th>
+                          <th className="num">Value</th>
+                          <th className="num">Reduced</th>
+                          <th className="num">Collected</th>
+                          <th>Reason given</th>
+                          <th>Recorded by</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exceptions.reduced.map((r) => (
+                          <tr key={r.invoice_number}>
+                            <td className="font-mono text-2xs">{r.invoice_number}</td>
+                            <td>{r.patient_name}</td>
+                            <td className="num">{(r.total_amount || 0).toFixed(2)}</td>
+                            <td className="num text-warn">{(r.discount || 0).toFixed(2)}</td>
+                            <td className={`num ${Number(r.paid_amount) === 0 ? 'text-critical font-semibold' : ''}`}>
+                              {(r.paid_amount || 0).toFixed(2)}
+                            </td>
+                            <td className={r.discount > 0 && !r.discount_reason ? 'text-critical' : ''}>
+                              <Value>{r.discount_reason}</Value>
+                            </td>
+                            <td className={r.dispensed_by_name ? '' : 'text-critical'}>
+                              <Value>{r.dispensed_by_name}</Value>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Prescriptions Dispensed</span>
-          <div className="text-3xl font-black text-purple-700 mt-1.5">{summary.total_prescriptions}</div>
-          <p className="text-xs text-slate-500 mt-1">Dispensed by pharmacy</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">OPD Consultation Fees</span>
-          <div className="text-3xl font-black text-emerald-600 font-mono mt-1.5">
-            {currency} {summary.total_opd_fees.toFixed(2)}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Triage & doctor fees</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pharmacy Sales</span>
-          <div className="text-3xl font-black text-teal-700 font-mono mt-1.5">
-            {currency} {summary.total_pharmacy_sales.toFixed(2)}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Formulary medicines</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Cols: Medicine Consumption Tally */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Pill className="w-4 h-4 text-cyan-600" />
-            <span>Medicines Dispensed Today (Formulary Depletion Ledger)</span>
-          </h3>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-600 font-bold uppercase text-[10px]">
-                  <th className="py-2.5 px-3">Medication</th>
-                  <th className="py-2.5 px-3 text-center">Units Consumed</th>
-                  <th className="py-2.5 px-3 text-right">Total Revenue</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {summary.dispensed_medicines.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="py-6 text-center text-slate-400 italic">
-                      No medications dispensed yet today.
-                    </td>
-                  </tr>
-                ) : (
-                  summary.dispensed_medicines.map((m, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">{m.drug_name}</td>
-                      <td className="py-2.5 px-3 text-center font-mono font-bold text-cyan-700">{m.total_units}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">
-                        {currency} {parseFloat(m.total_revenue).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right 1 Col: Cash Reconciliation Form */}
-        <div className="bg-white p-6 rounded-3xl h-fit space-y-4 border border-slate-200/90 shadow-md">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-200">
-            <DollarSign className="w-4 h-4 text-emerald-600" />
-            <span>Shift Cash Balancing</span>
-          </h3>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span className="font-medium">System Expected Cash:</span>
-              <strong className="text-slate-900 font-mono font-bold">{currency} {summary.total_revenue.toFixed(2)}</strong>
+              {exceptions.movements.length > 0 ? (
+                <div>
+                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-3">
+                    Stock moved outside a dispensation ({exceptions.movements.length})
+                  </p>
+                  <ul className="divide-y divide-line-soft rounded-md border border-line">
+                    {exceptions.movements.map((m, i) => (
+                      <li key={i} className="flex items-start justify-between gap-3 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-ink">{m.action_type}</p>
+                          <p className="mt-0.5 text-2xs leading-relaxed text-ink-3">{m.details}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-2xs text-ink-2">{m.user_name}</p>
+                          <p className="text-2xs text-ink-3">{formatDateTime(m.created_at)}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
+          )}
+        </Panel>
 
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <label className="text-slate-700 font-semibold">Physical Counted:</label>
-              <div className="flex items-center gap-1">
-                <span className="font-mono text-slate-500">{currency}</span>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={physicalCash}
-                  onChange={(e) => setPhysicalCash(e.target.value)}
-                  className="w-28 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-right text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                />
+        <Panel className="h-fit">
+          <PanelHead title="Count the drawer" />
+          <div className="space-y-3 px-4 py-3">
+            <dl className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <dt className="text-ink-2">Consultation fees</dt>
+                <dd className="font-mono text-ink">{currency} {(s?.total_opd_fees || 0).toFixed(2)}</dd>
               </div>
-            </div>
+              <div className="flex justify-between">
+                <dt className="text-ink-2">Pharmacy takings</dt>
+                <dd className="font-mono text-ink">{currency} {(s?.total_pharmacy_sales || 0).toFixed(2)}</dd>
+              </div>
+              <div className="flex justify-between border-t border-line pt-1.5 font-semibold">
+                <dt className="text-ink">Expected in the drawer</dt>
+                <dd className="font-mono text-ink">{currency} {expected.toFixed(2)}</dd>
+              </div>
+            </dl>
 
-            <div className={`flex justify-between text-xs font-semibold pt-2 border-t border-slate-200 ${
-              cashDifference === 0 ? 'text-emerald-700' : 'text-amber-700'
-            }`}>
-              <span>Variance:</span>
-              <span className="font-mono font-bold">
-                {cashDifference === 0 ? 'Balanced (0.00)' : `${currency} ${cashDifference.toFixed(2)}`}
-              </span>
-            </div>
-          </div>
-
-          <form onSubmit={handleCloseShift} className="space-y-3.5 text-xs">
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Cashier / Staff Member Name</label>
+              <label className="label" htmlFor="counted">Counted in the drawer ({currency})</label>
               <input
-                type="text"
-                required
-                value={cashierName}
-                onChange={(e) => setCashierName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                id="counted"
+                className="field font-mono text-right"
+                type="number"
+                min="0"
+                step="0.05"
+                value={counted}
+                onChange={(e) => setCounted(e.target.value)}
+                placeholder="Count it first"
+                disabled={data?.is_closed}
               />
+              <p className="mt-1 text-2xs leading-relaxed text-ink-3">
+                This is left empty on purpose. Count the money before typing anything here.
+              </p>
             </div>
 
+            {variance !== null ? (
+              <div className={`rounded-md border px-3 py-2 ${
+                Math.abs(variance) < 0.005 ? 'border-ok-line bg-ok-wash'
+                : 'border-warn-line bg-warn-wash'
+              }`}>
+                <p className={`flex items-center gap-1.5 text-xs font-semibold ${
+                  Math.abs(variance) < 0.005 ? 'text-ok' : 'text-warn'
+                }`}>
+                  {Math.abs(variance) < 0.005 ? (
+                    <><CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> The drawer balances</>
+                  ) : (
+                    <><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                      {variance > 0 ? 'Over' : 'Short'} by {currency} {Math.abs(variance).toFixed(2)}
+                    </>
+                  )}
+                </p>
+                {Math.abs(variance) >= 0.005 ? (
+                  <p className="mt-1 text-2xs leading-relaxed text-warn">
+                    A difference is not by itself a problem, but it is recorded. Write what you think
+                    happened in the note below.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             <div>
-              <label className="block text-slate-700 font-semibold mb-1">Shift Handover Remarks</label>
+              <label className="label" htmlFor="shift-notes">Note for the record</label>
               <textarea
-                rows="2"
-                placeholder="e.g. Safe locked, malaria RDTs restocked for night shift..."
+                id="shift-notes"
+                className="field"
+                rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                disabled={data?.is_closed}
               />
             </div>
 
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+              type="button"
+              className="btn btn-primary w-full justify-center"
+              onClick={close}
+              disabled={busy || data?.is_closed}
             >
-              {isSubmitting ? 'Finalizing...' : 'Close & Finalize Today\'s Shift'}
+              {busy ? (
+                <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Closing</>
+              ) : data?.is_closed ? 'Already closed today' : 'Close the shift'}
             </button>
-          </form>
-        </div>
 
+            <p className="text-2xs leading-relaxed text-ink-3">
+              Closed by {currentUser?.full_name || 'the signed-in user'}. Closing again on the same
+              day replaces the figures and is recorded.
+            </p>
+          </div>
+        </Panel>
       </div>
 
-      {/* Shift History Archive */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-900 mb-3">Past Shift Reconciliation Archive</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs font-mono">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-600 uppercase text-[10px]">
-                <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Patients</th>
-                <th className="py-2.5 px-3">Prescriptions</th>
-                <th className="py-2.5 px-3 text-right">Revenue ({currency})</th>
-                <th className="py-2.5 px-3 text-right">Physical Cash</th>
-                <th className="py-2.5 px-3 font-sans">Cashier</th>
-                <th className="py-2.5 px-3 font-sans">Sync Status</th>
-                <th className="py-2.5 px-3 text-center font-sans">Official Audit</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {history.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="py-4 text-center text-slate-400 italic font-sans">No past closed shifts yet.</td>
-                </tr>
-              ) : (
-                history.map((h) => (
-                  <tr key={h.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-2.5 px-3 text-cyan-700 font-bold">{h.report_date}</td>
-                    <td className="py-2.5 px-3 text-slate-800">{h.total_patients}</td>
-                    <td className="py-2.5 px-3 text-slate-800">{h.total_prescriptions}</td>
-                    <td className="py-2.5 px-3 text-right text-emerald-600 font-bold">{h.total_revenue.toFixed(2)}</td>
-                    <td className="py-2.5 px-3 text-right text-slate-900 font-bold">{h.cash_reconciled.toFixed(2)}</td>
-                    <td className="py-2.5 px-3 text-slate-700 font-sans">{h.cashier_name}</td>
-                    <td className="py-2.5 px-3 font-sans">
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                        {h.cloud_sync_status}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <button
-                        onClick={() => {
-                          setReportToPrint({
-                            summary: {
-                              total_patients: h.total_patients,
-                              completed_consultations: h.total_patients,
-                              total_prescriptions: h.total_prescriptions,
-                              total_opd_fees: h.total_revenue * 0.4,
-                              total_pharmacy_sales: h.total_revenue * 0.6,
-                              total_revenue: h.total_revenue,
-                              dispensed_medicines: []
-                            },
-                            existing_report: h,
-                            is_closed: true
-                          });
-                          setIsPrintReportOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 transition-all text-[11px] font-semibold cursor-pointer"
-                        title="View and Print Shift Report"
-                      >
-                        <Printer className="w-3 h-3" />
-                        <span>Print</span>
-                      </button>
-                    </td>
+      <Panel>
+        <PanelHead title="Medicines handed over today" note={`${(s?.dispensed_medicines || []).length} kinds`} />
+        {(s?.dispensed_medicines || []).length === 0 ? (
+          <EmptyState title="Nothing dispensed yet today" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr><th>Medicine</th><th className="num">Units</th><th className="num">Value ({currency})</th></tr>
+              </thead>
+              <tbody>
+                {s.dispensed_medicines.map((m) => (
+                  <tr key={m.drug_name}>
+                    <td>{m.drug_name}</td>
+                    <td className="num">{m.total_units}</td>
+                    <td className="num">{(m.total_revenue || 0).toFixed(2)}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
-      {/* Printable Shift Audit Report Modal */}
+      <Panel>
+        <PanelHead title="Previous days" note={`${history.length} closed shifts`} />
+        {history.length === 0 ? (
+          <EmptyState title="No shift has been closed yet" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th><th className="num">Patients</th>
+                  <th className="num">Expected ({currency})</th>
+                  <th className="num">Counted ({currency})</th>
+                  <th className="num">Difference</th>
+                  <th>Closed by</th><th aria-label="Print" />
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => {
+                  const diff = (h.cash_reconciled || 0) - (h.total_revenue || 0);
+                  return (
+                    <tr key={h.report_date}>
+                      <td className="font-mono text-2xs">{h.report_date}</td>
+                      <td className="num">{h.total_patients}</td>
+                      <td className="num">{(h.total_revenue || 0).toFixed(2)}</td>
+                      <td className="num">{(h.cash_reconciled || 0).toFixed(2)}</td>
+                      <td className={`num ${Math.abs(diff) < 0.005 ? '' : 'font-semibold text-warn'}`}>
+                        {diff > 0 ? '+' : ''}{diff.toFixed(2)}
+                      </td>
+                      <td><Value>{h.cashier_name}</Value></td>
+                      <td className="num">
+                        <button type="button" className="btn btn-sm" onClick={() => setPrinting(h)}>
+                          <Printer className="h-3 w-3" aria-hidden="true" />
+                          Print
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
       <PrintableShiftReportModal
-        isOpen={isPrintReportOpen}
-        onClose={() => setIsPrintReportOpen(false)}
-        data={reportToPrint}
+        isOpen={!!printing}
+        onClose={() => setPrinting(null)}
         settings={settings}
-        shiftDate={reportToPrint?.existing_report?.report_date}
+        shiftDate={printing?.report_date}
+        data={printing ? {
+          is_closed: true,
+          existing_report: printing,
+          summary: {
+            total_patients: printing.total_patients,
+            completed_consultations: printing.total_consultations,
+            total_prescriptions: printing.total_prescriptions,
+            total_opd_fees: printing.total_opd_fees,
+            total_pharmacy_sales: printing.total_pharmacy_sales,
+            total_revenue: printing.total_revenue,
+            // The per-medicine breakdown is only held for the current day, so a
+            // reprint of an older shift shows the totals without it rather than
+            // showing today's medicines against yesterday's date.
+            dispensed_medicines: printing.report_date === data?.report_date
+              ? (s?.dispensed_medicines || [])
+              : []
+          }
+        } : null}
       />
-
     </div>
   );
 }

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
 
 // GET /api/end-of-day/today (Shift summary for current day)
@@ -36,6 +37,32 @@ router.get('/today', async (req, res) => {
       ORDER BY total_units DESC
     `, [todayStr]);
 
+    /*
+     * The exceptions of the day. These are the lines a supervisor actually
+     * needs to look at: medicine that left the shelf for less than its price,
+     * or for nothing at all, and stock that moved with no patient attached.
+     */
+    const reducedSales = await allQuery(`
+      SELECT invoice_number, patient_name, total_amount, discount, paid_amount,
+             discount_reason, dispensed_by_name, created_at
+      FROM dispensations
+      WHERE date(created_at) = ? AND (discount > 0 OR paid_amount = 0)
+      ORDER BY id DESC
+    `, [todayStr]);
+
+    const stockMovements = await allQuery(`
+      SELECT created_at, action_type, user_name, details, severity
+      FROM activity_logs
+      WHERE date(created_at) = ?
+        AND action_type IN ('Stock received', 'Stock removed', 'Medicine removed from formulary')
+      ORDER BY id DESC
+    `, [todayStr]);
+
+    const unattributed = await getQuery(`
+      SELECT COUNT(*) AS cnt FROM dispensations
+      WHERE date(created_at) = ? AND (dispensed_by_name IS NULL OR dispensed_by_name = '')
+    `, [todayStr]);
+
     // Check if today is already closed
     const existingClose = await getQuery('SELECT * FROM end_of_day_reports WHERE report_date = ?', [todayStr]);
 
@@ -53,7 +80,10 @@ router.get('/today', async (req, res) => {
         total_opd_fees: visitStats.total_opd_fees || 0,
         total_pharmacy_sales: dispStats.total_pharmacy_sales || 0,
         total_revenue: totalRevenue,
-        dispensed_medicines: dispensedMeds
+        dispensed_medicines: dispensedMeds,
+        reduced_sales: reducedSales || [],
+        stock_movements: stockMovements || [],
+        unattributed_dispensations: (unattributed && unattributed.cnt) || 0
       }
     });
   } catch (err) {
@@ -63,10 +93,29 @@ router.get('/today', async (req, res) => {
 });
 
 // POST /api/end-of-day/close (Finalize and record End-of-Day report)
-router.post('/close', async (req, res) => {
+router.post('/close', requirePermission('endOfDay.close'), async (req, res) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];
     const { cashier_name, cash_reconciled, notes } = req.body;
+
+    /*
+     * The counted cash must be supplied. Defaulting it to the expected total
+     * would write a perfect reconciliation for a drawer nobody counted, and a
+     * shortfall would then be invisible in the very report meant to reveal it.
+     */
+    if (cash_reconciled === undefined || cash_reconciled === null || cash_reconciled === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Count the cash in the drawer and enter the amount. The shift cannot be closed without it.'
+      });
+    }
+    const countedCash = parseFloat(cash_reconciled);
+    if (Number.isNaN(countedCash) || countedCash < 0) {
+      return res.status(400).json({ success: false, message: 'Enter the counted cash as a number.' });
+    }
+    if (!String(cashier_name || '').trim()) {
+      return res.status(400).json({ success: false, message: 'The shift close must be recorded against a name.' });
+    }
 
     // Calculate actual figures
     const visitStats = await getQuery(`
@@ -113,17 +162,33 @@ router.post('/close', async (req, res) => {
       visitStats.total_opd_fees || 0,
       dispStats.total_pharmacy_sales || 0,
       totalRev,
-      cash_reconciled !== undefined ? parseFloat(cash_reconciled) : totalRev,
-      cashier_name || 'Officer on Duty',
-      notes || 'End-of-day shift reconciled successfully.'
+      countedCash,
+      String(cashier_name).trim(),
+      String(notes || '').trim() || null
+    ]);
+
+    const variance = countedCash - totalRev;
+    await runQuery(`
+      INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
+      VALUES ('Shift closed', ?, '', 'Shift close', ?, ?)
+    `, [
+      String(cashier_name).trim(),
+      `${todayStr}: expected ${totalRev.toFixed(2)}, counted ${countedCash.toFixed(2)}, ` +
+        (Math.abs(variance) < 0.005
+          ? 'balanced.'
+          : `${variance > 0 ? 'over' : 'short'} by ${Math.abs(variance).toFixed(2)}.`),
+      Math.abs(variance) < 0.005 ? 'Success' : 'Warning'
     ]);
 
     const saved = await getQuery('SELECT * FROM end_of_day_reports WHERE report_date = ?', [todayStr]);
 
     res.json({
       success: true,
-      message: 'End-of-day shift successfully closed and reconciled',
-      report: saved
+      message: Math.abs(variance) < 0.005
+        ? 'The shift is closed and the drawer balances.'
+        : `The shift is closed. The drawer is ${variance > 0 ? 'over' : 'short'} by ${Math.abs(variance).toFixed(2)}, and that has been recorded.`,
+      report: saved,
+      variance
     });
   } catch (err) {
     console.error('End of day close error:', err);

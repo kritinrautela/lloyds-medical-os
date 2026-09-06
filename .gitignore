@@ -23,3 +23,18 @@ yarn-error.log*
 tests/output/
 .playwright-mcp/
 *.backup
+
+# The clinic's own certificate and private key. Made on the clinic computer by
+# server/scripts/make-certificate.js. A key that shipped with the software
+# would be a key everybody has, so it never enters the repository.
+server/certs/
+
+# Demo raw video and intermediate audio
+demo-videos/**/*.webm
+demo-videos/*.webm
+demo-videos/**/*.aiff
+demo-videos/*.aiff
+
+
+# Patient photographs are clinical records, never source. They stay on the clinic machine.
+server/data/patient_photos/

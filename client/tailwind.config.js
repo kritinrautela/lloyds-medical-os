@@ -1,4 +1,13 @@
 /** @type {import('tailwindcss').Config} */
+
+/*
+ * Every colour resolves through a CSS custom property, so the same class name
+ * renders correctly in the daylight theme used at the outpatient counter and
+ * the low-light theme used on the night shift. The channel form
+ * `rgb(var(--x) / <alpha-value>)` keeps Tailwind's opacity modifiers working.
+ */
+const token = (name) => `rgb(var(${name}) / <alpha-value>)`;
+
 export default {
   content: [
     "./index.html",
@@ -9,31 +18,47 @@ export default {
       colors: {
         // Surfaces and rules. Everything structural is neutral so that any
         // colour on screen means a clinical state and nothing else.
-        canvas: '#F4F6F8',
-        surface: '#FFFFFF',
-        subtle: '#F7F9FA',
+        canvas: token('--c-canvas'),
+        surface: token('--c-surface'),
+        subtle: token('--c-subtle'),
         line: {
-          DEFAULT: '#DFE4E9',
-          soft: '#EAEEF1',
-          strong: '#C4CCD4'
+          DEFAULT: token('--c-line'),
+          soft: token('--c-line-soft'),
+          strong: token('--c-line-strong')
         },
         ink: {
-          DEFAULT: '#101720',
-          2: '#48545F',
-          3: '#6B7885',
-          inverse: '#FFFFFF'
+          DEFAULT: token('--c-ink'),
+          2: token('--c-ink-2'),
+          3: token('--c-ink-3'),
+          inverse: token('--c-ink-inverse')
         },
         // Lloyds brand. Reserved for identity and the primary action only.
         brand: {
-          DEFAULT: '#C8102E',
-          deep: '#8E0B20',
-          wash: '#FDF2F3'
+          DEFAULT: token('--c-brand'),
+          deep: token('--c-brand-deep'),
+          wash: token('--c-brand-wash')
         },
         // Clinical status scale. Never decorative.
-        critical: { DEFAULT: '#B3121F', wash: '#FDF1F2', line: '#F3C9CD' },
-        warn:     { DEFAULT: '#A15C07', wash: '#FDF6EA', line: '#EFD9AE' },
-        ok:       { DEFAULT: '#0B6E4F', wash: '#EFF8F3', line: '#BCE0CE' },
-        info:     { DEFAULT: '#1B4FA0', wash: '#EFF4FC', line: '#C4D6EF' }
+        critical: {
+          DEFAULT: token('--c-critical'),
+          wash: token('--c-critical-wash'),
+          line: token('--c-critical-line')
+        },
+        warn: {
+          DEFAULT: token('--c-warn'),
+          wash: token('--c-warn-wash'),
+          line: token('--c-warn-line')
+        },
+        ok: {
+          DEFAULT: token('--c-ok'),
+          wash: token('--c-ok-wash'),
+          line: token('--c-ok-line')
+        },
+        info: {
+          DEFAULT: token('--c-info'),
+          wash: token('--c-info-wash'),
+          line: token('--c-info-line')
+        }
       },
       fontFamily: {
         sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
@@ -48,9 +73,9 @@ export default {
         lg: '10px'
       },
       boxShadow: {
-        panel: '0 1px 2px rgba(16, 23, 32, 0.04), 0 1px 1px rgba(16, 23, 32, 0.03)',
-        raised: '0 4px 12px -2px rgba(16, 23, 32, 0.10), 0 2px 4px -2px rgba(16, 23, 32, 0.06)',
-        overlay: '0 24px 48px -12px rgba(16, 23, 32, 0.24), 0 8px 16px -8px rgba(16, 23, 32, 0.12)'
+        panel: 'var(--shadow-panel)',
+        raised: 'var(--shadow-raised)',
+        overlay: 'var(--shadow-overlay)'
       }
     },
   },

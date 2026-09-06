@@ -1,0 +1,27 @@
+1
+00:00:00,000 --> 00:00:03,418
+You sign in with your clinic
+account to open the clinical board.
+
+2
+00:00:03,418 --> 00:00:08,760
+The overview highlights patients who need
+immediate attention and those currently in
+the department.
+
+3
+00:00:08,760 --> 00:00:13,567
+As the shift progresses, recorded
+consultations and discharges appear in the
+daily ledger.
+
+4
+00:00:13,567 --> 00:00:17,520
+You switch to the ward view to check
+bed occupancy and patient placements.
+
+5
+00:00:17,520 --> 00:00:22,167
+The pharmacy board gives an instant count
+of stocked medications and items running
+low.

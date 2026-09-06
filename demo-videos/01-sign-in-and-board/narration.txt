@@ -1,0 +1,9 @@
+You sign in with your clinic account to open the clinical board.
+
+The overview highlights patients who need immediate attention and those currently in the department.
+
+As the shift progresses, recorded consultations and discharges appear in the daily ledger.
+
+You switch to the ward view to check bed occupancy and patient placements.
+
+The pharmacy board gives an instant count of stocked medications and items running low.

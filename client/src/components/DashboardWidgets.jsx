@@ -1,714 +1,1371 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Zap, Clock, AlertTriangle, CheckCircle2, Users, Activity, 
-  TrendingUp, Target, Award, Timer, Heart, Brain, Eye,
-  Shield, Flame, Droplets, Wind, ThermometerSun, Bell,
-  ChevronRight, ArrowUp, ArrowDown, Sparkles, Star,
-  HeartPulse, Stethoscope, Pill, BedDouble, Building2,
-  FileCheck, ShieldAlert
+import React, { useMemo, useState } from 'react';
+import {
+  AlertTriangle, ArrowRight, BedDouble, Boxes, CalendarClock, CheckCircle2,
+  Cloud, CloudOff, CircleSlash, FileSpreadsheet, HardHat, Lock, Package,
+  PackageMinus, ScrollText, ShieldAlert, ShieldCheck, Sparkles, Users, Wallet,
+  Warehouse
 } from 'lucide-react';
-import { sounds } from '../utils/soundEffects';
-import { api } from '../services/api';
+import {
+  Bar, Donut, EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, Value,
+  Vital, formatDateTime, formatDuration, hasAllergy, scoreVital, systolicOf
+} from './ui';
 
-// Mining Concession Trauma & Medevac Operational Readiness Card (Institutional Grade)
-export function TraumaMedevacStatusCard({ stats, onNavigate }) {
-  return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between h-full">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200">
-              <ShieldAlert className="w-5 h-5 text-rose-600" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 tracking-tight">Trauma & Medevac Status</h4>
-              <p className="text-[10px] text-slate-500 font-mono">Concession Station • Level 1 Acute Facility</p>
-            </div>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            DEFCON 1 READY
-          </span>
-        </div>
+/*
+ * Dashboard sections.
+ *
+ * Every figure rendered here comes from /api/dashboard/stats. Where the
+ * database holds no value the component prints an em dash. There are no
+ * placeholder patients, no simulated telemetry and no environmental readings
+ * the clinic has no instrument to measure.
+ */
 
-        <div className="space-y-2.5">
-          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-semibold text-slate-800">Aeromedical Rotary Medevac</span>
-            </div>
-            <span className="text-[11px] font-mono font-bold text-slate-700">Port Moresby / Standby</span>
-          </div>
+const QUEUE_STAGES = [
+  { key: 'Waiting', label: 'Waiting', tokPisin: 'Wetim' },
+  { key: 'Triage / Vitals', label: 'Triage and vitals' },
+  { key: 'In Consultation', label: 'With the doctor', tokPisin: 'Wantaim dokta' },
+  { key: 'At Pharmacy', label: 'At pharmacy', tokPisin: 'Kisim marasin' },
+  { key: 'Completed', label: 'Completed today' }
+];
 
-          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold text-slate-800">Resuscitation Bay O2 Telemetry</span>
-            </div>
-            <span className="text-[11px] font-mono font-bold text-emerald-700">100% Pressurized</span>
-          </div>
+// ---------------------------------------------------------------------------
+// Attention board — only ever built from conditions that are actually true
+// ---------------------------------------------------------------------------
 
-          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold text-slate-800">Taipan / Snakebite Antivenom</span>
-            </div>
-            <span className="text-[11px] font-mono font-bold text-slate-900">{stats?.antivenom_vials ?? 12} Vials (Cold Chain)</span>
-          </div>
+export function AttentionBoard({ stats, onNavigate, onSelectSection }) {
+  const items = [];
 
-          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-xs font-semibold text-slate-800">Mine Heat Stress Index (WBGT)</span>
-            </div>
-            <span className="text-[11px] font-mono font-bold text-amber-700">32.4°C (Condition Yellow)</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-3 border-t border-slate-100 mt-4 flex items-center justify-between">
-        <span className="text-[10px] text-slate-500 font-mono">Protocol: LMEL-OHS-04</span>
-        <button
-          onClick={() => onNavigate && onNavigate('queue')}
-          className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer"
-        >
-          <span>Acute Trauma Log</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Daily Goals Tracker
-export function DailyGoalsTracker({ stats, onNavigate, onOpenCheckIn, onSelectTab }) {
-  const goals = [
-    { id: 1, label: 'Patient Consultations', current: stats?.queueMap?.['Completed'] || 0, target: 25, icon: Stethoscope, color: 'emerald', action: () => onNavigate && onNavigate('queue') },
-    { id: 2, label: 'Revenue Target', current: stats?.total_revenue_today || 0, target: 500, icon: Target, color: 'cyan', isCurrency: true, action: () => onNavigate && onNavigate('end-of-day') },
-    { id: 3, label: 'New Registrations', current: stats?.today_visitors || 0, target: 8, icon: Users, color: 'purple', action: () => onOpenCheckIn && onOpenCheckIn() },
-    { id: 4, label: 'Zero LTI Days', current: (stats?.incidents?.length || 0) === 0 ? 1 : 0, target: 1, icon: Shield, color: 'amber', isBoolean: true, action: () => onSelectTab && onSelectTab('ohs') }
-  ];
-
-  const colorMap = {
-    emerald: { bg: 'bg-emerald-50 text-emerald-600', border: 'border-emerald-200', text: 'text-emerald-700', bar: 'from-emerald-500 to-teal-500' },
-    cyan: { bg: 'bg-cyan-50 text-cyan-600', border: 'border-cyan-200', text: 'text-cyan-700', bar: 'from-cyan-500 to-blue-500' },
-    purple: { bg: 'bg-purple-50 text-purple-600', border: 'border-purple-200', text: 'text-purple-700', bar: 'from-purple-500 to-indigo-500' },
-    amber: { bg: 'bg-amber-50 text-amber-600', border: 'border-amber-200', text: 'text-amber-700', bar: 'from-amber-500 to-orange-500' }
-  };
-
-  return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
-      <div>
-        <div className="flex items-center gap-2.5 mb-4">
-          <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-            <Award className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900">Daily Clinical Goals</h4>
-            <p className="text-[10px] text-slate-500">Tap any goal to navigate to duty module</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {goals.map((goal) => {
-            const Icon = goal.icon;
-            const c = colorMap[goal.color];
-            const percentage = goal.isBoolean ? (goal.current >= goal.target ? 100 : 0) : Math.min((goal.current / goal.target) * 100, 100);
-            const isComplete = percentage >= 100;
-
-            return (
-              <button 
-                key={goal.id} 
-                onClick={() => { sounds.playClick(); if (goal.action) goal.action(); }}
-                className="w-full text-left p-3 rounded-xl bg-slate-50/80 hover:bg-slate-100/90 border border-slate-200/80 transition-all group cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${c.text}`} />
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-950">{goal.label}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-xs font-mono font-bold ${c.text}`}>
-                      {goal.isCurrency ? `K ${(goal.current || 0).toFixed(0)}` : goal.current}
-                    </span>
-                    {isComplete && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                  </div>
-                </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                  <div 
-                    className={`bg-gradient-to-r ${c.bar} h-full rounded-full transition-all duration-700`}
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[9px] text-slate-500 font-medium">Progress: {Math.round(percentage)}%</span>
-                  <span className="text-[9px] text-slate-500 font-medium">
-                    Target: {goal.isCurrency ? `K ${goal.target}` : goal.target}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Patient Flow Journey Visualizer
-export function PatientFlowJourney({ stats, onNavigate }) {
-  const stages = [
-    { key: 'Waiting', label: 'Arrival', color: 'amber', icon: Users },
-    { key: 'Triage / Vitals', label: 'Triage', color: 'cyan', icon: Activity },
-    { key: 'In Consultation', label: 'Doctor', color: 'purple', icon: Stethoscope },
-    { key: 'At Pharmacy', label: 'Pharmacy', color: 'emerald', icon: Pill },
-    { key: 'Completed', label: 'Discharge', color: 'blue', icon: CheckCircle2 }
-  ];
-
-  const getCount = (key) => stats?.queueMap?.[key] || 0;
-  const total = stages.reduce((sum, s) => sum + getCount(s.key), 0);
-
-  const handleStageClick = (stageKey) => {
-    sounds.playClick();
-    if (stageKey === 'At Pharmacy') {
-      if (onNavigate) onNavigate('dispense');
-    } else {
-      if (onNavigate) onNavigate('queue');
-    }
-  };
-
-  return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200">
-            <Activity className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900">Patient Journey Flow</h4>
-            <p className="text-[10px] text-slate-500">{total} active patient steps • Click any stage to open OPD queue</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-          className="text-xs text-cyan-600 hover:text-cyan-700 font-bold flex items-center gap-1 transition-colors cursor-pointer"
-        >
-          View Live OPD <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Horizontal Flow */}
-      <div className="relative">
-        <div className="flex items-center justify-between">
-          {stages.map((stage, i) => {
-            const Icon = stage.icon;
-            const count = getCount(stage.key);
-            const percentage = total > 0 ? (count / total) * 100 : 0;
-            const colorClasses = {
-              amber: 'from-amber-50 to-amber-100/80 border-amber-200 text-amber-600 hover:border-amber-400',
-              cyan: 'from-cyan-50 to-cyan-100/80 border-cyan-200 text-cyan-600 hover:border-cyan-400',
-              purple: 'from-purple-50 to-purple-100/80 border-purple-200 text-purple-600 hover:border-purple-400',
-              emerald: 'from-emerald-50 to-emerald-100/80 border-emerald-200 text-emerald-600 hover:border-emerald-400',
-              blue: 'from-blue-50 to-blue-100/80 border-blue-200 text-blue-600 hover:border-blue-400'
-            };
-
-            return (
-              <React.Fragment key={stage.key}>
-                <button
-                  onClick={() => handleStageClick(stage.key)}
-                  className="flex flex-col items-center gap-2 relative z-10 group cursor-pointer"
-                >
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colorClasses[stage.color]} border flex items-center justify-center transition-all group-hover:scale-110 shadow-sm`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-lg font-black font-mono ${colorClasses[stage.color].split(' ').slice(2,3).join(' ')}`}>{count}</p>
-                    <p className="text-[10px] text-slate-500 group-hover:text-slate-900 transition-colors font-medium">{stage.label}</p>
-                  </div>
-                </button>
-                {i < stages.length - 1 && (
-                  <div className="flex-1 h-1 bg-slate-100 mx-2 relative rounded-full overflow-hidden">
-                    <div 
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full"
-                      style={{ width: `${Math.max(percentage, 5)}%` }}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Department Performance Cards
-export function DepartmentPerformance({ stats, onNavigate, onSelectTab }) {
-  const departments = [
-    { 
-      name: 'Emergency', 
-      metric: stats?.urgentVisits?.length ?? 0, 
-      label: 'Active Cases', 
-      icon: HeartPulse, 
-      color: 'red',
-      trend: (stats?.urgentVisits?.length || 0) > 0 ? `${stats.urgentVisits.length} Priority` : 'All Clear',
-      trendUp: (stats?.urgentVisits?.length || 0) === 0,
-      onClick: () => onNavigate && onNavigate('queue')
-    },
-    { 
-      name: 'Triage', 
-      metric: stats?.queueMap?.['Triage / Vitals'] ?? 0, 
-      label: 'In Queue', 
-      icon: Activity, 
-      color: 'amber',
-      trend: (stats?.queueMap?.['Triage / Vitals'] || 0) > 0 ? `${stats.queueMap['Triage / Vitals']} Waiting` : 'Ready',
-      trendUp: null,
-      onClick: () => onNavigate && onNavigate('queue')
-    },
-    { 
-      name: 'Pharmacy', 
-      metric: `K ${(stats?.today_pharmacy_revenue ?? 0).toFixed(0)}`, 
-      label: 'Sales Today', 
-      icon: Pill, 
-      color: 'cyan',
-      trend: (stats?.today_pharmacy_revenue || 0) > 0 ? 'Active' : 'No Sales',
-      trendUp: (stats?.today_pharmacy_revenue || 0) > 0 ? true : null,
-      onClick: () => onNavigate && onNavigate('pharmacy')
-    },
-    { 
-      name: 'Ward Beds', 
-      metric: `${stats?.occupied_beds ?? 0}/${stats?.total_beds ?? 10}`, 
-      label: 'Bed Occupancy', 
-      icon: BedDouble, 
-      color: 'purple',
-      trend: `${stats?.total_beds ? Math.round(((stats?.occupied_beds || 0) / stats.total_beds) * 100) : 0}% Load`,
-      trendUp: null,
-      onClick: () => onSelectTab && onSelectTab('beds')
-    }
-  ];
-
-  const colorMap = {
-    red: { bg: 'from-rose-50 to-white', border: 'border-rose-200 hover:border-rose-300', text: 'text-rose-700', icon: 'bg-rose-100 text-rose-600' },
-    amber: { bg: 'from-amber-50 to-white', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700', icon: 'bg-amber-100 text-amber-600' },
-    cyan: { bg: 'from-cyan-50 to-white', border: 'border-cyan-200 hover:border-cyan-300', text: 'text-cyan-700', icon: 'bg-cyan-100 text-cyan-600' },
-    purple: { bg: 'from-purple-50 to-white', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700', icon: 'bg-purple-100 text-purple-600' }
-  };
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {departments.map((dept) => {
-        const Icon = dept.icon;
-        const c = colorMap[dept.color];
-        return (
-          <button 
-            key={dept.name} 
-            onClick={() => { sounds.playClick(); dept.onClick(); }}
-            className={`p-4 rounded-2xl bg-gradient-to-br ${c.bg} border ${c.border} shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md group text-left cursor-pointer`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-xl ${c.icon}`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              {dept.trendUp !== null && (
-                <span className={`text-[10px] font-bold ${dept.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {dept.trendUp ? '↑' : '↓'} {dept.trend}
-                </span>
-              )}
-              {dept.trendUp === null && (
-                <span className="text-[10px] font-bold text-slate-500">{dept.trend}</span>
-              )}
-            </div>
-            <p className={`text-2xl font-black font-mono tracking-tight ${c.text}`}>{dept.metric}</p>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xs font-bold text-slate-800">{dept.name}</span>
-              <span className="text-[10px] text-slate-500">{dept.label}</span>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// Alert Notification Center
-export function AlertNotificationCenter({ stats, onNavigate, onSelectTab }) {
-  const alerts = [];
-  
-  if (stats?.low_stock_count > 0) {
-    alerts.push({ 
-      id: 1, 
-      type: 'warning', 
-      title: 'Low Stock Alert', 
-      message: `${stats.low_stock_count} medications below minimum reorder point`, 
-      icon: AlertTriangle, 
-      color: 'amber',
-      action: () => onNavigate && onNavigate('pharmacy')
-    });
-  }
-  if (stats?.expiring_soon_count > 0) {
-    alerts.push({ 
-      id: 2, 
-      type: 'info', 
-      title: 'Medication Expiry Warning', 
-      message: `${stats.expiring_soon_count} formulary items expiring within 90 days`, 
-      icon: Clock, 
-      color: 'amber',
-      action: () => onNavigate && onNavigate('pharmacy')
-    });
-  }
-  if (stats?.urgentVisits?.length > 0) {
-    alerts.push({ 
-      id: 3, 
-      type: 'emergency', 
-      title: 'Active High Acuity Emergency', 
-      message: `${stats.urgentVisits.length} high priority trauma/snakebite patients in queue`, 
-      icon: HeartPulse, 
-      color: 'red',
-      action: () => onNavigate && onNavigate('queue')
-    });
-  }
-  if (stats?.occupied_beds >= (stats?.total_beds || 10) * 0.4) {
-    alerts.push({ 
-      id: 4, 
-      type: 'warning', 
-      title: 'Observation Ward Active Load', 
-      message: `${stats?.occupied_beds || 4} of ${stats?.total_beds || 10} observation beds occupied`, 
-      icon: BedDouble, 
-      color: 'amber',
-      action: () => onSelectTab && onSelectTab('beds')
+  const emergencies = (stats?.urgentVisits || []).filter((v) => v.triage_priority === 'Emergency');
+  if (emergencies.length > 0) {
+    items.push({
+      id: 'emergency',
+      tone: 'critical',
+      icon: ShieldAlert,
+      title: `${emergencies.length} emergency ${emergencies.length === 1 ? 'patient' : 'patients'} in the queue`,
+      detail: emergencies.map((v) => v.patient_name).join(', '),
+      action: 'Open queue',
+      onAction: () => onNavigate('queue')
     });
   }
 
-  if (alerts.length === 0) {
-    alerts.push({ 
-      id: 5, 
-      type: 'success', 
-      title: 'All Systems Normal', 
-      message: 'Zero pending clinical emergencies or stock stockouts', 
-      icon: CheckCircle2, 
-      color: 'emerald',
-      action: () => sounds.playSuccessChime()
+  const urgent = (stats?.urgentVisits || []).filter((v) => v.triage_priority === 'Urgent');
+  if (urgent.length > 0) {
+    items.push({
+      id: 'urgent',
+      tone: 'warn',
+      icon: AlertTriangle,
+      title: `${urgent.length} urgent ${urgent.length === 1 ? 'patient' : 'patients'} waiting`,
+      detail: urgent.map((v) => `${v.patient_name} (${formatDuration(v.waiting_minutes) || '—'})`).join(', '),
+      action: 'Open queue',
+      onAction: () => onNavigate('queue')
     });
   }
 
-  const colorMap = {
-    red: { bg: 'bg-rose-50/80 hover:bg-rose-100/80', border: 'border-rose-200 hover:border-rose-300', text: 'text-rose-700', icon: 'bg-rose-100 text-rose-600' },
-    amber: { bg: 'bg-amber-50/80 hover:bg-amber-100/80', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700', icon: 'bg-amber-100 text-amber-600' },
-    emerald: { bg: 'bg-emerald-50/80 hover:bg-emerald-100/80', border: 'border-emerald-200 hover:border-emerald-300', text: 'text-emerald-700', icon: 'bg-emerald-100 text-emerald-600' }
-  };
-
-  return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-      <div className="flex items-center gap-2.5 mb-4">
-        <div className="p-2 rounded-xl bg-red-50 text-red-600 border border-red-200 relative">
-          <Bell className="w-5 h-5" />
-          {alerts.length > 0 && alerts[0].type !== 'success' && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[8px] font-bold flex items-center justify-center animate-pulse">
-              {alerts.length}
-            </span>
-          )}
-        </div>
-        <div>
-          <h4 className="text-sm font-bold text-slate-900">Clinical Alert Center</h4>
-          <p className="text-[10px] text-slate-500">{alerts.length} active notifications • Tap to take action</p>
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        {alerts.map((alert) => {
-          const Icon = alert.icon;
-          const c = colorMap[alert.color];
-          return (
-            <button
-              key={alert.id}
-              onClick={() => { sounds.playClick(); if (alert.action) alert.action(); }}
-              className={`w-full text-left p-3 rounded-xl ${c.bg} border ${c.border} flex items-center gap-3 transition-all hover:scale-[1.01] group cursor-pointer`}
-            >
-              <div className={`p-2 rounded-lg ${c.icon}`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-900">{alert.title}</p>
-                <p className="text-[10px] text-slate-500 truncate">{alert.message}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Subcomponent: Live telemetry clock (isolated to prevent parent re-renders)
-function TelemetryClock() {
-  const [time, setTime] = useState(new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return (
-    <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-    </span>
-  );
-}
-
-// Real-time Vitals Monitor Grid - Zero Overflow & Perfectly Responsive
-export function VitalsMonitorGrid({ stats, onNavigate }) {
-  const [selectedPatientIndex, setSelectedPatientIndex] = useState(0);
-
-  // Build patient vitals list from actual DB urgent visits + occupied beds (zero hallucinated data)
-  const patientVitalsList = [];
-
-  if (stats?.urgentVisits && stats.urgentVisits.length > 0) {
-    stats.urgentVisits.forEach((v) => {
-      patientVitalsList.push({
-        id: `visit-${v.id}`,
-        name: `${v.patient_name} (${v.patient_code})`,
-        location: `Urgent OPD - ${v.triage_priority}`,
-        heartRate: v.pulse ? parseInt(v.pulse) : 88,
-        spo2: v.spo2 ? parseInt(v.spo2) : 96,
-        bp: v.blood_pressure || v.bp || '130/85',
-        temp: v.temp ? parseFloat(v.temp) : 38.2,
-        respRate: v.resp_rate ? parseInt(v.resp_rate) : 20,
-        status: v.triage_priority === 'Emergency' ? 'Critical' : 'Warning'
-      });
+  if (stats?.out_of_stock_count > 0) {
+    const names = (stats.lowStockDrugs || [])
+      .filter((d) => d.stock_quantity <= 0)
+      .map((d) => d.name)
+      .slice(0, 4)
+      .join(', ');
+    items.push({
+      id: 'stockout',
+      tone: 'critical',
+      icon: Package,
+      title: `${stats.out_of_stock_count} ${stats.out_of_stock_count === 1 ? 'medicine is' : 'medicines are'} out of stock`,
+      detail: names,
+      action: 'Open formulary',
+      onAction: () => onNavigate('pharmacy')
     });
   }
 
-  if (stats?.beds) {
-    const occupied = stats.beds.filter(b => b.status === 'Occupied');
-    occupied.forEach(b => {
-      patientVitalsList.push({
-        id: `bed-${b.id}`,
-        name: `${b.patient_name || 'Inpatient'} (${b.bed_code})`,
-        location: `${b.ward_name}`,
-        heartRate: 80,
-        spo2: 97,
-        bp: '125/80',
-        temp: 37.1,
-        respRate: 18,
-        status: 'Monitoring'
-      });
+  if (stats?.expired_count > 0) {
+    items.push({
+      id: 'expired',
+      tone: 'critical',
+      icon: Package,
+      title: `${stats.expired_count} stocked ${stats.expired_count === 1 ? 'item is' : 'items are'} past their expiry date`,
+      detail: 'Expired stock must be quarantined before the next dispensing round.',
+      action: 'Open formulary',
+      onAction: () => onNavigate('pharmacy')
     });
   }
 
-  if (patientVitalsList.length === 0) {
+  const lowOnly = (stats?.low_stock_count || 0) - (stats?.out_of_stock_count || 0);
+  if (lowOnly > 0) {
+    items.push({
+      id: 'lowstock',
+      tone: 'warn',
+      icon: Package,
+      title: `${lowOnly} ${lowOnly === 1 ? 'medicine is' : 'medicines are'} below the reorder level`,
+      detail: (stats.lowStockDrugs || [])
+        .filter((d) => d.stock_quantity > 0)
+        .slice(0, 4)
+        .map((d) => `${d.name} (${d.stock_quantity} left)`)
+        .join(', '),
+      action: 'Open formulary',
+      onAction: () => onNavigate('pharmacy')
+    });
+  }
+
+  const overdueReturns = stats?.follow_ups_overdue || 0;
+  const dueReturns = stats?.follow_ups_due_today || 0;
+  if (overdueReturns + dueReturns > 0) {
+    const names = (stats.followUpsDue || []).slice(0, 4).map((f) => `${f.patient_name} (${f.follow_up_date})`).join(', ');
+    items.push({
+      id: 'returns',
+      tone: overdueReturns > 0 ? 'warn' : 'neutral',
+      icon: CalendarClock,
+      title: overdueReturns > 0
+        ? `${overdueReturns} ${overdueReturns === 1 ? 'patient is' : 'patients are'} overdue to return${dueReturns ? `, ${dueReturns} due today` : ''}`
+        : `${dueReturns} ${dueReturns === 1 ? 'patient is' : 'patients are'} due back today`,
+      detail: names,
+      action: 'Open returns',
+      onAction: () => onNavigate('registers', 'returns')
+    });
+  }
+
+  const openReferrals = stats?.openReferrals || [];
+  if (openReferrals.length > 0) {
+    const stale = openReferrals.filter((r) => r.days_open >= 7).length;
+    items.push({
+      id: 'referrals',
+      tone: stale > 0 || openReferrals.some((r) => r.urgency === 'Emergency') ? 'warn' : 'neutral',
+      icon: ShieldAlert,
+      title: `${openReferrals.length} ${openReferrals.length === 1 ? 'referral is' : 'referrals are'} awaiting an outcome${stale ? `, ${stale} open a week or more` : ''}`,
+      detail: openReferrals.slice(0, 4).map((r) => `${r.patient_name} to ${r.referred_to}`).join(', '),
+      action: 'Open referrals',
+      onAction: () => onNavigate('registers', 'referrals')
+    });
+  }
+
+  if ((stats?.notifiable_today || 0) > 0) {
+    items.push({
+      id: 'notifiable',
+      tone: 'warn',
+      icon: ShieldAlert,
+      title: `${stats.notifiable_today} reportable ${stats.notifiable_today === 1 ? 'diagnosis' : 'diagnoses'} recorded today`,
+      detail: 'On the notifiable line list. Urgent conditions should be phoned through to the provincial health office.',
+      action: 'Open line list',
+      onAction: () => onNavigate('registers', 'notifiable')
+    });
+  }
+
+  const unreconciled = stats?.unreconciledDays || [];
+  if (unreconciled.length > 0) {
+    items.push({
+      id: 'reconcile',
+      tone: 'warn',
+      icon: Wallet,
+      title: `${unreconciled.length} trading ${unreconciled.length === 1 ? 'day has' : 'days have'} no shift close on record`,
+      detail: unreconciled.slice(0, 5).map((d) => d.day).join(', '),
+      action: 'Open shift close',
+      onAction: () => onNavigate('end-of-day')
+    });
+  }
+
+  const flagged = stats?.flaggedDispensations || [];
+  if (flagged.length > 0) {
+    items.push({
+      id: 'flagged',
+      tone: 'warn',
+      icon: Lock,
+      title: `${flagged.length} pharmacy ${flagged.length === 1 ? 'transaction' : 'transactions'} discounted or unpaid today`,
+      detail: 'Each one needs a reason recorded before the shift is closed.',
+      action: 'Review controls',
+      onAction: () => onSelectSection('controls')
+    });
+  }
+
+  const longest = stats?.longest_wait_minutes;
+  if (typeof longest === 'number' && longest >= 90) {
+    items.push({
+      id: 'wait',
+      tone: 'warn',
+      icon: Users,
+      title: `Longest wait is now ${formatDuration(longest)}`,
+      detail: 'A patient has been in the department longer than an hour and a half.',
+      action: 'Open queue',
+      onAction: () => onNavigate('queue')
+    });
+  }
+
+  if (items.length === 0) {
     return (
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-                <HeartPulse className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">Vitals Monitor Grid</h4>
-                <p className="text-[10px] text-slate-500">Live Clinical Telemetry Station</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <TelemetryClock />
-            </div>
-          </div>
-
-          <div className="p-8 rounded-2xl bg-slate-50/80 border border-dashed border-slate-200 text-center space-y-2.5 my-auto">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <h5 className="text-sm font-bold text-slate-800">Station Telemetry Normal</h5>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-              No acute resuscitation or observation patients requiring continuous vitals monitoring right now. Check in a patient or admit to ward to stream live telemetry.
-            </p>
-            <button
-              onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-              className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
-            >
-              <span>View OPD Triage Queue</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      <Panel>
+        <div className="flex items-center gap-2.5 px-4 py-3">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" aria-hidden="true" />
+          <p className="text-sm text-ink-2">
+            Nothing outstanding. No emergency patients, no stockouts and no unreconciled shifts.
+          </p>
         </div>
-      </div>
+      </Panel>
     );
   }
 
-  const currentPatient = patientVitalsList[selectedPatientIndex] || patientVitalsList[0];
+  return (
+    <Panel>
+      <PanelHead
+        title="Needs attention"
+        note={`${items.length} ${items.length === 1 ? 'item' : 'items'}, ordered by clinical urgency`}
+      />
+      <ul className="divide-y divide-line-soft">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const accent = item.tone === 'critical' ? 'text-critical' : item.tone === 'neutral' ? 'text-ink-3' : 'text-warn';
+          return (
+            <li key={item.id} className="flex items-start gap-3 px-4 py-3">
+              <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${accent}`} aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink">{item.title}</p>
+                {item.detail ? (
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{item.detail}</p>
+                ) : null}
+              </div>
+              <button type="button" className="btn btn-sm shrink-0" onClick={item.onAction}>
+                {item.action}
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </Panel>
+  );
+}
 
-  const vitalCards = [
-    { 
-      label: 'Heart Rate', 
-      value: currentPatient.heartRate, 
-      unit: 'BPM', 
-      icon: Heart, 
-      color: 'red', 
-      status: currentPatient.heartRate > 100 ? 'High' : currentPatient.heartRate < 60 ? 'Low' : 'Normal',
-      isWarning: currentPatient.heartRate > 100 || currentPatient.heartRate < 60 
-    },
-    { 
-      label: 'Blood Oxygen', 
-      value: currentPatient.spo2, 
-      unit: '% SpO2', 
-      icon: Droplets, 
-      color: 'cyan', 
-      status: currentPatient.spo2 < 94 ? 'Hypoxic' : 'Normal',
-      isWarning: currentPatient.spo2 < 95 
-    },
-    { 
-      label: 'Blood Pressure', 
-      value: currentPatient.bp, 
-      unit: 'mmHg', 
-      icon: Activity, 
-      color: 'purple', 
-      status: 'Normal',
-      isWarning: false 
-    },
-    { 
-      label: 'Temperature', 
-      value: `${currentPatient.temp}°`, 
-      unit: 'Celsius', 
-      icon: ThermometerSun, 
-      color: 'amber', 
-      status: currentPatient.temp > 38.0 ? 'Febrile' : 'Normal',
-      isWarning: currentPatient.temp > 38.0 
-    },
-    { 
-      label: 'Resp Rate', 
-      value: currentPatient.respRate, 
-      unit: '/min', 
-      icon: Wind, 
-      color: 'emerald', 
-      status: currentPatient.respRate > 22 ? 'Tachypnea' : 'Normal',
-      isWarning: currentPatient.respRate > 22 
-    }
-  ];
+// ---------------------------------------------------------------------------
+// Patient flow
+// ---------------------------------------------------------------------------
+
+export function PatientFlow({ stats, onNavigate }) {
+  const queue = stats?.queueMap || {};
+  const waits = stats?.stageWait || {};
 
   return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 relative">
-              <HeartPulse className="w-5 h-5 text-rose-600" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">Vitals Telemetry Grid</h4>
-              <p className="text-[10px] text-slate-500 font-mono">{currentPatient.location}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <TelemetryClock />
-            <button
-              onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-              className="text-[10px] font-bold text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 hover:bg-slate-200/80 transition-colors cursor-pointer"
-            >
-              OPD Queue →
-            </button>
-          </div>
-        </div>
+    <Panel>
+      <PanelHead title="Patient flow today" note="Counts and the longest time anyone has been at that stage">
+        <button type="button" className="btn btn-sm" onClick={() => onNavigate('queue')}>
+          Open queue
+        </button>
+      </PanelHead>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th className="num">Patients</th>
+            <th className="num">Longest wait</th>
+          </tr>
+        </thead>
+        <tbody>
+          {QUEUE_STAGES.map((stage) => {
+            const count = queue[stage.key] || 0;
+            const wait = waits[stage.key];
+            const tone = typeof wait === 'number' && wait >= 90 ? 'warn' : 'neutral';
+            return (
+              <tr key={stage.key}>
+                <td>
+                  <span className="font-medium text-ink">{stage.label}</span>
+                  {stage.tokPisin ? (
+                    <span className="ml-2 text-2xs text-ink-3">{stage.tokPisin}</span>
+                  ) : null}
+                </td>
+                <td className="num font-semibold text-ink">{count}</td>
+                <td className="num">
+                  {stage.key === 'Completed' ? (
+                    <span className="unrecorded">—</span>
+                  ) : count === 0 ? (
+                    <span className="unrecorded">—</span>
+                  ) : tone === 'warn' ? (
+                    <span className="text-warn font-semibold">{formatDuration(wait)}</span>
+                  ) : (
+                    <Value>{formatDuration(wait)}</Value>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <footer className="border-t border-line-soft px-4 py-2.5 text-xs text-ink-3">
+        {/* With nothing to average, the sentence says so on its own. Printing a
+            dash and then the same thing in words read as "— — no visit". */}
+        {stats?.average_turnaround_minutes === null || stats?.average_turnaround_minutes === undefined ? (
+          'No visit has been completed yet today, so there is no average time to show.'
+        ) : (
+          <>
+            Average time from arrival to completion today:{' '}
+            <span className="font-semibold text-ink-2">
+              <Value>{formatDuration(stats.average_turnaround_minutes)}</Value>
+            </span>
+          </>
+        )}
+      </footer>
+    </Panel>
+  );
+}
 
-        {/* Patient Selection Bar */}
-        <div className="mb-4">
-          <select
-            value={selectedPatientIndex}
-            onChange={(e) => { sounds.playClick(); setSelectedPatientIndex(Number(e.target.value)); }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 font-semibold truncate cursor-pointer hover:border-slate-300 transition-colors"
-          >
-            {patientVitalsList.map((p, idx) => (
-              <option key={p.id} value={idx} className="bg-white text-slate-800">
-                {p.name} — [{p.location}]
-              </option>
-            ))}
-          </select>
-        </div>
+// ---------------------------------------------------------------------------
+// Priority patients, with the observations that were actually recorded
+// ---------------------------------------------------------------------------
 
-        {/* Responsive Grid - Clean Institutional Medical Design */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-          {vitalCards.map((vital) => {
-            const Icon = vital.icon;
-            const isLongVal = String(vital.value).length > 4;
+export function PriorityPatients({ stats, onNavigate }) {
+  const patients = stats?.urgentVisits || [];
+
+  return (
+    <Panel>
+      <PanelHead
+        title="Priority patients"
+        note="Emergency and urgent triage categories still open. Observations shown are the ones recorded at triage."
+      >
+        <button type="button" className="btn btn-sm" onClick={() => onNavigate('queue')}>
+          Open queue
+        </button>
+      </PanelHead>
+
+      {patients.length === 0 ? (
+        <EmptyState
+          title="No emergency or urgent patients right now"
+          detail="Patients appear here as soon as triage assigns them an urgent or emergency category."
+        />
+      ) : (
+        <ul className="divide-y divide-line-soft">
+          {patients.map((v) => {
+            const systolic = systolicOf(v.bp);
+            const isEmergency = v.triage_priority === 'Emergency';
+            const paediatric = typeof v.age === 'number' && v.age < 12;
+            const noObs = !v.bp && !v.pulse && !v.spo2 && !v.temp && !v.resp_rate;
 
             return (
-              <div 
-                key={vital.label} 
-                className={`p-3.5 rounded-xl border flex flex-col justify-between min-h-[120px] transition-all relative overflow-hidden group ${
-                  vital.isWarning
-                    ? 'bg-rose-50/50 border-rose-300 shadow-xs'
-                    : 'bg-slate-50/70 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
-                }`}
-              >
-                {vital.isWarning && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-600 animate-ping" />
-                )}
-                
-                {/* Header: Icon & Unit */}
-                <div className="flex items-center justify-between w-full">
-                  <Icon className={`w-4 h-4 ${vital.isWarning ? 'text-rose-600' : 'text-slate-600'}`} />
-                  <span className="text-[9px] text-slate-600 uppercase font-mono font-semibold tracking-wider">{vital.unit}</span>
+              <li key={v.id} className="px-4 py-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Pill tone={isEmergency ? 'critical' : 'warn'}>{v.triage_priority}</Pill>
+                      <span className="text-sm font-semibold text-ink">{v.patient_name}</span>
+                      <span className="text-xs text-ink-3">
+                        <Value>{v.age}</Value>
+                        {v.age ? 'y' : ''} · <Value>{v.gender}</Value> · {v.patient_code}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-ink-2">
+                      <Value>{v.reason || v.diagnosis}</Value>
+                    </p>
+                    {hasAllergy(v.allergies) ? (
+                      <p className="mt-1 text-xs font-semibold text-critical">Allergies: {v.allergies}</p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <Pill tone="neutral">{v.status}</Pill>
+                    <p className="mt-1 text-2xs text-ink-3">
+                      In department <Value>{formatDuration(v.waiting_minutes)}</Value>
+                    </p>
+                  </div>
                 </div>
 
-                {/* Center: Value */}
-                <div className="my-2 text-center">
-                  <p className={`font-black font-mono tracking-tight leading-none ${isLongVal ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'} ${vital.isWarning ? 'text-rose-700' : 'text-slate-900'}`}>
-                    {vital.value}
+                {noObs ? (
+                  <p className="mt-2.5 rounded border border-line bg-subtle px-3 py-2 text-xs text-ink-3">
+                    No observations recorded for this visit yet.
                   </p>
+                ) : (
+                  <div className="mt-2.5 grid grid-cols-3 gap-x-4 gap-y-2 rounded border border-line bg-subtle px-3 py-2 sm:grid-cols-5">
+                    <Vital
+                      label="BP"
+                      value={v.bp}
+                      unit="mmHg"
+                      tone={scoreVital('systolic', systolic, v.age).tone}
+                    />
+                    <Vital label="Pulse" value={v.pulse} unit="bpm" tone={scoreVital('pulse', v.pulse, v.age).tone} />
+                    <Vital label="SpO₂" value={v.spo2} unit="%" tone={scoreVital('spo2', v.spo2, v.age).tone} />
+                    <Vital label="Temp" value={v.temp} unit="°C" tone={scoreVital('temp', v.temp, v.age).tone} />
+                    <Vital label="Resp" value={v.resp_rate} unit="/min" tone={scoreVital('resp', v.resp_rate, v.age).tone} />
+                  </div>
+                )}
+
+                {paediatric && !noObs ? (
+                  <p className="mt-1.5 text-2xs text-ink-3">
+                    Paediatric patient — observations are shown as recorded but not scored, because adult
+                    early-warning ranges do not apply.
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ward
+// ---------------------------------------------------------------------------
+
+export function WardBoard({ stats, onAdmit, onDischarge }) {
+  const beds = stats?.beds || [];
+  const occupied = stats?.occupied_beds || 0;
+  const available = stats?.available_beds || 0;
+  const other = beds.length - occupied - available;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[auto,1fr]">
+        <Panel className="flex items-center px-5 py-4">
+          <Donut
+            value={occupied}
+            max={beds.length}
+            label="of the ward is occupied"
+            tone={beds.length && occupied / beds.length >= 0.85 ? 'warn' : 'neutral'}
+          />
+        </Panel>
+
+        <MetricStrip columns={3}>
+          <Metric
+            label="Beds occupied"
+            value={occupied}
+            context={`of ${beds.length} in the facility`}
+            tint="4"
+            icon={BedDouble}
+          />
+          <Metric
+            label="Ready for admission"
+            value={available}
+            context="Cleaned and available"
+            tone={available === 0 ? 'warn' : 'neutral'}
+            tint="6"
+            icon={CheckCircle2}
+          />
+          <Metric
+            label="Off the board"
+            value={other}
+            context="Cleaning, isolation or maintenance"
+            tint="5"
+            icon={CircleSlash}
+          />
+        </MetricStrip>
+      </div>
+
+      {beds.length === 0 ? (
+        <Panel>
+          <EmptyState title="No beds configured" detail="Add ward beds to the database to use the bed board." />
+        </Panel>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {beds.map((bed) => {
+            const isOccupied = bed.status === 'Occupied';
+            const isAvailable = bed.status === 'Available';
+            const tone = isOccupied ? 'critical' : isAvailable ? 'ok' : 'warn';
+
+            return (
+              <Panel key={bed.id} className="flex flex-col">
+                <div className="flex items-start justify-between gap-2 border-b border-line-soft px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs font-semibold text-ink">{bed.bed_code}</p>
+                    <p className="mt-0.5 truncate text-sm font-semibold text-ink">{bed.ward_name}</p>
+                    <p className="text-xs text-ink-3">{bed.bed_type}</p>
+                  </div>
+                  <Pill tone={tone}>{bed.status}</Pill>
                 </div>
 
-                {/* Footer: Label & Status Badge */}
-                <div className="text-center w-full space-y-1">
-                  <p className="text-[10px] text-slate-500 font-semibold truncate">{vital.label}</p>
-                  <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider ${
-                    vital.isWarning 
-                      ? 'bg-rose-100 text-rose-800 border border-rose-200' 
-                      : 'bg-white text-slate-700 border border-slate-200/80 shadow-2xs'
-                  }`}>
-                    {vital.status}
-                  </span>
+                <div className="flex-1 px-4 py-3">
+                  {isOccupied ? (
+                    <dl className="space-y-1.5 text-xs">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Patient</dt>
+                        <dd className="truncate text-right font-semibold text-ink">
+                          <Value>{bed.patient_name}</Value>
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Record</dt>
+                        <dd className="font-mono text-right text-ink-2"><Value>{bed.patient_code}</Value></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Acuity</dt>
+                        <dd className="text-right text-ink-2"><Value>{bed.acuity_level}</Value></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Diagnosis</dt>
+                        <dd className="text-right text-ink-2"><Value>{bed.diagnosis}</Value></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Admitted</dt>
+                        <dd className="text-right text-ink-2"><Value>{formatDateTime(bed.admission_date)}</Value></dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-ink-3">Attending</dt>
+                        <dd className="truncate text-right text-ink-2"><Value>{bed.attending_doctor}</Value></dd>
+                      </div>
+                      {bed.vitals_ticker ? (
+                        <div className="pt-1">
+                          <dt className="text-ink-3">Observations at admission</dt>
+                          <dd className="mt-0.5 font-mono text-2xs text-ink-2">{bed.vitals_ticker}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : (
+                    <p className="text-xs leading-relaxed text-ink-3">
+                      <Value>{bed.notes}</Value>
+                    </p>
+                  )}
                 </div>
-              </div>
+
+                <div className="border-t border-line-soft px-4 py-2.5">
+                  <button
+                    type="button"
+                    className={`btn btn-sm w-full ${isOccupied ? '' : 'btn-primary'}`}
+                    onClick={() => (isOccupied ? onDischarge(bed) : onAdmit(bed))}
+                  >
+                    {isOccupied ? 'Discharge patient' : 'Admit patient'}
+                  </button>
+                </div>
+              </Panel>
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pharmacy and supply
+// ---------------------------------------------------------------------------
+
+export function PharmacyBoard({ stats, money, onNavigate }) {
+  const low = stats?.lowStockDrugs || [];
+  const expiring = stats?.expiringDrugs || [];
+  const topMedicines = stats?.topMedicines || [];
+  const maxDispensed = Math.max(...topMedicines.map((m) => m.total_dispensed), 1);
+
+  return (
+    <div className="space-y-4">
+      <MetricStrip columns={5}>
+        <Metric
+          label="Out of stock"
+          value={stats?.out_of_stock_count ?? 0}
+          context="Nothing left on the shelf"
+          tone={(stats?.out_of_stock_count || 0) > 0 ? 'critical' : 'neutral'}
+          tint="3"
+          icon={PackageMinus}
+        />
+        <Metric
+          label="Below reorder level"
+          value={stats?.low_stock_count ?? 0}
+          context="At or under the minimum"
+          tone={(stats?.low_stock_count || 0) > 0 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={Package}
+        />
+        <Metric
+          label="Expiring within 90 days"
+          value={stats?.expiring_soon_count ?? 0}
+          context={`${stats?.expired_count ?? 0} already past expiry`}
+          tone={(stats?.expired_count || 0) > 0 ? 'critical' : (stats?.expiring_soon_count || 0) > 0 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={CalendarClock}
+        />
+        <Metric label="Items dispensed today" value={stats?.items_dispensed_today ?? 0} context="Units across all transactions" tint="6" icon={Boxes} />
+        <Metric label="Stock at cost" value={money(stats?.formulary_value ?? 0)} context="Whole formulary valuation" tint="5" icon={Warehouse} />
+      </MetricStrip>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel>
+          <PanelHead title="Stock below reorder level" note="Lowest cover first">
+            <button type="button" className="btn btn-sm" onClick={() => onNavigate('pharmacy')}>
+              Open formulary
+            </button>
+          </PanelHead>
+          {low.length === 0 ? (
+            <EmptyState title="Every medicine is above its reorder level" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Category</th>
+                    <th className="num">In stock</th>
+                    <th className="num">Minimum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {low.slice(0, 12).map((d) => (
+                    <tr key={d.id}>
+                      <td className="font-medium text-ink">{d.name}</td>
+                      <td>{d.category}</td>
+                      <td className="num">
+                        <span className={d.stock_quantity <= 0 ? 'font-semibold text-critical' : 'font-semibold text-warn'}>
+                          {d.stock_quantity}
+                        </span>
+                      </td>
+                      <td className="num">{d.min_stock_alert}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelHead title="Expiry watch" note="Stocked items expiring within 90 days" />
+          {expiring.length === 0 ? (
+            <EmptyState title="No stocked item expires in the next 90 days" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Batch</th>
+                    <th className="num">Units</th>
+                    <th className="num">Expires</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expiring.slice(0, 12).map((d) => {
+                    const expired = d.days_to_expiry < 0;
+                    return (
+                      <tr key={d.id}>
+                        <td className="font-medium text-ink">{d.name}</td>
+                        <td className="font-mono text-xs"><Value>{d.batch_number}</Value></td>
+                        <td className="num">{d.stock_quantity}</td>
+                        <td className="num">
+                          <span className={expired ? 'font-semibold text-critical' : 'font-semibold text-warn'}>
+                            {expired
+                              ? `${Math.abs(d.days_to_expiry)}d ago`
+                              : `${d.days_to_expiry}d`}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <PanelHead title="Most dispensed medicines" note="All time, by units leaving the pharmacy" />
+        {topMedicines.length === 0 ? (
+          <EmptyState title="Nothing has been dispensed yet" />
+        ) : (
+          <ul className="divide-y divide-line-soft">
+            {topMedicines.map((m) => (
+              <li key={m.drug_name} className="px-4 py-2.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm text-ink">{m.drug_name}</span>
+                  <span className="shrink-0 text-sm font-semibold text-ink">{m.total_dispensed} units</span>
+                </div>
+                <div className="mt-1.5">
+                  <Bar value={m.total_dispensed} max={maxDispensed} tone="info" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Controls: accountability for stock and cash
+// ---------------------------------------------------------------------------
+
+export function ControlsBoard({ stats, money, onNavigate }) {
+  const byStaff = stats?.dispensingByStaff || [];
+  const flagged = stats?.flaggedDispensations || [];
+  const eod = stats?.endOfDayToday;
+  const sync = stats?.cloudSync;
+  const presence = stats?.staffPresence || [];
+  const unreconciled = stats?.unreconciledDays || [];
+
+  const discountRate =
+    stats?.gross_sales_today > 0
+      ? (stats.discount_total_today / stats.gross_sales_today) * 100
+      : null;
+
+  return (
+    <div className="space-y-4">
+      <MetricStrip columns={5}>
+        <Metric
+          label="Collected today"
+          value={money(stats?.total_revenue_today ?? 0)}
+          context="Consultation fees plus pharmacy sales"
+          tint="5"
+          icon={Wallet}
+        />
+        <Metric
+          label="Discounts given"
+          value={money(stats?.discount_total_today ?? 0)}
+          context={
+            discountRate === null
+              ? 'No sales recorded today'
+              : `${discountRate.toFixed(1)}% of gross pharmacy sales`
+          }
+          tone={discountRate !== null && discountRate > 10 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={Sparkles}
+        />
+        <Metric
+          label="Flagged transactions"
+          value={flagged.length}
+          context="Discounted or nothing collected"
+          tone={flagged.length > 0 ? 'warn' : 'neutral'}
+          tint="4"
+          icon={AlertTriangle}
+        />
+        <Metric
+          label="Shift close filed"
+          value={eod ? 'Yes' : 'No'}
+          context={eod ? `Counted by ${eod.cashier_name || 'unnamed'}` : 'Cash has not been counted yet today'}
+          tone={eod ? 'ok' : 'warn'}
+          tint="6"
+          icon={ShieldCheck}
+        />
+        <Metric
+          label="Audit entries today"
+          value={stats?.audit_events_today ?? 0}
+          context="Actions written to the permanent log"
+          tint="1"
+          icon={ScrollText}
+        />
+      </MetricStrip>
+
+      <Panel>
+        <PanelHead
+          title="Pharmacy transactions by staff member, today"
+          note="Every dispensation is attributed to the person signed in at the counter"
+        />
+        {byStaff.length === 0 ? (
+          <EmptyState title="No medicines have been dispensed today" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Staff member</th>
+                  <th className="num">Transactions</th>
+                  <th className="num">Collected</th>
+                  <th className="num">Discount given</th>
+                  <th className="num">Discounted</th>
+                  <th className="num">Nothing collected</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byStaff.map((row) => {
+                  const unattributed = row.staff_name === 'Unattributed';
+                  return (
+                    <tr key={`${row.staff_name}-${row.staff_role}`}>
+                      <td>
+                        <span className={unattributed ? 'font-medium text-warn' : 'font-medium text-ink'}>
+                          {row.staff_name}
+                        </span>
+                        {row.staff_role ? (
+                          <span className="ml-2 text-2xs text-ink-3">{row.staff_role}</span>
+                        ) : null}
+                        {unattributed ? (
+                          <p className="mt-0.5 text-2xs text-ink-3">
+                            Recorded before staff attribution was switched on.
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="num">{row.transactions}</td>
+                      <td className="num font-semibold text-ink">{money(row.collected)}</td>
+                      <td className="num">
+                        <span className={row.discount_given > 0 ? 'font-semibold text-warn' : ''}>
+                          {money(row.discount_given)}
+                        </span>
+                      </td>
+                      <td className="num">{row.discounted_transactions}</td>
+                      <td className="num">
+                        <span className={row.zero_paid_transactions > 0 ? 'font-semibold text-warn' : ''}>
+                          {row.zero_paid_transactions}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel>
+          <PanelHead
+            title="Transactions to review at shift close"
+            note="Money was discounted, or none was collected"
+          />
+          {flagged.length === 0 ? (
+            <EmptyState title="Every transaction today was collected in full" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Patient</th>
+                    <th>Dispensed by</th>
+                    <th className="num">Gross</th>
+                    <th className="num">Discount</th>
+                    <th className="num">Collected</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flagged.map((row) => (
+                    <tr key={row.id}>
+                      <td className="font-mono text-xs">{row.invoice_number}</td>
+                      <td className="text-ink">{row.patient_name}</td>
+                      <td><Value>{row.dispensed_by_name}</Value></td>
+                      <td className="num">{money(row.total_amount)}</td>
+                      <td className="num font-semibold text-warn">{money(row.discount)}</td>
+                      <td className="num">
+                        <span className={row.paid_amount === 0 ? 'font-semibold text-critical' : ''}>
+                          {money(row.paid_amount)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelHead title="Records and backup" note="What is protected, and when it was last saved" />
+          <dl className="divide-y divide-line-soft text-sm">
+            <ControlRow
+              icon={Lock}
+              label="Audit workbook encryption"
+              tone={stats?.exportProtected ? 'ok' : 'critical'}
+              status={stats?.exportProtected ? 'Password set' : 'No password set'}
+              detail={
+                stats?.exportProtected
+                  ? 'The exported workbook is encrypted and its sheets are locked against editing. The password is held on the server and is never sent to a browser.'
+                  : 'Set an export password under Facility Settings. Without it the audit workbook can be edited by anyone who receives it.'
+              }
+            />
+            <ControlRow
+              icon={FileSpreadsheet}
+              label="Last export"
+              tone="neutral"
+              status={stats?.lastExport ? formatDateTime(stats.lastExport.created_at) : 'Never'}
+              detail={
+                stats?.lastExport
+                  ? `${stats.lastExport.action_type} by ${stats.lastExport.user_name}.`
+                  : 'No protected export has been taken from this database yet.'
+              }
+            />
+            <ControlRow
+              icon={sync?.configured ? Cloud : CloudOff}
+              label="Google Sheets replication"
+              tone={
+                !sync
+                  ? 'neutral'
+                  : !sync.configured
+                  ? 'warn'
+                  : sync.last_sync_status === 'Success'
+                  ? 'ok'
+                  : 'warn'
+              }
+              status={!sync ? 'Unknown' : !sync.configured ? 'Not configured' : sync.last_sync_status}
+              detail={
+                !sync
+                  ? 'Sync configuration could not be read.'
+                  : !sync.configured
+                  ? 'Add the Apps Script web app URL under Cloud Sync. Until then nothing leaves this machine.'
+                  : sync.last_successful_sync_at
+                  ? `Last successful upload ${formatDateTime(sync.last_successful_sync_at)}. ${sync.records_synced_count} records sent in total.`
+                  : 'Configured, but no upload has succeeded yet.'
+              }
+            />
+            <ControlRow
+              icon={Wallet}
+              label="Cash reconciliation"
+              tone={unreconciled.length > 0 ? 'warn' : eod ? 'ok' : 'neutral'}
+              status={
+                unreconciled.length > 0
+                  ? `${unreconciled.length} day${unreconciled.length === 1 ? '' : 's'} outstanding`
+                  : eod
+                  ? 'Today is closed'
+                  : 'Today still open'
+              }
+              detail={
+                unreconciled.length > 0
+                  ? `No shift close on record for: ${unreconciled.slice(0, 6).map((d) => d.day).join(', ')}.`
+                  : eod
+                  ? `Counted ${money(eod.cash_reconciled)} against ${money(eod.total_revenue)} recorded.`
+                  : 'The shift has not been closed yet today.'
+              }
+              action={
+                <button type="button" className="btn btn-sm" onClick={() => onNavigate('end-of-day')}>
+                  Open shift close
+                </button>
+              }
+            />
+          </dl>
+        </Panel>
+      </div>
+
+      <Panel>
+        <PanelHead
+          title="Who is on the system"
+          note="A member of staff counts as on the system if their device has checked in within the last five minutes"
+        />
+        {presence.length === 0 ? (
+          <EmptyState title="No staff accounts found" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Staff member</th>
+                  <th>Role</th>
+                  <th>Account</th>
+                  <th>Last active</th>
+                  <th>Last sign-in</th>
+                </tr>
+              </thead>
+              <tbody>
+                {presence.map((u) => (
+                  <tr key={u.id}>
+                    <td className="font-medium text-ink">
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className={`inline-block h-1.5 w-1.5 rounded-full ${u.online ? 'bg-ok' : 'bg-line-strong'}`}
+                          aria-hidden="true"
+                        />
+                        {u.full_name}
+                      </span>
+                      <span className="ml-2 font-mono text-2xs text-ink-3">{u.staff_id}</span>
+                    </td>
+                    <td>{u.role}</td>
+                    <td>
+                      <Pill tone={u.account_status === 'Active' ? 'neutral' : 'warn'}>
+                        {u.account_status || 'Unknown'}
+                      </Pill>
+                    </td>
+                    <td>
+                      {u.online ? (
+                        <span className="font-semibold text-ok">On the system now</span>
+                      ) : u.last_seen ? (
+                        formatDateTime(u.last_seen)
+                      ) : (
+                        <span className="unrecorded">Never</span>
+                      )}
+                    </td>
+                    <td><Value>{formatDateTime(u.last_login)}</Value></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+function ControlRow({ icon: Icon, label, status, detail, tone, action }) {
+  const toneClass = {
+    ok: 'text-ok',
+    warn: 'text-warn',
+    critical: 'text-critical',
+    neutral: 'text-ink-2'
+  }[tone];
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3">
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${toneClass}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <dt className="text-sm font-semibold text-ink">{label}</dt>
+          <dd className={`text-xs font-semibold ${toneClass}`}>{status}</dd>
+        </div>
+        <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{detail}</p>
+        {action ? <div className="mt-2">{action}</div> : null}
       </div>
     </div>
   );
 }
 
-// Weather Alert Banner
+// ---------------------------------------------------------------------------
+// Trends and surveillance
+// ---------------------------------------------------------------------------
 
-// Quick Stats Summary
-export function QuickStatsSummary({ stats, formatKina }) {
-  const stats_data = [
-    { label: 'Total Patients Today', value: stats?.today_visitors || 0, icon: Users, color: 'cyan' },
-    { label: 'Completed Visits', value: stats?.queueMap?.['Completed'] || 0, icon: CheckCircle2, color: 'emerald' },
-    { label: 'Shift Revenue', value: formatKina(stats?.total_revenue_today || 0), icon: Target, color: 'green' },
-    { label: 'Active Malaria Cases', value: stats?.malaria_cases || 0, icon: AlertTriangle, color: 'rose' }
-  ];
+export function TrendsBoard({ stats, money }) {
+  const trend = stats?.footfallTrend || [];
+  const maxTrend = Math.max(...trend.map((d) => d.count), 1);
+  const diagnoses = stats?.topDiagnoses || [];
+  const maxDiag = Math.max(...diagnoses.map((d) => d.count), 1);
 
-  const colorMap = {
-    cyan: 'text-cyan-700',
-    emerald: 'text-emerald-700',
-    green: 'text-emerald-700',
-    rose: 'text-rose-700'
-  };
+  // Grouped on the server across every visit in the window, so this is not
+  // limited to whatever happens to be in the top-diagnoses list.
+  const surveillance = stats?.conditionGroups || [];
+  const surveillanceDays = stats?.conditionGroupsWindowDays ?? 30;
+  const surveillanceVisits = stats?.conditionGroupsVisitsConsidered ?? 0;
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-      {stats_data.map((stat, i) => {
-        const Icon = stat.icon;
-        return (
-          <div key={i} className="flex items-center gap-3">
-            <Icon className={`w-5 h-5 ${colorMap[stat.color]}`} />
-            <div>
-              <p className={`text-lg font-black font-mono ${colorMap[stat.color]}`}>{stat.value}</p>
-              <p className="text-[10px] text-slate-500 font-medium">{stat.label}</p>
+    <div className="space-y-4">
+      <Panel>
+        <PanelHead title="Attendance over the last seven days" note="Recorded visits per day" />
+        {trend.length === 0 ? (
+          <EmptyState title="No visits recorded in the last seven days" />
+        ) : (
+          <div className="px-4 py-4">
+            <div className="flex h-40 items-end gap-2">
+              {trend.map((day) => {
+                const isToday = day.visit_date === new Date().toISOString().split('T')[0];
+                const height = Math.max(4, (day.count / maxTrend) * 100);
+                return (
+                  <div key={day.visit_date} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span className="text-xs font-semibold text-ink">{day.count}</span>
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className={`w-full rounded-t ${isToday ? 'bg-info' : 'bg-line-strong'}`}
+                        style={{ height: `${height}%` }}
+                        title={`${day.visit_date}: ${day.count} visits`}
+                      />
+                    </div>
+                    <span className={`text-2xs ${isToday ? 'font-semibold text-info' : 'text-ink-3'}`}>
+                      {new Date(`${day.visit_date}T00:00:00`).toLocaleDateString([], { weekday: 'short' })}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            {i < stats_data.length - 1 && <div className="w-px h-8 bg-slate-200 ml-3" />}
           </div>
-        );
-      })}
+        )}
+      </Panel>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel>
+          <PanelHead title="Most recorded diagnoses" note="All visits with a diagnosis entered" />
+          {diagnoses.length === 0 ? (
+            <EmptyState title="No diagnoses recorded yet" />
+          ) : (
+            <ul className="divide-y divide-line-soft">
+              {diagnoses.map((d) => (
+                <li key={d.diagnosis} className="px-4 py-2.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-sm text-ink">{d.diagnosis}</span>
+                    <span className="shrink-0 text-sm font-semibold text-ink">{d.count}</span>
+                  </div>
+                  <div className="mt-1.5">
+                    <Bar value={d.count} max={maxDiag} tone="neutral" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelHead
+            title="Condition groups"
+            note={`Visits in the last ${surveillanceDays} days, grouped by presentation`}
+          />
+          {surveillance.length === 0 ? (
+            <EmptyState
+              title="No visits match the tracked condition groups yet"
+              detail={`${surveillanceVisits} visits in the last ${surveillanceDays} days were checked against the diagnosis and presenting reason.`}
+            />
+          ) : (
+            <>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Condition group</th>
+                    <th className="num">Visits</th>
+                    <th className="num">Share of visits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {surveillance.map((row) => (
+                    <tr key={row.label}>
+                      <td className="text-ink">{row.label}</td>
+                      <td className="num font-semibold text-ink">{row.visits}</td>
+                      <td className="num">
+                        {surveillanceVisits > 0
+                          ? `${((row.visits / surveillanceVisits) * 100).toFixed(1)}%`
+                          : '\u2014'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <footer className="border-t border-line-soft px-4 py-2.5 text-2xs leading-relaxed text-ink-3">
+                Each visit is counted once, matched against the diagnosis and presenting reason a clinician
+                entered. These are records of what was written down, not laboratory-confirmed cases. A visit
+                with no diagnosis recorded appears in no group.
+              </footer>
+            </>
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <PanelHead title="Revenue recorded" note="Kina collected against work done" />
+        <dl className="divide-y divide-line-soft text-sm">
+          <RevenueRow label="Consultation fees today" value={money(stats?.today_opd_fees ?? 0)} />
+          <RevenueRow label="Pharmacy sales today" value={money(stats?.today_pharmacy_revenue ?? 0)} />
+          <RevenueRow label="Total collected today" value={money(stats?.total_revenue_today ?? 0)} strong />
+          <RevenueRow label="Pharmacy sales, all time" value={money(stats?.total_pharmacy_revenue ?? 0)} />
+        </dl>
+      </Panel>
     </div>
+  );
+}
+
+function RevenueRow({ label, value, strong }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+      <dt className={strong ? 'font-semibold text-ink' : 'text-ink-2'}>{label}</dt>
+      <dd className={`font-semibold ${strong ? 'text-base text-ink' : 'text-ink'}`}>{value}</dd>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Occupational health
+// ---------------------------------------------------------------------------
+
+export function SafetyBoard({ stats }) {
+  const incidents = stats?.incidents || [];
+
+  return (
+    <div className="space-y-4">
+      <MetricStrip columns={3}>
+        <Metric
+          label="Incidents in the last 30 days"
+          value={stats?.incidents_30d ?? 0}
+          context="Recorded in the occupational health register"
+          tone={(stats?.incidents_30d || 0) > 0 ? 'warn' : 'ok'}
+          tint="4"
+          icon={HardHat}
+        />
+        <Metric
+          label="Days since the last incident"
+          value={stats?.days_since_last_incident}
+          context={
+            stats?.days_since_last_incident === null
+              ? 'No incident has ever been recorded'
+              : 'Counted from the most recent recorded incident date'
+          }
+        />
+        <Metric
+          label="Workers not on full duty"
+          value={stats?.open_restricted_duty ?? 0}
+          context="Restricted, off-duty or under evaluation"
+          tone={(stats?.open_restricted_duty || 0) > 0 ? 'warn' : 'neutral'}
+        />
+      </MetricStrip>
+
+      <Panel>
+        <PanelHead title="Occupational health register" note="Most recent incidents first" />
+        {incidents.length === 0 ? (
+          <EmptyState
+            title="No occupational incidents recorded"
+            detail="Workplace injuries and illnesses entered against a worker appear here."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Worker</th>
+                  <th>Department</th>
+                  <th>Type</th>
+                  <th>Classification</th>
+                  <th>Date</th>
+                  <th>Fitness for work</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidents.map((inc) => {
+                  const restricted =
+                    inc.fit_for_work_status && inc.fit_for_work_status !== 'Fit for Full Duty';
+                  return (
+                    <tr key={inc.id}>
+                      <td className="font-mono text-xs">{inc.incident_code}</td>
+                      <td className="font-medium text-ink">
+                        {inc.patient_name}
+                        {inc.employee_id ? (
+                          <span className="ml-2 font-mono text-2xs text-ink-3">{inc.employee_id}</span>
+                        ) : null}
+                      </td>
+                      <td>{inc.department}</td>
+                      <td>{inc.incident_type}</td>
+                      <td>{inc.severity}</td>
+                      <td>{inc.incident_date}</td>
+                      <td>
+                        <Pill tone={restricted ? 'warn' : 'ok'}>
+                          <Value>{inc.fit_for_work_status}</Value>
+                        </Pill>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shift handover
+// ---------------------------------------------------------------------------
+
+export function HandoverBoard({ stats, onAddNote }) {
+  const notes = stats?.shiftNotes || [];
+
+  return (
+    <Panel>
+      <PanelHead
+        title="Shift handover log"
+        note="What the outgoing shift needs the incoming shift to know"
+      >
+        <button type="button" className="btn btn-sm btn-primary" onClick={onAddNote}>
+          Record a note
+        </button>
+      </PanelHead>
+
+      {notes.length === 0 ? (
+        <EmptyState
+          title="No handover notes recorded"
+          detail="Notes written here are kept permanently and appear to whoever takes the next shift."
+          action={
+            <button type="button" className="btn btn-sm btn-primary" onClick={onAddNote}>
+              Record the first note
+            </button>
+          }
+        />
+      ) : (
+        <ul className="divide-y divide-line-soft">
+          {notes.map((n) => {
+            const tone =
+              n.priority === 'Critical Emergency'
+                ? 'critical'
+                : n.priority === 'Clinical Alert'
+                ? 'warn'
+                : 'neutral';
+            return (
+              <li key={n.id} className="px-4 py-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Pill tone={tone}>{n.priority}</Pill>
+                      <span className="text-2xs text-ink-3">{n.shift_type}</span>
+                    </div>
+                    <h3 className="mt-1.5 text-sm font-semibold text-ink">{n.title}</h3>
+                    <p className="mt-1 max-w-3xl text-xs leading-relaxed text-ink-2">{n.note_content}</p>
+                  </div>
+                  <div className="shrink-0 text-right text-2xs text-ink-3">
+                    <p className="font-semibold text-ink-2">{n.author_name}</p>
+                    <p>{n.author_role}</p>
+                    <p className="mt-0.5"><Value>{formatDateTime(n.created_at)}</Value></p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Audit trail
+// ---------------------------------------------------------------------------
+
+const SEVERITY_TONE = {
+  Emergency: 'critical',
+  Warning: 'warn',
+  Success: 'ok',
+  Info: 'neutral'
+};
+
+export function AuditBoard({ stats }) {
+  const [filter, setFilter] = useState('all');
+  const activities = stats?.activities || [];
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return activities;
+    if (filter === 'attention') {
+      return activities.filter((a) => a.severity === 'Emergency' || a.severity === 'Warning');
+    }
+    return activities.filter((a) => a.action_type === filter);
+  }, [activities, filter]);
+
+  const actionTypes = useMemo(
+    () => Array.from(new Set(activities.map((a) => a.action_type))).sort(),
+    [activities]
+  );
+
+  return (
+    <Panel>
+      <PanelHead
+        title="Audit trail"
+        note="Every recorded action, in the order it happened. Entries are appended and never edited."
+      >
+        <select
+          className="field h-7 w-auto text-xs"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          aria-label="Filter the audit trail"
+        >
+          <option value="all">All entries</option>
+          <option value="attention">Needs attention</option>
+          {actionTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </PanelHead>
+
+      {filtered.length === 0 ? (
+        <EmptyState title="No entries match this filter" />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Staff member</th>
+                <th>Patient</th>
+                <th>Location</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((a) => (
+                <tr key={a.id}>
+                  <td className="whitespace-nowrap font-mono text-xs">
+                    <Value>{formatDateTime(a.created_at)}</Value>
+                  </td>
+                  <td>
+                    <Pill tone={SEVERITY_TONE[a.severity] || 'neutral'}>{a.action_type}</Pill>
+                  </td>
+                  <td className="whitespace-nowrap text-ink">{a.user_name}</td>
+                  <td className="whitespace-nowrap"><Value>{a.patient_name}</Value></td>
+                  <td className="whitespace-nowrap">{a.location}</td>
+                  <td className="min-w-[22rem] text-xs">{a.details}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
   );
 }

@@ -1,103 +1,369 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Activity, 
-  Clock, 
-  CheckCircle2, 
-  Stethoscope, 
-  Pill, 
-  AlertCircle, 
-  ChevronRight, 
-  Thermometer, 
-  Heart, 
-  Wind, 
-  Plus, 
-  X,
-  FileEdit,
-  ShoppingCart,
-  Printer,
-  ShieldAlert,
-  FlaskConical,
-  Gauge,
-  AlertTriangle,
-  Zap,
-  BedDouble
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ArrowRight, Loader2, Printer, Send, Stethoscope, UserPlus, X
 } from 'lucide-react';
+import ReferralModal from '../components/ReferralModal';
+import PrintableReferralLetter from '../components/PrintableReferralLetter';
+import { FITNESS_STATUSES, RDT_RESULTS, notifiableFor } from '../lib/publicHealth';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { PatientAvatar } from '../components/PatientPhoto';
 import PrintableOPDRegisterModal from '../components/PrintableOPDRegisterModal';
+import {
+  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value,
+  Vital, formatDuration, hasAllergy, scoreVital, systolicOf
+} from '../components/ui';
 
-const ICD10_PRESETS = [
-  { code: 'B50.9', label: 'Falciparum Malaria', defaultPriority: 'Urgent' },
-  { code: 'T63.0', label: 'Snake Venom Toxicity (20WBCT)', defaultPriority: 'Emergency' },
-  { code: 'T14.1', label: 'Blast / Crush Laceration', defaultPriority: 'Emergency' },
-  { code: 'T67.0', label: 'Heat Exhaustion / Dehydration', defaultPriority: 'Urgent' },
-  { code: 'I10', label: 'Essential Hypertension', defaultPriority: 'Standard' },
-  { code: 'J06.9', label: 'Acute Upper Resp Infection', defaultPriority: 'Standard' },
-  { code: 'K29.7', label: 'Acute Gastritis / Dyspepsia', defaultPriority: 'Standard' }
+/*
+ * The outpatient queue.
+ *
+ * This is the screen the clinic actually lives in, so it is built around one
+ * question: who is waiting, and who has been waiting too long. Everything else
+ * on the page is secondary to that.
+ *
+ * Waiting times are computed in the browser from the check-in timestamp, which
+ * the server stores in UTC, so the figure keeps counting up between refreshes
+ * rather than freezing until someone reloads the page.
+ */
+
+const STAGES = [
+  { key: 'Waiting', label: 'Waiting', tokPisin: 'Wetim' },
+  { key: 'Triage / Vitals', label: 'Triage and vitals' },
+  { key: 'In Consultation', label: 'With the doctor', tokPisin: 'Wantaim dokta' },
+  { key: 'At Pharmacy', label: 'At pharmacy', tokPisin: 'Kisim marasin' },
+  { key: 'Completed', label: 'Completed' }
 ];
 
-const RAPID_LAB_TESTS = [
+const NEXT_STAGE = {
+  'Waiting': 'Triage / Vitals',
+  'Triage / Vitals': 'In Consultation',
+  'In Consultation': 'At Pharmacy',
+  'At Pharmacy': 'Completed'
+};
+
+// Presentations this clinic sees most, kept as one-tap entries so a busy
+// clinician is not typing the same diagnosis twenty times a day. Selecting one
+// fills the diagnosis field; it never records anything on its own.
+const DIAGNOSIS_PRESETS = [
+  { code: 'B50.9', label: 'Falciparum malaria', priority: 'Urgent' },
+  { code: 'B51.9', label: 'Vivax malaria', priority: 'Urgent' },
+  { code: 'T63.0', label: 'Snakebite envenoming', priority: 'Emergency' },
+  { code: 'T14.1', label: 'Crush or laceration injury', priority: 'Emergency' },
+  { code: 'T67.0', label: 'Heat exhaustion and dehydration', priority: 'Urgent' },
+  { code: 'J18.9', label: 'Pneumonia', priority: 'Urgent' },
+  { code: 'A09', label: 'Gastroenteritis', priority: 'Standard' },
+  { code: 'J06.9', label: 'Upper respiratory infection', priority: 'Standard' },
+  { code: 'L02.9', label: 'Skin abscess', priority: 'Standard' },
+  { code: 'I10', label: 'Hypertension', priority: 'Standard' },
+  { code: 'A15.9', label: 'Suspected tuberculosis', priority: 'Standard' },
+  { code: 'K29.7', label: 'Gastritis', priority: 'Standard' }
+];
+
+const LAB_TESTS = [
   'Malaria RDT (Pf/Pv)',
-  '20WBCT Snakebite Venom Clotting Test',
-  'Blood Glucose (Rapid)',
-  'Dengue NS1 Ag',
-  'Urine Dipstick Panel',
-  'Full Blood Count (FBC)'
+  '20 minute whole blood clotting test',
+  'Blood glucose',
+  'Haemoglobin',
+  'Urine dipstick',
+  'Sputum for AFB'
 ];
+
+const PRIORITIES = ['Standard', 'Urgent', 'Emergency'];
+
+// A visit row carries the patient's photo columns alongside its own id. The
+// avatar addresses photos by patient id, so reshape rather than passing the
+// visit straight through: v.id is the visit, not the person.
+function patientOf(visit) {
+  return {
+    id: visit.patient_id,
+    full_name: visit.patient_name,
+    hospital_number: visit.hospital_number,
+    allergies: visit.allergies,
+    photo_path: visit.photo_path,
+    photo_taken_at: visit.photo_taken_at
+  };
+}
+
+function minutesSince(iso) {
+  if (!iso) return null;
+  const stamp = new Date(String(iso).includes('T') ? iso : `${iso}Z`.replace(' ', 'T'));
+  if (Number.isNaN(stamp.getTime())) return null;
+  return Math.max(0, Math.round((Date.now() - stamp.getTime()) / 60000));
+}
 
 export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPatient, refreshStats }) {
+  const { currentUser } = useAuth();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [isPrintRegisterOpen, setIsPrintRegisterOpen] = useState(false);
-  
-  // Vitals & Consultation Modal
-  const [editingVisit, setEditingVisit] = useState(null);
-  const [selectedLabOrders, setSelectedLabOrders] = useState([]);
-  const [vitalsData, setVitalsData] = useState({
-    bp: '',
-    pulse: '',
-    temp: '',
-    resp_rate: '',
-    spo2: '',
-    weight: '',
-    diagnosis: '',
-    doctor_notes: '',
-    triage_priority: 'Standard',
-    consultation_fee: 15.0
-  });
+  const [stage, setStage] = useState('Open');
+  const [consultVisit, setConsultVisit] = useState(null);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [, setTick] = useState(0);
 
   const currency = settings?.currency_symbol || 'K';
 
-  const fetchQueue = async () => {
+  const load = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await api.getTodayVisits();
       setVisits(res.visits || []);
     } catch (err) {
-      console.error(err);
+      console.error('Load queue failed:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchQueue();
   }, []);
 
-  const handleStatusChange = async (visitId, newStatus) => {
+  useEffect(() => { load(); }, [load]);
+
+  // One timer drives both the live wait counters and a quiet reload, so a
+  // second clinician moving a patient on another device shows up here.
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000);
+    const reload = setInterval(load, 60000);
+    return () => { clearInterval(id); clearInterval(reload); };
+  }, [load]);
+
+  const counts = useMemo(() => {
+    const map = {};
+    STAGES.forEach((s) => { map[s.key] = 0; });
+    visits.forEach((v) => { map[v.status] = (map[v.status] || 0) + 1; });
+    return map;
+  }, [visits]);
+
+  const openVisits = useMemo(() => visits.filter((v) => v.status !== 'Completed'), [visits]);
+
+  const longestWait = useMemo(() => {
+    const waits = openVisits.map((v) => minutesSince(v.created_at)).filter((m) => m !== null);
+    return waits.length ? Math.max(...waits) : null;
+  }, [openVisits]);
+
+  const shown = useMemo(() => {
+    if (stage === 'Open') return openVisits;
+    if (stage === 'All') return visits;
+    return visits.filter((v) => v.status === stage);
+  }, [visits, openVisits, stage]);
+
+  const advance = async (visit) => {
+    const next = NEXT_STAGE[visit.status];
+    if (!next) return;
     try {
-      await api.updateVisitStatus(visitId, newStatus);
-      fetchQueue();
-      if (refreshStats) refreshStats();
+      await api.updateVisitStatus(visit.id, next, currentUser?.full_name || '');
+      await load();
+      refreshStats?.();
     } catch (err) {
-      alert(err.message);
+      console.error('Advance failed:', err);
     }
   };
 
-  const openVitalsModal = (visit) => {
-    setEditingVisit(visit);
-    setSelectedLabOrders([]);
-    setVitalsData({
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SectionTitle note={`${openVisits.length} still open of ${visits.length} today`}>
+          Outpatient queue
+        </SectionTitle>
+        <div className="flex gap-2">
+          <button type="button" className="btn btn-sm" onClick={() => setRegisterOpen(true)}>
+            <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+            Print today's register
+          </button>
+          <button type="button" className="btn btn-sm btn-primary" onClick={onOpenCheckIn}>
+            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            Check in a patient
+          </button>
+        </div>
+      </div>
+
+      <MetricStrip columns={5}>
+        {STAGES.map((s, i) => (
+          <Metric
+            key={s.key}
+            label={s.tokPisin ? `${s.label} · ${s.tokPisin}` : s.label}
+            value={counts[s.key] || 0}
+            context={
+              s.key === 'Waiting' && longestWait !== null
+                ? `Longest wait ${formatDuration(longestWait)}`
+                : s.key === 'Completed'
+                ? 'Closed today'
+                : 'Patients at this stage'
+            }
+            tone={s.key === 'Waiting' && (counts.Waiting || 0) > 10 ? 'warn' : 'neutral'}
+            tint={String((i % 6) + 1)}
+            onClick={() => setStage(s.key)}
+          />
+        ))}
+      </MetricStrip>
+
+      <Panel>
+        <PanelHead title="Queue" note="Emergency first, then urgent, then in order of arrival">
+          <select
+            className="field h-7 w-auto text-xs"
+            value={stage}
+            onChange={(e) => setStage(e.target.value)}
+            aria-label="Filter the queue by stage"
+          >
+            <option value="Open">Still open</option>
+            <option value="All">Everyone today</option>
+            {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+        </PanelHead>
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Reading the queue
+          </div>
+        ) : shown.length === 0 ? (
+          <EmptyState
+            title={stage === 'Open' ? 'Nobody is waiting' : 'No patients at this stage'}
+            detail="Patients appear here the moment they are checked in at reception."
+            action={
+              <button type="button" className="btn btn-sm btn-primary" onClick={onOpenCheckIn}>
+                Check in a patient
+              </button>
+            }
+          />
+        ) : (
+          <ul className="divide-y divide-line-soft">
+            {shown.map((v) => (
+              <QueueRow
+                key={v.id}
+                visit={v}
+                currency={currency}
+                onAdvance={() => advance(v)}
+                onConsult={() => setConsultVisit(v)}
+              />
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <ConsultationModal
+        visit={consultVisit}
+        settings={settings}
+        currentUser={currentUser}
+        onClose={() => setConsultVisit(null)}
+        onSaved={async (goToPharmacy) => {
+          const visit = consultVisit;
+          setConsultVisit(null);
+          await load();
+          refreshStats?.();
+          if (goToPharmacy && visit) {
+            onOpenDispenseForPatient?.({
+              id: visit.patient_id,
+              full_name: visit.patient_name,
+              visit_id: visit.id
+            });
+          }
+        }}
+      />
+
+      <PrintableOPDRegisterModal
+        isOpen={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        visits={visits}
+        settings={settings}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function QueueRow({ visit, currency, onAdvance, onConsult }) {
+  const waited = minutesSince(visit.created_at);
+  const emergency = visit.triage_priority === 'Emergency';
+  const urgent = visit.triage_priority === 'Urgent';
+  const done = visit.status === 'Completed';
+  const allergic = hasAllergy(visit.allergies);
+  const nextStage = NEXT_STAGE[visit.status];
+
+  const hasObs = visit.bp || visit.pulse || visit.temp || visit.spo2 || visit.resp_rate;
+  const waitTone = done ? 'neutral' : waited >= 120 ? 'critical' : waited >= 60 ? 'warn' : 'neutral';
+
+  return (
+    <li className={`px-4 py-3 ${emergency && !done ? 'bg-critical-wash' : ''}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 gap-3">
+          <PatientAvatar patient={patientOf(visit)} size={44} />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-ink">{visit.patient_name}</span>
+              {emergency ? <Pill tone="critical">Emergency</Pill> : null}
+              {urgent ? <Pill tone="warn">Urgent</Pill> : null}
+              <Pill tone={done ? 'ok' : 'neutral'}>{visit.status}</Pill>
+            </div>
+            <p className="mt-0.5 text-2xs text-ink-3">
+              <span className="font-mono"><Value>{visit.hospital_number}</Value></span>
+              {' · '}<Value>{visit.age}</Value>{visit.age ? 'y' : ''}
+              {' · '}{visit.gender}
+              {' · '}<span className="font-mono">{visit.visit_code}</span>
+            </p>
+            <p className="mt-1 max-w-2xl text-xs text-ink-2">
+              <Value>{visit.diagnosis || visit.reason}</Value>
+            </p>
+            {allergic ? (
+              <p className="mt-1 text-xs font-semibold text-critical">Allergies: {visit.allergies}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-4">
+          <div className="text-right">
+            <p className="text-2xs uppercase tracking-wide text-ink-3">
+              {done ? 'Seen in' : 'Waiting'}
+            </p>
+            <p className={`text-sm font-semibold ${
+              waitTone === 'critical' ? 'text-critical' : waitTone === 'warn' ? 'text-warn' : 'text-ink'
+            }`}>
+              <Value>{formatDuration(waited)}</Value>
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-sm" onClick={onConsult}>
+              <Stethoscope className="h-3.5 w-3.5" aria-hidden="true" />
+              {hasObs ? 'Open notes' : 'Record vitals'}
+            </button>
+            {nextStage ? (
+              <button type="button" className="btn btn-sm btn-primary" onClick={onAdvance}>
+                {nextStage === 'Completed' ? 'Complete' : `Send to ${nextStage.replace(' / ', ' and ').toLowerCase()}`}
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {hasObs ? (
+        <div className="mt-2.5 grid grid-cols-3 gap-x-4 gap-y-2 rounded border border-line bg-subtle px-3 py-2 sm:grid-cols-6">
+          <Vital label="BP" value={visit.bp} unit="mmHg" tone={scoreVital('systolic', systolicOf(visit.bp), visit.age).tone} />
+          <Vital label="Pulse" value={visit.pulse} unit="bpm" tone={scoreVital('pulse', visit.pulse, visit.age).tone} />
+          <Vital label="SpO₂" value={visit.spo2} unit="%" tone={scoreVital('spo2', visit.spo2, visit.age).tone} />
+          <Vital label="Temp" value={visit.temp} unit="°C" tone={scoreVital('temp', visit.temp, visit.age).tone} />
+          <Vital label="Resp" value={visit.resp_rate} unit="/min" tone={scoreVital('resp', visit.resp_rate, visit.age).tone} />
+          <Vital label="Weight" value={visit.weight} unit="kg" />
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
+  const [form, setForm] = useState(null);
+  const [labs, setLabs] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [referring, setReferring] = useState(false);
+  const [printReferral, setPrintReferral] = useState(null);
+  const [referred, setReferred] = useState(null);
+
+  useEffect(() => {
+    if (!visit) { setForm(null); return; }
+    setLabs([]);
+    setError('');
+    setForm({
       bp: visit.bp || '',
       pulse: visit.pulse || '',
       temp: visit.temp || '',
@@ -107,522 +373,324 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
       diagnosis: visit.diagnosis || '',
       doctor_notes: visit.doctor_notes || '',
       triage_priority: visit.triage_priority || 'Standard',
-      consultation_fee: visit.consultation_fee || 15.0
+      rdt_result: visit.rdt_result || 'Not done',
+      follow_up_date: visit.follow_up_date || '',
+      follow_up_note: visit.follow_up_note || '',
+      fitness_status: visit.fitness_status || 'Not assessed',
+      fitness_restrictions: visit.fitness_restrictions || '',
+      fitness_until: visit.fitness_until || '',
+      // The fee comes from facility settings. It used to be fixed in the
+      // browser, which meant the clinic could not change its own price.
+      consultation_fee:
+        visit.consultation_fee != null
+          ? visit.consultation_fee
+          : (settings?.default_consultation_fee ?? 0)
     });
-  };
+  }, [visit, settings]);
 
-  const toggleLabOrder = (lab) => {
-    setSelectedLabOrders(prev => 
-      prev.includes(lab) ? prev.filter(l => l !== lab) : [...prev, lab]
-    );
-  };
+  if (!visit || !form) return null;
 
-  const applyIcdPreset = (preset) => {
-    setVitalsData(prev => ({
-      ...prev,
-      diagnosis: `${preset.code} ${preset.label}`,
-      triage_priority: prev.triage_priority === 'Emergency' ? 'Emergency' : preset.defaultPriority
-    }));
-  };
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const currency = settings?.currency_symbol || 'K';
 
-  const handleVitalsSubmit = async (e, proceedToPharmacy = false) => {
-    e.preventDefault();
+  const submit = async (goToPharmacy) => {
+    setSaving(true);
+    setError('');
     try {
-      const payload = {
-        ...vitalsData,
-        doctor_notes: selectedLabOrders.length > 0
-          ? `${vitalsData.doctor_notes || ''}\n[DIAGNOSTIC ORDERS: ${selectedLabOrders.join(', ')}]`.trim()
-          : vitalsData.doctor_notes
-      };
-      await api.updateVisitVitals(editingVisit.id, payload);
-      if (proceedToPharmacy) {
-        await api.updateVisitStatus(editingVisit.id, 'At Pharmacy');
-      }
-      setEditingVisit(null);
-      fetchQueue();
-      if (refreshStats) refreshStats();
+      const notes = labs.length
+        ? `${form.doctor_notes || ''}\nTests requested: ${labs.join(', ')}.`.trim()
+        : form.doctor_notes;
 
-      if (proceedToPharmacy) {
-        onOpenDispenseForPatient({
-          id: editingVisit.patient_id,
-          full_name: editingVisit.patient_name,
-          visit_id: editingVisit.id
-        });
+      await api.updateVisitVitals(visit.id, {
+        ...form,
+        consultation_fee: Number(form.consultation_fee) || 0,
+        doctor_notes: notes,
+        doctor_name: currentUser?.full_name || ''
+      });
+
+      if (goToPharmacy) {
+        await api.updateVisitStatus(visit.id, 'At Pharmacy', currentUser?.full_name || '');
       }
+      onSaved(goToPharmacy);
     } catch (err) {
-      alert(err.message);
+      setError(err.message || 'The consultation could not be saved.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const filteredVisits = visits.filter(v => {
-    if (statusFilter === 'All') return true;
-    return v.status === statusFilter;
-  });
+  const allergic = hasAllergy(visit.allergies);
 
-  const priorityBadge = (priority) => {
-    if (priority === 'Emergency') {
-      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white animate-pulse">EMERGENCY</span>;
+  // Said before saving, so the clinician knows the diagnosis will go on the
+  // reportable line list. The server makes the same decision when it saves.
+  const reportable = notifiableFor(form.diagnosis);
+  const rdtPositive = String(form.rdt_result || '').startsWith('Positive');
+  const reportableLabel = reportable === 'Malaria, confirmed'
+    ? (form.rdt_result === 'Negative' ? null : rdtPositive ? 'Malaria, confirmed' : 'Malaria, clinical diagnosis (not test-confirmed)')
+    : reportable;
+
+  // Saving the consultation first means the referral letter carries what was
+  // just typed, not what was on the record before the doctor sat down.
+  const openReferral = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateVisitVitals(visit.id, {
+        ...form,
+        consultation_fee: Number(form.consultation_fee) || 0,
+        doctor_name: currentUser?.full_name || ''
+      });
+      setReferring(true);
+    } catch (err) {
+      setError(err.message || 'The consultation could not be saved before referring.');
+    } finally {
+      setSaving(false);
     }
-    if (priority === 'Urgent') {
-      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">URGENT</span>;
-    }
-    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">Standard</span>;
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-600" />
-            <span>Today's OPD Queue & Clinical Triage</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real-time outpatient tracker: record clinical vitals, diagnose conditions, and advance triage flow.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setIsPrintRegisterOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-95"
-            title="Print today's OPD register and clinical log"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Daily Register</span>
+    <div className="scrim" role="dialog" aria-modal="true" aria-label="Consultation">
+      {referring ? (
+        <ReferralModal
+          patient={patientOf(visit)}
+          visit={{ ...visit, ...form }}
+          onClose={() => setReferring(false)}
+          onSaved={(r) => setReferred(r)}
+          onPrint={(r) => { setReferring(false); setPrintReferral(r); }}
+        />
+      ) : null}
+      {printReferral ? (
+        <PrintableReferralLetter referral={printReferral} settings={settings} onClose={() => setPrintReferral(null)} />
+      ) : null}
+      <div className="panel max-h-[92vh] w-full max-w-3xl overflow-y-auto shadow-overlay">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line-soft bg-surface px-4 py-3">
+          <div className="flex min-w-0 gap-3">
+            <PatientAvatar patient={patientOf(visit)} size={40} />
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-semibold text-ink">{visit.patient_name}</h2>
+              <p className="mt-0.5 text-2xs text-ink-3">
+                <span className="font-mono"><Value>{visit.hospital_number}</Value></span>
+                {' · '}<Value>{visit.age}</Value>{visit.age ? 'y' : ''} · {visit.gender}
+                {visit.blood_group ? ` · ${visit.blood_group}` : ''}
+              </p>
+            </div>
+          </div>
+          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Close">
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
-          <button
-            onClick={onOpenCheckIn}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Check-in Patient</span>
-          </button>
         </div>
-      </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {['All', 'Waiting', 'Triage / Vitals', 'In Consultation', 'At Pharmacy', 'Completed'].map((tab) => {
-          const count = tab === 'All' ? visits.length : visits.filter(v => v.status === tab).length;
-          return (
-            <button
-              key={tab}
-              onClick={() => setStatusFilter(tab)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                statusFilter === tab
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-300 font-bold shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>{tab}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${statusFilter === tab ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+        <div className="space-y-4 px-4 py-4">
+          {allergic ? (
+            <p className="rounded-md border border-critical-line bg-critical-wash px-3 py-2 text-sm font-semibold text-critical">
+              Allergies on record: {visit.allergies}
+            </p>
+          ) : null}
 
-      {/* Queue Table */}
-      <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-4">Visit #</th>
-                <th className="py-3 px-4">Patient</th>
-                <th className="py-3 px-4">Chief Complaint / Notes</th>
-                <th className="py-3 px-4">Vitals Summary</th>
-                <th className="py-3 px-4">Priority</th>
-                <th className="py-3 px-4">Current Stage</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-500">Loading today's queue...</td>
-                </tr>
-              ) : filteredVisits.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-500">
-                    No patients currently in this stage.
-                  </td>
-                </tr>
-              ) : (
-                filteredVisits.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-cyan-600">
-                      {v.visit_code}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900 text-sm">{v.patient_name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{v.age} Yrs • {v.gender} • <span className="text-cyan-700 font-semibold">{v.patient_code}</span></div>
-                    </td>
-                    <td className="py-3 px-4 max-w-xs">
-                      <p className="text-slate-800 font-medium">{v.reason}</p>
-                      {v.diagnosis && (
-                        <p className="text-emerald-700 text-[11px] font-bold mt-0.5 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block">Dx: {v.diagnosis}</p>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[11px]">
-                      {v.bp || v.temp || v.pulse || v.spo2 ? (
-                        <div className="space-y-0.5 text-slate-700">
-                          {v.bp && <div>BP: {v.bp}</div>}
-                          {v.temp && <div>Temp: {v.temp}</div>}
-                          {v.spo2 && <div>SpO2: <span className="text-cyan-700 font-bold">{v.spo2}</span></div>}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic">No vitals recorded</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {priorityBadge(v.triage_priority)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <select
-                        value={v.status}
-                        onChange={(e) => handleStatusChange(v.id, e.target.value)}
-                        className={`text-xs font-semibold rounded-lg px-2.5 py-1 border focus:outline-none transition-colors ${
-                          v.status === 'Completed'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                            : v.status === 'At Pharmacy'
-                            ? 'bg-purple-50 text-purple-700 border-purple-300'
-                            : v.status === 'In Consultation'
-                            ? 'bg-amber-50 text-amber-700 border-amber-300'
-                            : 'bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        <option value="Waiting">Waiting</option>
-                        <option value="Triage / Vitals">Triage / Vitals</option>
-                        <option value="In Consultation">In Consultation</option>
-                        <option value="At Pharmacy">At Pharmacy</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Record Vitals / Consult */}
-                        <button
-                          onClick={() => openVitalsModal(v)}
-                          title="Record Vitals & Diagnosis"
-                          className="px-2.5 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold flex items-center gap-1 transition-all"
-                        >
-                          <FileEdit className="w-3.5 h-3.5" />
-                          <span>Vitals / Notes</span>
-                        </button>
-                        {/* Go to Dispensing */}
-                        {v.status !== 'Completed' && (
-                          <button
-                            onClick={() => onOpenDispenseForPatient({ id: v.patient_id, full_name: v.patient_name, visit_id: v.id })}
-                            title="Dispense Medications"
-                            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-all"
-                          >
-                            <ShoppingCart className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <div>
+            <p className="label">Observations</p>
+            <p className="mb-2 text-2xs text-ink-3">
+              Leave a box empty if the measurement was not taken. An empty box records nothing; it
+              does not record a normal reading.
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <Obs id="bp" label="BP" hint="120/80" value={form.bp} onChange={set('bp')} />
+              <Obs id="pulse" label="Pulse" hint="bpm" value={form.pulse} onChange={set('pulse')} />
+              <Obs id="spo2" label="SpO₂" hint="%" value={form.spo2} onChange={set('spo2')} />
+              <Obs id="temp" label="Temp" hint="°C" value={form.temp} onChange={set('temp')} />
+              <Obs id="resp" label="Resp" hint="/min" value={form.resp_rate} onChange={set('resp_rate')} />
+              <Obs id="weight" label="Weight" hint="kg" value={form.weight} onChange={set('weight')} />
+            </div>
+            {typeof visit.age === 'number' && visit.age < 12 ? (
+              <p className="mt-2 text-2xs text-ink-3">
+                This patient is under 12. Observations are recorded but not scored against adult
+                early-warning ranges, which do not apply to children.
+              </p>
+            ) : null}
+          </div>
 
-      {/* Vitals & Clinical Examination Modal */}
-      {editingVisit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden my-8 animate-scaleIn">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <div>
+            <label className="label" htmlFor="diagnosis">Diagnosis</label>
+            <input
+              id="diagnosis"
+              className="field"
+              value={form.diagnosis}
+              onChange={set('diagnosis')}
+              placeholder="Type it, or choose one below"
+              maxLength={200}
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {DIAGNOSIS_PRESETS.map((preset) => (
+                <button
+                  key={preset.code}
+                  type="button"
+                  className="rounded border border-line bg-surface px-2 py-1 text-2xs font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+                  onClick={() => setForm((f) => ({
+                    ...f,
+                    diagnosis: `${preset.code} ${preset.label}`,
+                    triage_priority: f.triage_priority === 'Emergency' ? 'Emergency' : preset.priority
+                  }))}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {reportableLabel ? (
+            <p className="rounded-md border border-warn-line bg-warn-wash px-3 py-2 text-xs text-warn">
+              <span className="font-semibold">Reportable: {reportableLabel}.</span> This diagnosis goes on the
+              notifiable line list under Clinical registers. Urgent conditions should also be phoned through to the
+              provincial health office.
+            </p>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="label" htmlFor="rdt">Malaria rapid test</label>
+              <select id="rdt" className="field" value={form.rdt_result} onChange={set('rdt_result')}>
+                {RDT_RESULTS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <p className="mt-1 text-2xs text-ink-3">Recorded here so the month's positivity rate is counted, not guessed.</p>
+            </div>
+            <div>
+              <label className="label" htmlFor="follow-up">Return on</label>
+              <input id="follow-up" className="field" type="date" value={form.follow_up_date} onChange={set('follow_up_date')} />
+              <p className="mt-1 text-2xs text-ink-3">Leave empty if no return is needed.</p>
+            </div>
+            <div>
+              <label className="label" htmlFor="follow-up-note">Reason for return</label>
+              <input id="follow-up-note" className="field" value={form.follow_up_note} onChange={set('follow_up_note')}
+                placeholder="Repeat test, wound check, review" maxLength={120} />
+            </div>
+          </div>
+
+          <div>
+            <p className="label">Tests requested</p>
+            <div className="flex flex-wrap gap-1.5">
+              {LAB_TESTS.map((test) => {
+                const on = labs.includes(test);
+                return (
+                  <button
+                    key={test}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setLabs((l) => (on ? l.filter((x) => x !== test) : [...l, test]))}
+                    className={`rounded border px-2 py-1 text-2xs font-medium transition-colors ${
+                      on
+                        ? 'border-info-line bg-info-wash text-info'
+                        : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink'
+                    }`}
+                  >
+                    {test}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-2xs text-ink-3">
+              Requested tests are appended to the consultation note. Results are entered when they
+              come back; nothing is recorded as a result here.
+            </p>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="notes">Consultation note</label>
+            <textarea
+              id="notes"
+              className="field"
+              rows={4}
+              value={form.doctor_notes}
+              onChange={set('doctor_notes')}
+            />
+          </div>
+
+          <div className="rounded-md border border-line-soft bg-subtle/60 p-3">
+            <p className="label">Fitness for work</p>
+            <p className="mb-2 text-2xs text-ink-3">
+              For mine site workers. A decision here can be printed as a certificate from the patient record; it
+              never shows the diagnosis.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
-                <span className="text-[10px] font-mono text-cyan-600 font-bold uppercase tracking-wider">Clinical Examination & CDS Suite</span>
-                <h3 className="text-base font-bold text-slate-900">{editingVisit.patient_name}</h3>
-                <p className="text-xs text-slate-500">Code: <span className="font-mono font-bold">{editingVisit.patient_code}</span> • Reason: {editingVisit.reason}</p>
+                <label className="label" htmlFor="fitness">Decision</label>
+                <select id="fitness" className="field" value={form.fitness_status} onChange={set('fitness_status')}>
+                  {FITNESS_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
-              <button onClick={() => setEditingVisit(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
-                <X className="w-4 h-4" />
+              <div>
+                <label className="label" htmlFor="fitness-until">Applies until</label>
+                <input id="fitness-until" className="field" type="date" value={form.fitness_until} onChange={set('fitness_until')}
+                  disabled={form.fitness_status === 'Not assessed' || form.fitness_status === 'Fit for full duty'} />
+              </div>
+              <div>
+                <label className="label" htmlFor="fitness-restrictions">Restrictions</label>
+                <input id="fitness-restrictions" className="field" value={form.fitness_restrictions} onChange={set('fitness_restrictions')}
+                  placeholder="No heights, light duties, no driving" maxLength={200}
+                  disabled={form.fitness_status === 'Not assessed'} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="priority">Triage priority</label>
+              <select id="priority" className="field" value={form.triage_priority} onChange={set('triage_priority')}>
+                {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="fee">Consultation fee ({currency})</label>
+              <input
+                id="fee"
+                className="field"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.consultation_fee}
+                onChange={set('consultation_fee')}
+              />
+              <p className="mt-1 text-2xs text-ink-3">
+                The default comes from Facility settings. Change it here only for this visit.
+              </p>
+            </div>
+          </div>
+
+          {error ? (
+            <p className="rounded border border-critical-line bg-critical-wash px-3 py-2 text-xs text-critical">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-3">
+            <p className="text-2xs text-ink-3">
+              Recorded against {currentUser?.full_name || 'the signed-in user'}.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn" onClick={onClose}>Cancel</button>
+              <button type="button" className="btn" onClick={openReferral} disabled={saving}
+                title="Saves the consultation, then opens the referral">
+                <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                {referred ? `Referred ${referred.referral_code}` : 'Refer out'}
+              </button>
+              <button type="button" className="btn" onClick={() => submit(false)} disabled={saving}>
+                {saving ? 'Saving' : 'Save'}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => submit(true)} disabled={saving}>
+                Save and send to pharmacy
               </button>
             </div>
-
-            {/* PATIENT ALLERGY SAFETY CROSS-CHECK */}
-            {editingVisit.allergies && editingVisit.allergies.toLowerCase() !== 'none' && editingVisit.allergies.toLowerCase() !== 'nil' && (
-              <div className="mx-6 mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 animate-pulse">
-                <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-black text-rose-900 uppercase tracking-wider">Clinical Allergy Alert</h4>
-                  <p className="text-xs text-rose-700 font-medium mt-0.5">
-                    Patient has documented drug sensitivity: <strong className="underline">{editingVisit.allergies}</strong>. Verify all prescriptions prior to pharmacy dispensation.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={(e) => handleVitalsSubmit(e, false)} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              {/* Vitals Grid */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-cyan-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <Stethoscope className="w-3.5 h-3.5 text-cyan-600" />
-                    <span>Vital Signs (Triage Intake)</span>
-                  </label>
-                  <span className="text-[10px] text-slate-500 font-mono">Live CDS Telemetry Active</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Blood Pressure</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 120/80"
-                      value={vitalsData.bp}
-                      onChange={(e) => setVitalsData({ ...vitalsData, bp: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Pulse Rate (BPM)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 84"
-                      value={vitalsData.pulse}
-                      onChange={(e) => setVitalsData({ ...vitalsData, pulse: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Body Temp (°C)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 38.6"
-                      value={vitalsData.temp}
-                      onChange={(e) => setVitalsData({ ...vitalsData, temp: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Oxygen Sat (SpO2)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 98"
-                      value={vitalsData.spo2}
-                      onChange={(e) => setVitalsData({ ...vitalsData, spo2: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Resp. Rate (/min)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 18"
-                      value={vitalsData.resp_rate}
-                      onChange={(e) => setVitalsData({ ...vitalsData, resp_rate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Weight (kg)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 68"
-                      value={vitalsData.weight}
-                      onChange={(e) => setVitalsData({ ...vitalsData, weight: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* CLINICAL DECISION SUPPORT (CDS) CALCULATIONS BAR */}
-                {(() => {
-                  const sbp = parseFloat((vitalsData.bp || '').split('/')[0]) || 0;
-                  const dbp = parseFloat((vitalsData.bp || '').split('/')[1]) || 0;
-                  const hr = parseFloat(vitalsData.pulse) || 0;
-                  const temp = parseFloat(vitalsData.temp) || 0;
-                  const spo2 = parseFloat(vitalsData.spo2) || 0;
-
-                  const shockIndex = (sbp > 0 && hr > 0) ? (hr / sbp).toFixed(2) : null;
-                  const isShockElevated = shockIndex && parseFloat(shockIndex) > 0.9;
-
-                  const mapValue = (sbp > 0 && dbp > 0) ? Math.round((2 * dbp + sbp) / 3) : null;
-                  const isMapLow = mapValue && mapValue < 65;
-
-                  let news2 = 0;
-                  if (hr) {
-                    if (hr <= 40 || hr >= 131) news2 += 3;
-                    else if (hr >= 111) news2 += 2;
-                    else if (hr >= 91) news2 += 1;
-                  }
-                  if (temp) {
-                    if (temp <= 35.0 || temp >= 39.1) news2 += 3;
-                    else if (temp <= 36.0 || temp >= 38.1) news2 += 1;
-                  }
-                  if (spo2) {
-                    if (spo2 <= 91) news2 += 3;
-                    else if (spo2 <= 93) news2 += 2;
-                    else if (spo2 <= 95) news2 += 1;
-                  }
-
-                  return (
-                    <div className="mt-3 p-3 rounded-2xl bg-slate-100/90 border border-slate-200 grid grid-cols-3 gap-2 text-center">
-                      <div className={`p-2 rounded-xl border ${isShockElevated ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-white border-slate-200 text-slate-800'}`}>
-                        <span className="block text-[9px] font-mono uppercase text-slate-500 font-bold">Shock Index (HR/SBP)</span>
-                        <span className="text-xs font-black">{shockIndex ? `${shockIndex}` : '—'}</span>
-                        <span className="block text-[9px] font-semibold mt-0.5">{isShockElevated ? '⚠️ High Risk' : 'Normal (<0.9)'}</span>
-                      </div>
-                      <div className={`p-2 rounded-xl border ${isMapLow ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-white border-slate-200 text-slate-800'}`}>
-                        <span className="block text-[9px] font-mono uppercase text-slate-500 font-bold">MAP (Perfusion)</span>
-                        <span className="text-xs font-black">{mapValue ? `${mapValue} mmHg` : '—'}</span>
-                        <span className="block text-[9px] font-semibold mt-0.5">{isMapLow ? '⚠️ Hypotension' : 'Adequate (≥65)'}</span>
-                      </div>
-                      <div className={`p-2 rounded-xl border ${news2 >= 4 ? 'bg-rose-50 border-rose-300 text-rose-800' : news2 >= 2 ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-white border-slate-200 text-slate-800'}`}>
-                        <span className="block text-[9px] font-mono uppercase text-slate-500 font-bold">NEWS2 Score</span>
-                        <span className="text-xs font-black">{news2}</span>
-                        <span className="block text-[9px] font-semibold mt-0.5">{news2 >= 4 ? '🔴 High Risk' : news2 >= 2 ? '🟡 Medium' : '🟢 Low Risk'}</span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Diagnosis & Notes with ICD-10 Chips */}
-              <div className="space-y-3 pt-2">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Clinical Diagnosis (PNG Protocol)</label>
-                    <span className="text-[10px] text-slate-400 font-mono">1-Click ICD-10 Presets</span>
-                  </div>
-
-                  {/* 1-Click ICD-10 Chips */}
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {ICD10_PRESETS.map((preset) => (
-                      <button
-                        key={preset.code}
-                        type="button"
-                        onClick={() => applyIcdPreset(preset)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 border border-slate-200 text-[10px] font-bold text-slate-700 transition-all cursor-pointer"
-                      >
-                        +{preset.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <input
-                    type="text"
-                    placeholder="e.g. B50.9 Plasmodium falciparum Malaria / Acute Bronchitis"
-                    value={vitalsData.diagnosis}
-                    onChange={(e) => setVitalsData({ ...vitalsData, diagnosis: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-medium"
-                  />
-                </div>
-
-                {/* DIAGNOSTIC LAB ORDERS CHECKLIST */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                    <FlaskConical className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Diagnostic Lab & Rapid Test Orders</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                    {RAPID_LAB_TESTS.map((lab) => {
-                      const isChecked = selectedLabOrders.includes(lab);
-                      return (
-                        <button
-                          key={lab}
-                          type="button"
-                          onClick={() => toggleLabOrder(lab)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-left transition-all flex items-center gap-2 border ${
-                            isChecked
-                              ? 'bg-purple-100 text-purple-800 border-purple-300 shadow-2xs'
-                              : 'bg-white text-slate-700 border-slate-200 hover:border-purple-200'
-                          }`}
-                        >
-                          <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-bold ${isChecked ? 'bg-purple-600 text-white' : 'border border-slate-300'}`}>
-                            {isChecked ? '✓' : ''}
-                          </span>
-                          <span className="truncate">{lab}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Doctor Clinical Observations & Notes</label>
-                  <textarea
-                    rows="3"
-                    placeholder="Physical exam findings, medication recommendations..."
-                    value={vitalsData.doctor_notes}
-                    onChange={(e) => setVitalsData({ ...vitalsData, doctor_notes: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Triage Priority</label>
-                    <select
-                      value={vitalsData.triage_priority}
-                      onChange={(e) => setVitalsData({ ...vitalsData, triage_priority: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                    >
-                      <option value="Standard">Standard (Green)</option>
-                      <option value="Urgent">Urgent (Yellow)</option>
-                      <option value="Emergency">Emergency (Red)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Consultation Fee ({currency})</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={vitalsData.consultation_fee}
-                      onChange={(e) => setVitalsData({ ...vitalsData, consultation_fee: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setEditingVisit(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition-colors"
-                >
-                  Save Vitals & Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => handleVitalsSubmit(e, true)}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>Save & Send to Pharmacy</span>
-                </button>
-              </div>
-            </form>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
 
-      {/* Printable Daily OPD Register Modal */}
-      <PrintableOPDRegisterModal
-        isOpen={isPrintRegisterOpen}
-        onClose={() => setIsPrintRegisterOpen(false)}
-        visits={visits}
-        settings={settings}
-      />
-
+function Obs({ id, label, hint, value, onChange }) {
+  return (
+    <div>
+      <label className="label" htmlFor={`obs-${id}`}>{label}</label>
+      <input id={`obs-${id}`} className="field" value={value} onChange={onChange} placeholder={hint} maxLength={20} />
     </div>
   );
 }

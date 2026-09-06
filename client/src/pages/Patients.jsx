@@ -1,597 +1,1070 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  QrCode, 
-  Calendar, 
-  Phone, 
-  MapPin, 
-  AlertCircle, 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  X,
-  ChevronRight,
-  Eye,
-  Trash2,
-  Printer
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  AlertTriangle, ArrowLeft, BadgeCheck, ChevronRight, CreditCard, FileCheck, Loader2, Pill as Pill_, Printer, Search, Send, UserPlus, Users, X
 } from 'lucide-react';
 import { api } from '../services/api';
-import PatientCardModal from '../components/PatientCardModal';
-import PrintablePatientRecordModal from '../components/PrintablePatientRecordModal';
+import { useAuth } from '../context/AuthContext';
+import PatientPhotoCapture, { PatientAvatar } from '../components/PatientPhoto';
+import ReferralModal from '../components/ReferralModal';
+import PrintableReferralLetter from '../components/PrintableReferralLetter';
+import PrintableFitnessCertificate from '../components/PrintableFitnessCertificate';
+import { REFERRAL_OUTCOMES } from '../lib/publicHealth';
+import {
+  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, Vital,
+  formatDateTime, hasAllergy, scoreVital, systolicOf
+} from '../components/ui';
 
-export default function Patients({ settings, onCheckInPatient, refreshStats }) {
+/*
+ * The patient register.
+ *
+ * Two things carry this page. The hospital number, which is one number per
+ * person for life and is printed on the card they take away; and the
+ * photograph, which is how the counter confirms the person in front of them is
+ * the person the record belongs to.
+ */
+
+const PROVINCES = [
+  'Morobe Province', 'Madang Province', 'Eastern Highlands Province',
+  'Western Highlands Province', 'Chimbu (Simbu) Province', 'Enga Province',
+  'Southern Highlands Province', 'Hela Province', 'Jiwaka Province',
+  'National Capital District', 'Central Province', 'Gulf Province',
+  'Milne Bay Province', 'Oro (Northern) Province', 'Western Province',
+  'East Sepik Province', 'West Sepik (Sandaun) Province', 'Manus Province',
+  'New Ireland Province', 'East New Britain Province', 'West New Britain Province',
+  'Autonomous Region of Bougainville'
+];
+
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const EMPTY_FORM = {
+  full_name: '',
+  age: '',
+  gender: 'Male',
+  phone: '',
+  province: 'Morobe Province',
+  district: '',
+  address_or_village: '',
+  blood_group: '',
+  allergies: '',
+  emergency_contact: '',
+  medical_history: ''
+};
+
+export default function Patients({ settings, onCheckInPatient, onDispensePatient, refreshStats }) {
+  const { currentUser } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [provinceFilter, setProvinceFilter] = useState('');
-  
-  // Modals
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [selectedPatientForCard, setSelectedPatientForCard] = useState(null);
-  const [selectedPatientHistory, setSelectedPatientHistory] = useState(null);
-  const [selectedPatientForRecordPrint, setSelectedPatientForRecordPrint] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const [province, setProvince] = useState('');
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [cardPatient, setCardPatient] = useState(null);
 
-  // New Patient Form State
-  const [formData, setFormData] = useState({
-    full_name: '',
-    age: '',
-    gender: 'Male',
-    phone: '',
-    province: 'Morobe Province',
-    district: 'Lae Urban',
-    address_or_village: '',
-    blood_group: 'O+',
-    allergies: '',
-    emergency_contact: '',
-    medical_history: ''
-  });
-
-  const pngProvinces = [
-    'Morobe Province',
-    'National Capital District (Port Moresby)',
-    'Western Highlands Province',
-    'Eastern Highlands Province',
-    'Madang Province',
-    'Central Province',
-    'East New Britain',
-    'West New Britain',
-    'Enga Province',
-    'Southern Highlands',
-    'Sepik (East & West)',
-    'Milne Bay',
-    'Manus / New Ireland',
-    'Bougainville'
-  ];
-
-  const fetchPatients = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await api.getPatients({ q: searchQuery, province: provinceFilter });
+      const res = await api.getPatients({ q: query, province });
       setPatients(res.patients || []);
     } catch (err) {
-      console.error(err);
+      console.error('Load patients failed:', err);
+      setPatients([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [query, province]);
 
   useEffect(() => {
-    fetchPatients();
-  }, [searchQuery, provinceFilter]);
+    const id = setTimeout(load, query ? 220 : 0);
+    return () => clearTimeout(id);
+  }, [load, query]);
 
-  const handleRegisterSubmit = async (e) => {
+  return (
+    <div className="space-y-4">
+      <SectionTitle note={`${patients.length} shown${patients.length === 100 ? ', newest 100' : ''}`}>
+        Patient register
+      </SectionTitle>
+
+      <Panel>
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+          <div className="relative min-w-[16rem] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-3" aria-hidden="true" />
+            <input
+              className="field pl-9"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Name, hospital number from the card, village or phone"
+              aria-label="Search the patient register"
+            />
+          </div>
+
+          <select
+            className="field w-auto min-w-[12rem]"
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            aria-label="Filter by province"
+          >
+            <option value="">Every province</option>
+            {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+
+          <button type="button" className="btn btn-primary" onClick={() => setRegisterOpen(true)}>
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            Register a patient
+          </button>
+        </div>
+
+        <p className="border-t border-line-soft px-4 py-2 text-2xs leading-relaxed text-ink-3">
+          A hospital number can be typed exactly as it is printed, or without the dashes. The last
+          digit is a check digit: if it does not match, the number was mistyped and the register
+          will not return the wrong patient.
+        </p>
+      </Panel>
+
+      <Panel>
+        <PanelHead
+          title="Registered patients"
+          note="Newest registration first"
+        />
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Reading the register
+          </div>
+        ) : patients.length === 0 ? (
+          <EmptyState
+            title={query || province ? 'No patient matches that search' : 'No patients registered yet'}
+            detail={
+              query || province
+                ? 'Check the spelling, or clear the filters to see the whole register.'
+                : 'The first patient you register will appear here with a hospital number of their own.'
+            }
+            action={
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => setRegisterOpen(true)}>
+                Register a patient
+              </button>
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Hospital number</th>
+                  <th className="num">Age</th>
+                  <th>Sex</th>
+                  <th>Village or address</th>
+                  <th>Allergies</th>
+                  <th>Registered</th>
+                  <th aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {patients.map((p) => {
+                  const allergic = hasAllergy(p.allergies);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <span className="flex items-center gap-2.5">
+                          <PatientAvatar patient={p} size={34} />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium text-ink">{p.full_name}</span>
+                            <span className="block truncate text-2xs text-ink-3">
+                              <Value>{p.phone}</Value>
+                            </span>
+                          </span>
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap font-mono text-xs font-semibold text-ink">
+                        <Value>{p.hospital_number}</Value>
+                      </td>
+                      <td className="num"><Value>{p.age}</Value></td>
+                      <td>{p.gender}</td>
+                      <td className="max-w-[14rem] truncate">
+                        <Value>{p.address_or_village}</Value>
+                        <span className="block text-2xs text-ink-3">
+                          <Value>{p.province}</Value>
+                        </span>
+                      </td>
+                      <td>
+                        {allergic ? (
+                          <Pill tone="critical" title={p.allergies}>{p.allergies}</Pill>
+                        ) : (
+                          <span className="text-2xs text-ink-3">None recorded</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap text-xs">
+                        <Value>{formatDateTime(p.created_at)}</Value>
+                      </td>
+                      <td className="whitespace-nowrap text-right">
+                        <span className="inline-flex gap-1.5">
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            onClick={() => onCheckInPatient?.(p)}
+                          >
+                            Check in
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            onClick={() => setSelectedId(p.id)}
+                            aria-label={`Open the record for ${p.full_name}`}
+                          >
+                            Record
+                            <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <RegisterModal
+        open={registerOpen}
+        currentUser={currentUser}
+        onClose={() => setRegisterOpen(false)}
+        // Fires the moment the patient exists on the server, not when the
+        // dialog is dismissed. A clerk who registers somebody and then closes
+        // the dialog must see them in the register straight away, otherwise
+        // they assume it failed and register the same person a second time
+        // under a second hospital number.
+        onSaved={() => {
+          load();
+          refreshStats?.();
+        }}
+        onPrintCard={(patient) => {
+          setRegisterOpen(false);
+          setCardPatient(patient);
+        }}
+        onOpenExisting={(id) => {
+          setRegisterOpen(false);
+          setSelectedId(id);
+        }}
+      />
+
+      <PatientRecord
+        patientId={selectedId}
+        currentUser={currentUser}
+        settings={settings}
+        onClose={() => setSelectedId(null)}
+        onChanged={load}
+        onPrintCard={(p) => setCardPatient(p)}
+        onCheckIn={onCheckInPatient}
+        onDispense={onDispensePatient}
+      />
+
+      <IdCardSheet
+        patient={cardPatient}
+        settings={settings}
+        onClose={() => setCardPatient(null)}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function RegisterModal({ open, currentUser, onClose, onSaved, onPrintCard, onOpenExisting }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [created, setCreated] = useState(null);
+  // People who may already be on the register under this name. Looked up as
+  // the clerk types, because the moment to notice a second record is before
+  // the second hospital number exists, not after.
+  const [similar, setSimilar] = useState([]);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setForm(EMPTY_FORM);
+      setError('');
+      setCreated(null);
+      setSimilar([]);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || created) return undefined;
+    const name = form.full_name.trim();
+    if (name.length < 3) { setSimilar([]); return undefined; }
+    let cancelled = false;
+    setChecking(true);
+    const timer = setTimeout(() => {
+      api.findSimilarPatients({ name, age: form.age, village: form.address_or_village })
+        .then((res) => { if (!cancelled) setSimilar(res.matches || []); })
+        .catch(() => { if (!cancelled) setSimilar([]); })
+        .finally(() => { if (!cancelled) setChecking(false); });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [open, created, form.full_name, form.age, form.address_or_village]);
+
+  if (!open) return null;
+
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (!formData.full_name || !formData.age) {
-      alert('Please fill in patient name and age');
+    if (!form.full_name.trim() || !form.age || !form.gender) {
+      setError('A record needs at least a name, an age and a sex before it can be opened.');
       return;
     }
+    setSaving(true);
+    setError('');
     try {
-      const res = await api.createPatient(formData);
-      setIsRegisterOpen(false);
-      setFormData({
-        full_name: '',
-        age: '',
-        gender: 'Male',
-        phone: '',
-        province: 'Morobe Province',
-        district: 'Lae Urban',
-        address_or_village: '',
-        blood_group: 'O+',
-        allergies: '',
-        emergency_contact: '',
-        medical_history: ''
+      const res = await api.createPatient({
+        ...form,
+        age: parseInt(form.age, 10),
+        registered_by: currentUser?.full_name || ''
       });
-      fetchPatients();
-      if (refreshStats) refreshStats();
-      // Offer to check in immediately
-      if (confirm(`Patient ${res.patient.full_name} (${res.patient.patient_code}) registered! Would you like to check them into today's OPD queue now?`)) {
-        onCheckInPatient(res.patient);
-      }
+      setCreated(res.patient);
+      onSaved?.(res.patient);
     } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const viewHistory = async (patientId) => {
-    try {
-      setHistoryLoading(true);
-      const data = await api.getPatient(patientId);
-      setSelectedPatientHistory(data);
-    } catch (err) {
-      alert('Failed to load history: ' + err.message);
+      setError(err.message || 'The patient could not be registered.');
     } finally {
-      setHistoryLoading(false);
-    }
-  };
-
-  const handleDelete = async (id, name) => {
-    if (confirm(`Are you sure you want to delete patient record for ${name}?`)) {
-      try {
-        await api.deletePatient(id);
-        fetchPatients();
-        if (refreshStats) refreshStats();
-      } catch (err) {
-        alert(err.message);
-      }
+      setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-600" />
-            <span>Patient Registry & Health Records</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Search patient records, check-in to OPD queue, and generate printable digital health QR cards.
-          </p>
+    <div className="scrim" role="dialog" aria-modal="true" aria-label="Register a patient">
+      <div className="panel max-h-[92vh] w-full max-w-3xl overflow-y-auto shadow-overlay">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line-soft bg-surface px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">
+              {created ? 'Patient registered' : 'Register a patient'}
+            </h2>
+            <p className="mt-0.5 text-xs text-ink-3">
+              {created
+                ? 'Take the photograph now, then print the card for the patient to keep.'
+                : 'Only the name, age and sex are required. Everything else can be filled in later.'}
+            </p>
+          </div>
+          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Close">
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
         </div>
 
-        <button
-          onClick={() => setIsRegisterOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Register New Patient</span>
-        </button>
-      </div>
-
-      {/* Filters & Search */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-2 relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Name, Patient ID (PAT-PNG-...), Village, or Phone..."
-            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all shadow-2xs"
-          />
-        </div>
-
-        <div>
-          <select
-            value={provinceFilter}
-            onChange={(e) => setProvinceFilter(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 shadow-2xs"
-          >
-            <option value="">All PNG Provinces</option>
-            {pngProvinces.map((p, i) => (
-              <option key={i} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Patients Table */}
-      <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Patient Name</th>
-                <th className="py-3 px-4">Demographics</th>
-                <th className="py-3 px-4">Location / Village</th>
-                <th className="py-3 px-4">Contact</th>
-                <th className="py-3 px-4">Allergies</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-500">Loading patients from local SQLite database...</td>
-                </tr>
-              ) : patients.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-500">
-                    No patients found matching your search.
-                  </td>
-                </tr>
-              ) : (
-                patients.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-cyan-600">
-                      {p.patient_code}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900 text-sm">{p.full_name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{p.medical_history ? p.medical_history.slice(0, 35) + '...' : 'No prior history'}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-slate-800 font-medium">{p.age} Yrs • {p.gender}</div>
-                      <div className="text-[10px] font-bold text-emerald-700">Blood: {p.blood_group || 'N/A'}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-slate-800 font-medium">{p.address_or_village || '-'}</div>
-                      <div className="text-[10px] text-slate-500">{p.district ? `${p.district}, ` : ''}{p.province}</div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-700 font-mono">
-                      {p.phone || '-'}
-                    </td>
-                    <td className="py-3 px-4">
-                      {p.allergies && p.allergies !== 'None' ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                          {p.allergies}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">None</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Check-in to today */}
-                        <button
-                          onClick={() => onCheckInPatient(p)}
-                          title="Check into today's OPD Queue"
-                          className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[11px] font-semibold transition-all cursor-pointer"
-                        >
-                          Check-in
-                        </button>
-                        {/* QR Card */}
-                        <button
-                          onClick={() => setSelectedPatientForCard(p)}
-                          title="View Digital Health Card"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
-                        >
-                          <QrCode className="w-3.5 h-3.5 text-cyan-600" />
-                        </button>
-                        {/* View History */}
-                        <button
-                          onClick={() => viewHistory(p.id)}
-                          title="View Medical Timeline"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        {/* Delete */}
-                        <button
-                          onClick={() => handleDelete(p.id, p.full_name)}
-                          title="Delete Record"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Register New Patient Modal */}
-      {isRegisterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden my-8 animate-scaleIn">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-cyan-600" />
-                <span>New Patient Registration (Papua New Guinea)</span>
-              </h3>
-              <button onClick={() => setIsRegisterOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
-                <X className="w-4 h-4" />
-              </button>
+        {created ? (
+          <div className="space-y-4 px-4 py-4">
+            <div className="rounded-md border border-ok-line bg-ok-wash px-4 py-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-ok">
+                <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+                {created.full_name} is registered
+              </p>
+              <p className="mt-1.5 text-xs text-ink-2">Their hospital number, for life:</p>
+              <p className="mt-1 font-mono text-2xl font-semibold tracking-wide text-ink">
+                {created.hospital_number}
+              </p>
+              <p className="mt-1.5 text-2xs leading-relaxed text-ink-3">
+                Write this on the patient's card. Every future visit, prescription and receipt is
+                filed against it.
+              </p>
             </div>
 
-            <form onSubmit={handleRegisterSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder="e.g. Paulus Kurum"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Age (Years) *</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    max="125"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    placeholder="e.g. 34"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Gender *</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="e.g. +675 7123 4567"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Blood Group</label>
-                  <select
-                    value={formData.blood_group}
-                    onChange={(e) => setFormData({ ...formData, blood_group: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  >
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="Unknown">Unknown</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">PNG Province</label>
-                  <select
-                    value={formData.province}
-                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  >
-                    {pngProvinces.map((p, i) => (
-                      <option key={i} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">District / Sub-district</label>
-                  <input
-                    type="text"
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="e.g. Lae Urban / Hagen Central"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Village / Settlement Address</label>
-                  <input
-                    type="text"
-                    value={formData.address_or_village}
-                    onChange={(e) => setFormData({ ...formData, address_or_village: e.target.value })}
-                    placeholder="e.g. Boundary Road Compound 4 / Kwikila Bush Camp"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Known Drug Allergies</label>
-                  <input
-                    type="text"
-                    value={formData.allergies}
-                    onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                    placeholder="e.g. Penicillin, Sulphonamides (Bactrim), Aspirin, or None"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Emergency Contact</label>
-                  <input
-                    type="text"
-                    value={formData.emergency_contact}
-                    onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
-                    placeholder="e.g. Brother: John (+675 7123 9999)"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Medical Background / History</label>
-                  <textarea
-                    rows="2"
-                    value={formData.medical_history}
-                    onChange={(e) => setFormData({ ...formData, medical_history: e.target.value })}
-                    placeholder="e.g. Past malaria in 2024, hypertension, asthma, diabetes..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="label">Photograph</p>
+                <PatientPhotoCapture
+                  patient={created}
+                  takenBy={currentUser?.full_name}
+                  onSaved={(updated) => setCreated(updated)}
+                />
               </div>
-
-              <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsRegisterOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
-                >
-                  Save Patient
-                </button>
+              <div className="text-xs leading-relaxed text-ink-2">
+                <p className="font-semibold text-ink">Why the photograph matters here</p>
+                <p className="mt-1.5">
+                  Many patients share a name and few carry an identity document. A photograph on the
+                  record lets the counter confirm the person in front of them is the person the
+                  record belongs to, and stops one card being used by several people to collect
+                  medicines.
+                </p>
+                <p className="mt-2">
+                  It is optional. If there is no camera on this machine, or the patient does not want
+                  their photograph taken, leave it and the record still works.
+                </p>
               </div>
-            </form>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-line-soft pt-3">
+              <button type="button" className="btn" onClick={() => { setCreated(null); setForm(EMPTY_FORM); }}>
+                Register another
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => onPrintCard(created)}>
+                <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                Print the patient card
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={submit} className="space-y-4 px-4 py-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="p-name">Full name</label>
+                <input id="p-name" className="field" value={form.full_name} onChange={set('full_name')} maxLength={120} />
+              </div>
+              <div>
+                <label className="label" htmlFor="p-age">Age in years</label>
+                <input id="p-age" className="field" type="number" min="0" max="130" value={form.age} onChange={set('age')} />
+              </div>
+            </div>
 
-      {/* Patient History Drawer */}
-      {selectedPatientHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-xs">
-          <div className="w-full max-w-lg h-full bg-white border-l border-slate-200 p-6 flex flex-col justify-between overflow-y-auto animate-slideLeft shadow-2xl">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="label" htmlFor="p-gender">Sex</label>
+                <select id="p-gender" className="field" value={form.gender} onChange={set('gender')}>
+                  <option>Male</option>
+                  <option>Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="p-phone">Phone</label>
+                <input id="p-phone" className="field" value={form.phone} onChange={set('phone')} placeholder="Leave blank if none" maxLength={40} />
+              </div>
+              <div>
+                <label className="label" htmlFor="p-blood">Blood group</label>
+                <select id="p-blood" className="field" value={form.blood_group} onChange={set('blood_group')}>
+                  <option value="">Not known</option>
+                  {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <p className="mt-1 text-2xs text-ink-3">Leave as not known unless it has been tested.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="label" htmlFor="p-province">Province</label>
+                <select id="p-province" className="field" value={form.province} onChange={set('province')}>
+                  {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="p-district">District</label>
+                <input id="p-district" className="field" value={form.district} onChange={set('district')} maxLength={80} />
+              </div>
+              <div>
+                <label className="label" htmlFor="p-village">Village or address</label>
+                <input id="p-village" className="field" value={form.address_or_village} onChange={set('address_or_village')} maxLength={160} />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="p-allergies">Known allergies</label>
+                <input
+                  id="p-allergies"
+                  className="field"
+                  value={form.allergies}
+                  onChange={set('allergies')}
+                  placeholder="Leave blank if none are known"
+                  maxLength={200}
+                />
+                <p className="mt-1 text-2xs text-ink-3">
+                  Anything typed here is shown in red on the queue and at the dispensing counter.
+                </p>
+              </div>
+              <div>
+                <label className="label" htmlFor="p-emergency">Person to contact</label>
+                <input id="p-emergency" className="field" value={form.emergency_contact} onChange={set('emergency_contact')} maxLength={160} />
+              </div>
+            </div>
+
             <div>
-              <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-                <div>
-                  <span className="text-[10px] font-mono text-cyan-600 font-bold uppercase tracking-wider">Patient Medical Record</span>
-                  <h3 className="text-lg font-bold text-slate-900">{selectedPatientHistory.patient.full_name}</h3>
-                  <p className="text-xs text-slate-500 font-mono">{selectedPatientHistory.patient.patient_code}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedPatientHistory(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
-                >
-                  <X className="w-4 h-4" />
+              <label className="label" htmlFor="p-history">Relevant history</label>
+              <textarea id="p-history" className="field" rows={3} value={form.medical_history} onChange={set('medical_history')} />
+            </div>
+
+            {similar.length > 0 ? (
+              <div className="rounded-md border border-warn-line bg-warn-wash p-3">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-warn">
+                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                  Possibly already registered
+                </p>
+                <p className="mt-0.5 text-2xs leading-relaxed text-ink-2">
+                  {similar.length === 1 ? 'One record' : `${similar.length} records`} on the register {similar.length === 1 ? 'looks' : 'look'} like this
+                  person. Open one to check before issuing a second number, or register anyway if it is
+                  somebody else.
+                </p>
+                <ul className="mt-2 divide-y divide-warn-line/60">
+                  {similar.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between gap-3 py-1.5">
+                      <div className="min-w-0 text-xs">
+                        <p className="truncate font-medium text-ink">
+                          {m.full_name}
+                          <span className="ml-1.5 font-mono text-2xs text-ink-3">{m.hospital_number}</span>
+                        </p>
+                        <p className="truncate text-2xs text-ink-3">
+                          {[m.age ? `${m.age} years` : null, m.gender, m.address_or_village].filter(Boolean).join(' · ')}
+                          {m.why ? ` · ${m.why}` : ''}
+                        </p>
+                      </div>
+                      <button type="button" className="btn btn-sm shrink-0" onClick={() => onOpenExisting?.(m.id)}>
+                        Open record
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {error ? (
+              <p className="rounded border border-critical-line bg-critical-wash px-3 py-2 text-xs text-critical">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-3">
+              <p className="text-2xs text-ink-3">
+                {checking ? 'Checking the register for this name. ' : ''}Recorded against {currentUser?.full_name || 'the signed-in user'}.
+              </p>
+              <div className="flex gap-2">
+                <button type="button" className="btn" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Registering' : similar.length > 0 ? 'Register anyway' : 'Register and issue a number'}
                 </button>
               </div>
-
-              {/* Patient Basic Details */}
-              <div className="grid grid-cols-2 gap-3 my-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-                <div><span className="text-slate-500 font-medium">Age / Gender:</span> <strong className="text-slate-900 font-bold ml-1">{selectedPatientHistory.patient.age} Yrs / {selectedPatientHistory.patient.gender}</strong></div>
-                <div><span className="text-slate-500 font-medium">Blood:</span> <strong className="text-emerald-700 font-bold ml-1">{selectedPatientHistory.patient.blood_group}</strong></div>
-                <div><span className="text-slate-500 font-medium">Phone:</span> <span className="text-slate-800 ml-1">{selectedPatientHistory.patient.phone || '-'}</span></div>
-                <div><span className="text-slate-500 font-medium">Village:</span> <span className="text-slate-800 ml-1">{selectedPatientHistory.patient.address_or_village || '-'}</span></div>
-                <div className="col-span-2 text-red-600 font-semibold">Allergies: {selectedPatientHistory.patient.allergies || 'None'}</div>
-              </div>
-
-              {/* Past Visits Timeline */}
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-cyan-600" />
-                <span>Visit & Triage History ({selectedPatientHistory.visits?.length || 0})</span>
-              </h4>
-
-              <div className="space-y-3 mb-6">
-                {selectedPatientHistory.visits?.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No past visits recorded.</p>
-                ) : (
-                  selectedPatientHistory.visits.map((v) => (
-                    <div key={v.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-cyan-700 font-bold">{v.visit_date} • {v.visit_code}</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-medium">{v.status}</span>
-                      </div>
-                      <p className="text-slate-800 font-medium">Reason: {v.reason}</p>
-                      {v.diagnosis && <p className="text-emerald-700 font-bold text-[11px]">Diagnosis: {v.diagnosis}</p>}
-                      <div className="text-[10px] text-slate-500 flex flex-wrap gap-2 pt-1 font-mono">
-                        {v.bp && <span>BP: {v.bp}</span>}
-                        {v.temp && <span>Temp: {v.temp}</span>}
-                        {v.pulse && <span>Pulse: {v.pulse}</span>}
-                        {v.spo2 && <span>SpO2: {v.spo2}</span>}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Past Prescriptions */}
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-teal-600" />
-                <span>Pharmacy Dispensing History ({selectedPatientHistory.dispensations?.length || 0})</span>
-              </h4>
-
-              <div className="space-y-2">
-                {selectedPatientHistory.dispensations?.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No past pharmacy records.</p>
-                ) : (
-                  selectedPatientHistory.dispensations.map((d) => (
-                    <div key={d.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-cyan-700 font-bold">{d.invoice_number}</span>
-                        <span className="font-bold text-slate-900">{settings?.currency_symbol || 'K'} {d.paid_amount.toFixed(2)}</span>
-                      </div>
-                      <p className="text-slate-700 text-[11px]">{d.drugs_summary}</p>
-                      <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString()}</span>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-2">
-              <button
-                onClick={() => setSelectedPatientForCard(selectedPatientHistory.patient)}
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Print Patient QR Card"
-              >
-                <QrCode className="w-3.5 h-3.5 text-cyan-600" />
-                <span>QR Card</span>
-              </button>
+// ---------------------------------------------------------------------------
 
-              <button
-                onClick={() => setSelectedPatientForRecordPrint(selectedPatientHistory)}
-                className="px-3 py-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                title="Print Full Patient Medical File"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print Medical File</span>
-              </button>
+/*
+ * The patient record, on the whole screen.
+ *
+ * It used to be a dialog, and a dialog is the wrong shape for a clinical
+ * record: it has to hold a photograph, an allergy that must not be missed,
+ * every visit with its observations, every medicine handed over and the
+ * audit trail of who has touched the file. All of that needs the width of the
+ * screen, not a box in the middle of it. So the record takes over the page,
+ * with a way back at the top left where every application puts one.
+ */
+function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, onPrintCard, onCheckIn, onDispense }) {
+  const { can } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [referring, setReferring] = useState(false);
+  const [printReferral, setPrintReferral] = useState(null);
+  const [certificateVisit, setCertificateVisit] = useState(null);
+  const [outcomeError, setOutcomeError] = useState('');
 
-              <button
-                onClick={() => {
-                  onCheckInPatient(selectedPatientHistory.patient);
-                  setSelectedPatientHistory(null);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs cursor-pointer active:scale-95 transition-all"
-              >
-                Check-in Today
-              </button>
+  const reload = useCallback(() => {
+    if (!patientId) { setData(null); return; }
+    setLoading(true);
+    api.getPatient(patientId)
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [patientId]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  // The record's own referral rows carry only the referral. The letter also
+  // needs the patient and the observations from the visit, so it is fetched
+  // in the joined form the register uses.
+  const openLetter = async (r) => {
+    try {
+      const res = await api.getReferral(r.id);
+      setPrintReferral(res.referral || r);
+    } catch {
+      setPrintReferral(r);
+    }
+  };
+
+  const recordOutcome = async (referral, outcome) => {
+    if (!outcome || outcome === referral.outcome) return;
+    setOutcomeError('');
+    const note = window.prompt(`Outcome for ${referral.referral_code}: ${outcome}. Add a note if there is one.`, referral.outcome_note || '');
+    if (note === null) return;
+    try {
+      await api.updateReferralOutcome(referral.id, outcome, note);
+      reload();
+      onChanged?.();
+    } catch (err) {
+      setOutcomeError(err.message || 'The outcome could not be saved.');
+    }
+  };
+
+  // Escape goes back, and the page behind does not scroll while the record
+  // is open, so the scroll position of the register is where it was left.
+  useEffect(() => {
+    if (!patientId) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [patientId, onClose]);
+
+  if (!patientId) return null;
+
+  const patient = data?.patient;
+  const visits = data?.visits || [];
+  const dispensations = data?.dispensations || [];
+  const history = data?.history || [];
+  const referrals = data?.referrals || [];
+  const latestVisit = visits[0] || null;
+  const canRefer = can?.('queue.consult');
+  const canRecordOutcome = can?.('queue.triage');
+
+  // The most recent visit that carries at least one observation.
+  const observed = visits.find((v) => v.bp || v.pulse || v.temp || v.spo2 || v.resp_rate || v.weight);
+  const openVisit = visits.find((v) => v.status && v.status !== 'Completed' && v.status !== 'Cancelled');
+  const collected = dispensations.reduce((sum, d) => sum + (Number(d.paid_amount) || 0), 0);
+  const fees = visits.reduce((sum, v) => sum + (Number(v.consultation_fee) || 0), 0);
+
+  return (
+    <div className="fixed inset-0 z-40 !mt-0 flex flex-col bg-canvas" role="dialog" aria-modal="true" aria-label="Patient record">
+      <header className="sticky top-0 z-10 border-b border-line bg-surface">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-3 px-4 py-2.5 md:px-6">
+          <button type="button" className="btn btn-sm shrink-0" onClick={onClose}>
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Register</span>
+          </button>
+
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {patient ? <PatientAvatar patient={patient} size={36} className="hidden shrink-0 sm:block" /> : null}
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-semibold text-ink">
+                {patient?.full_name || 'Patient record'}
+              </h1>
+              <p className="truncate font-mono text-2xs text-ink-3">
+                <Value>{patient?.hospital_number}</Value>
+                {patient?.age ? <span className="font-sans"> · {patient.age} years</span> : null}
+                {patient?.gender ? <span className="font-sans"> · {patient.gender}</span> : null}
+                {openVisit ? <span className="font-sans text-warn"> · In the department now</span> : null}
+              </p>
             </div>
           </div>
+
+          {patient ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" className="btn btn-sm hidden md:inline-flex" onClick={() => onPrintCard(patient)}>
+                <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
+                Patient card
+              </button>
+              {canRefer ? (
+                <button type="button" className="btn btn-sm hidden md:inline-flex" onClick={() => setReferring(true)}>
+                  <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                  Refer
+                </button>
+              ) : null}
+              {onDispense ? (
+                <button type="button" className="btn btn-sm hidden sm:inline-flex" onClick={() => { onDispense(patient, openVisit); onClose(); }}>
+                  <Pill_ className="h-3.5 w-3.5" aria-hidden="true" />
+                  Dispense
+                </button>
+              ) : null}
+              {onCheckIn ? (
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => { onCheckIn(patient); onClose(); }}
+                  disabled={!!openVisit} title={openVisit ? 'Already checked in today' : undefined}>
+                  Check in
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      )}
+      </header>
 
-      {/* Patient Health ID Card Modal */}
-      <PatientCardModal
-        isOpen={!!selectedPatientForCard}
-        onClose={() => setSelectedPatientForCard(null)}
-        patient={selectedPatientForCard}
-        hospital={settings}
-      />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {loading || !patient ? (
+          <div className="flex items-center justify-center gap-2 px-6 py-24 text-sm text-ink-3">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Reading the record
+          </div>
+        ) : (
+          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+            {hasAllergy(patient.allergies) ? (
+              <div className="mb-4 flex items-start gap-3 rounded-md border border-critical-line bg-critical-wash px-4 py-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-critical" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-critical">Allergy on record</p>
+                  <p className="mt-0.5 text-base font-semibold leading-snug text-critical">{patient.allergies}</p>
+                  <p className="mt-0.5 text-2xs text-critical/80">The dispensing counter checks every medicine against this line before it is handed over.</p>
+                </div>
+              </div>
+            ) : null}
 
-      {/* Printable Patient Complete Medical File Modal */}
-      <PrintablePatientRecordModal
-        isOpen={!!selectedPatientForRecordPrint}
-        onClose={() => setSelectedPatientForRecordPrint(null)}
-        data={selectedPatientForRecordPrint}
-        settings={settings}
-      />
+            <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+              {/* Identity */}
+              <div className="min-w-0 space-y-4 lg:sticky lg:top-0 lg:self-start">
+                <PatientPhotoCapture
+                  patient={patient}
+                  takenBy={currentUser?.full_name}
+                  onSaved={(updated) => {
+                    setData((d) => ({ ...d, patient: updated }));
+                    onChanged?.();
+                  }}
+                />
+
+                <Panel>
+                  <PanelHead title="Identity" />
+                  <dl className="divide-y divide-line-soft text-xs">
+                    <Field label="Hospital number"><span className="font-mono">{patient.hospital_number}</span></Field>
+                    <Field label="Age">{patient.age ? `${patient.age} years` : null}</Field>
+                    <Field label="Sex">{patient.gender}</Field>
+                    <Field label="Phone">{patient.phone}</Field>
+                    <Field label="Village">{patient.address_or_village}</Field>
+                    <Field label="District">{patient.district}</Field>
+                    <Field label="Province">{patient.province}</Field>
+                    <Field label="Blood group">{patient.blood_group}</Field>
+                    <Field label="Emergency contact">{patient.emergency_contact}</Field>
+                    <Field label="Registered">{formatDateTime(patient.created_at)}</Field>
+                    <Field label="Registered by">{patient.registered_by}</Field>
+                    <Field label="Photograph">{patient.photo_taken_at ? `${formatDateTime(patient.photo_taken_at)}${patient.photo_taken_by ? ` by ${patient.photo_taken_by}` : ''}` : null}</Field>
+                  </dl>
+                </Panel>
+
+                {patient.medical_history ? (
+                  <Panel>
+                    <PanelHead title="Relevant history" />
+                    <p className="px-4 py-3 text-xs leading-relaxed text-ink-2">{patient.medical_history}</p>
+                  </Panel>
+                ) : null}
+              </div>
+
+              {/* Clinical */}
+              <div className="min-w-0 space-y-4">
+                <MetricStrip columns={4}>
+                  <Metric label="Visits" value={visits.length}
+                    context={visits[0] ? `Last seen ${visits[0].visit_date}` : 'Never seen'} tint="1" />
+                  <Metric label="Medicines handed over" value={dispensations.length}
+                    context={dispensations[0] ? `Last ${formatDateTime(dispensations[0].created_at)}` : 'None yet'} tint="2" />
+                  <Metric label="Paid at the counter" value={`K ${collected.toFixed(2)}`}
+                    context="Pharmacy, all visits" tint="3" />
+                  <Metric label="Consultation fees" value={`K ${fees.toFixed(2)}`}
+                    context="Recorded at check-in" tint="4" />
+                </MetricStrip>
+
+                <Panel>
+                  <PanelHead
+                    title="Latest observations"
+                    note={observed ? `Recorded at the visit of ${observed.visit_date}` : 'No observations have been recorded'}
+                  />
+                  {observed ? (
+                    <div className="grid grid-cols-3 gap-px bg-line-soft sm:grid-cols-6">
+                      <Vital label="Blood pressure" value={observed.bp} unit="mmHg"
+                        tone={scoreVital('systolic', systolicOf(observed.bp), patient.age).tone} />
+                      <Vital label="Pulse" value={observed.pulse} unit="bpm"
+                        tone={scoreVital('pulse', observed.pulse, patient.age).tone} />
+                      <Vital label="Temperature" value={observed.temp} unit="°C"
+                        tone={scoreVital('temp', observed.temp, patient.age).tone} />
+                      <Vital label="Breathing" value={observed.resp_rate} unit="/min"
+                        tone={scoreVital('resp', observed.resp_rate, patient.age).tone} />
+                      <Vital label="Oxygen" value={observed.spo2} unit="%"
+                        tone={scoreVital('spo2', observed.spo2, patient.age).tone} />
+                      <Vital label="Weight" value={observed.weight} unit="kg" />
+                    </div>
+                  ) : (
+                    <EmptyState title="Nothing measured yet" detail="Observations recorded at triage appear here with the visit they belong to." />
+                  )}
+                </Panel>
+
+                <Panel>
+                  <PanelHead title="Visits" note={`${visits.length} recorded`} />
+                  {visits.length === 0 ? (
+                    <EmptyState title="This patient has not been seen yet" />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Reason</th>
+                            <th>Diagnosis</th>
+                            <th>Seen by</th>
+                            <th>Triage</th>
+                            <th className="num">Fee</th>
+                            <th>Status</th>
+                            <th aria-label="Documents" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visits.map((v) => (
+                            
+                            <React.Fragment key={v.id}>
+                              <tr>
+                                <td className="whitespace-nowrap">{v.visit_date}<span className="block font-mono text-2xs text-ink-3">{v.visit_code}</span></td>
+                                <td className="max-w-[18rem]"><Value>{v.reason}</Value></td>
+                                <td className="max-w-[18rem]"><Value>{v.diagnosis}</Value></td>
+                                <td className="whitespace-nowrap"><Value>{v.doctor_name}</Value></td>
+                                <td><Value>{v.triage_priority}</Value></td>
+                                <td className="num">{v.consultation_fee != null ? Number(v.consultation_fee).toFixed(2) : '—'}</td>
+                                <td><Pill tone={v.status === 'Completed' ? 'ok' : v.status === 'Cancelled' ? 'neutral' : 'warn'}>{v.status}</Pill></td>
+                                <td className="whitespace-nowrap">
+                                  {v.fitness_status && v.fitness_status !== 'Not assessed' ? (
+                                    <button type="button" className="btn btn-sm" onClick={() => setCertificateVisit(v)}
+                                      title="Print the fitness for work certificate">
+                                      <FileCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                      Certificate
+                                    </button>
+                                  ) : null}
+                                </td>
+                              </tr>
+                              {v.doctor_notes || v.follow_up_date || (v.rdt_result && v.rdt_result !== 'Not done') || v.notifiable_condition || (v.fitness_status && v.fitness_status !== 'Not assessed') ? (
+                                <tr>
+                                  <td colSpan={8} className="border-t-0 pt-0 text-2xs leading-relaxed text-ink-2">
+                                    <span className="flex flex-wrap items-center gap-1.5">
+                                      {v.follow_up_date ? (
+                                        <Pill tone="info">Return {v.follow_up_date}{v.follow_up_note ? `: ${v.follow_up_note}` : ''}</Pill>
+                                      ) : null}
+                                      {v.rdt_result && v.rdt_result !== 'Not done' ? (
+                                        <Pill tone={String(v.rdt_result).startsWith('Positive') ? 'warn' : 'neutral'}>Malaria RDT {v.rdt_result}</Pill>
+                                      ) : null}
+                                      {v.notifiable_condition ? <Pill tone="critical">Reportable: {v.notifiable_condition}</Pill> : null}
+                                      {v.fitness_status && v.fitness_status !== 'Not assessed' ? (
+                                        <Pill tone={v.fitness_status === 'Fit for full duty' ? 'ok' : v.fitness_status === 'Unfit for work' ? 'critical' : 'warn'}>
+                                          {v.fitness_status}{v.fitness_until ? ` until ${v.fitness_until}` : ''}{v.fitness_restrictions ? `: ${v.fitness_restrictions}` : ''}
+                                        </Pill>
+                                      ) : null}
+                                    </span>
+                                    {v.doctor_notes ? (
+                                      <span className="mt-1 block"><span className="font-semibold text-ink-3">Notes: </span>{v.doctor_notes}</span>
+                                    ) : null}
+                                  </td>
+                                </tr>
+                              ) : null}
+                            </React.Fragment>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Panel>
+
+                <Panel>
+                  <PanelHead title="Referrals" note={`${referrals.length} recorded`} />
+                  {outcomeError ? (
+                    <p className="mx-4 mb-2 rounded border border-critical-line bg-critical-wash px-3 py-2 text-xs text-critical">{outcomeError}</p>
+                  ) : null}
+                  {referrals.length === 0 ? (
+                    <EmptyState title="This patient has not been referred anywhere"
+                      detail={canRefer ? 'Use Refer at the top of the record, or Refer out during a consultation.' : undefined} />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>To</th>
+                            <th>Reason</th>
+                            <th>Urgency</th>
+                            <th>Referred by</th>
+                            <th>Outcome</th>
+                            <th aria-label="Actions" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {referrals.map((r) => (
+                            <tr key={r.id}>
+                              <td className="whitespace-nowrap">{String(r.created_at || '').slice(0, 10)}<span className="block font-mono text-2xs text-ink-3">{r.referral_code}</span></td>
+                              <td className="max-w-[16rem]"><Value>{r.referred_to}</Value>{r.department ? <span className="block text-2xs text-ink-3">{r.department}</span> : null}</td>
+                              <td className="max-w-[18rem]"><Value>{r.reason}</Value></td>
+                              <td><Pill tone={r.urgency === 'Emergency' ? 'critical' : r.urgency === 'Urgent' ? 'warn' : 'neutral'}>{r.urgency}</Pill></td>
+                              <td className="whitespace-nowrap"><Value>{r.referred_by}</Value></td>
+                              <td>
+                                {canRecordOutcome ? (
+                                  <select className="field py-1 text-xs" value={r.outcome} aria-label={`Outcome of ${r.referral_code}`}
+                                    onChange={(e) => recordOutcome(r, e.target.value)}>
+                                    {REFERRAL_OUTCOMES.map((o) => <option key={o} value={o}>{o}</option>)}
+                                  </select>
+                                ) : (
+                                  <Pill tone={r.outcome === 'Awaiting outcome' ? 'warn' : r.outcome === 'Died' ? 'critical' : 'ok'}>{r.outcome}</Pill>
+                                )}
+                                {r.outcome_note ? <span className="block text-2xs text-ink-3">{r.outcome_note}</span> : null}
+                              </td>
+                              <td className="whitespace-nowrap">
+                                <button type="button" className="btn btn-sm" onClick={() => openLetter(r)}>
+                                  <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Letter
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Panel>
+
+                <Panel>
+                  <PanelHead title="Medicines dispensed" note={`${dispensations.length} hand-overs`} />
+                  {dispensations.length === 0 ? (
+                    <EmptyState title="No medicines have been dispensed to this patient" />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>When</th>
+                            <th>Invoice</th>
+                            <th>Medicines</th>
+                            <th>Dispensed by</th>
+                            <th>Paid</th>
+                            <th className="num">Collected</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dispensations.map((d) => (
+                            <tr key={d.id}>
+                              <td className="whitespace-nowrap"><Value>{formatDateTime(d.created_at)}</Value></td>
+                              <td className="whitespace-nowrap font-mono text-xs">{d.invoice_number}</td>
+                              <td className="max-w-[22rem]"><Value>{d.drugs_summary}</Value></td>
+                              <td className="whitespace-nowrap"><Value>{d.dispensed_by_name}</Value></td>
+                              <td className="whitespace-nowrap"><Value>{d.payment_method}</Value>{Number(d.discount) > 0 ? <span className="block text-2xs text-warn">Reduced by {Number(d.discount).toFixed(2)}</span> : null}</td>
+                              <td className="num">{Number(d.paid_amount).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Panel>
+
+                <Panel>
+                  <PanelHead title="Record history" note="Who has done what on this file, newest first" />
+                  {history.length === 0 ? (
+                    <EmptyState title="Nothing recorded against this file yet" />
+                  ) : (
+                    <ol className="divide-y divide-line-soft">
+                      {history.map((h) => (
+                        <li key={h.id} className="flex gap-3 px-4 py-2">
+                          <span className="w-28 shrink-0 whitespace-nowrap text-2xs text-ink-3">{formatDateTime(h.created_at)}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="text-xs font-medium text-ink">{h.action_type}</span>
+                            <span className="text-xs text-ink-3"> · {h.user_name}{h.user_role ? `, ${h.user_role}` : ''}</span>
+                            {h.details ? <span className="block text-2xs leading-relaxed text-ink-2">{h.details}</span> : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </Panel>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {referring && patient ? (
+        <ReferralModal
+          patient={patient}
+          visit={latestVisit}
+          onClose={() => setReferring(false)}
+          onSaved={() => { reload(); onChanged?.(); }}
+          onPrint={(r) => { setReferring(false); setPrintReferral(r); }}
+        />
+      ) : null}
+      {printReferral ? (
+        <PrintableReferralLetter referral={printReferral} settings={settings} onClose={() => setPrintReferral(null)} />
+      ) : null}
+      {certificateVisit && patient ? (
+        <PrintableFitnessCertificate visit={certificateVisit} patient={patient} settings={settings}
+          onClose={() => setCertificateVisit(null)} />
+      ) : null}
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2 px-3 py-2">
+      <dt className="text-ink-3">{label}</dt>
+      <dd className="min-w-0 break-words font-medium text-ink-2"><Value>{children}</Value></dd>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/*
+ * The card the patient takes home. Printed on ordinary paper and cut out, it
+ * carries the number the clinic will ask for on every future visit, plus the
+ * photograph so it cannot easily be used by somebody else.
+ */
+function IdCardSheet({ patient, settings, onClose }) {
+  if (!patient) return null;
+
+  return (
+    <div className="printable-modal-overlay scrim" role="dialog" aria-modal="true" aria-label="Patient card">
+      <div className="printable-modal-card panel w-full max-w-lg shadow-overlay">
+        <div className="no-print flex items-center justify-between gap-3 border-b border-line-soft px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink">Patient card</h2>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-sm btn-primary" onClick={() => window.print()}>
+              <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+              Print
+            </button>
+            <button type="button" className="btn btn-sm" onClick={onClose}>Close</button>
+          </div>
+        </div>
+
+        <div className="printable-area px-5 py-5">
+          <div className="mx-auto w-full max-w-[420px] rounded-md border border-line p-4">
+            <div className="flex items-start justify-between gap-3 border-b border-line-soft pb-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-ink">
+                  {settings?.name || 'Lloyds Medical OS'}
+                </p>
+                <p className="truncate text-2xs text-ink-3">
+                  {[settings?.district, settings?.province].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <p className="shrink-0 text-2xs uppercase tracking-wide text-ink-3">Patient card</p>
+            </div>
+
+            <div className="mt-3 flex gap-3">
+              <PatientAvatar patient={patient} size={84} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold text-ink">{patient.full_name}</p>
+                <p className="mt-0.5 text-xs text-ink-2">
+                  <Value>{patient.age}</Value> years · {patient.gender}
+                </p>
+                <p className="mt-2 text-2xs uppercase tracking-wide text-ink-3">Hospital number</p>
+                <p className="font-mono text-lg font-semibold tracking-wide text-ink">
+                  {patient.hospital_number}
+                </p>
+              </div>
+            </div>
+
+            <dl className="mt-3 space-y-1 border-t border-line-soft pt-2.5 text-2xs">
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-3">Village</dt>
+                <dd className="truncate text-ink-2"><Value>{patient.address_or_village}</Value></dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-3">Allergies</dt>
+                <dd className="truncate font-semibold text-ink-2">
+                  {hasAllergy(patient.allergies) ? patient.allergies : 'None recorded'}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-3">Clinic phone</dt>
+                <dd className="truncate text-ink-2"><Value>{settings?.phone}</Value></dd>
+              </div>
+            </dl>
+
+            <p className="mt-3 border-t border-line-soft pt-2 text-2xs leading-relaxed text-ink-3">
+              Bring this card to every visit. Tell the clerk the number on it.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,11 @@
+You open the patient register to enrol a person presenting to the clinic.
+
+You enter their full name, age, home village, and province.
+
+Any known allergy is recorded here so that every department sees it.
+
+Once saved, the system assigns a permanent hospital number for life.
+
+You open the printable patient card to hand to the patient for their visits.
+
+Every patient record is stored safely in the clinic database, ready for immediate access during care.

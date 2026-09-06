@@ -1,0 +1,9 @@
+You open the patient register and bring up the complete clinical file.
+
+An allergy alert remains prominent across the top of the record.
+
+You review the patient identity panel, past consultations, and dispensed medications.
+
+The audit log tracks every entry recorded under the attending clinician.
+
+From the screen menu, you can enlarge the display for bedside care and return to normal view.

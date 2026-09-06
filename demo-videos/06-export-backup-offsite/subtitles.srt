@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:04,108
+You open protected export to create
+offline copies of clinic records.
+
+2
+00:00:04,108 --> 00:00:08,514
+Entering the facility export password
+unlocks an encrypted audit workbook.
+
+3
+00:00:08,514 --> 00:00:12,861
+You can also download a full encrypted
+database archive for safe storage.
+
+4
+00:00:12,861 --> 00:00:17,564
+In Google Sheets backup, automated
+replication settings keep an offsite
+record.
+
+5
+00:00:17,564 --> 00:00:22,864
+Scheduled synchronization runs quietly in
+the background whenever a network is
+connected.

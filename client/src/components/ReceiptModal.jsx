@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { Printer, X, CheckCircle2, FileText, Receipt, ShieldCheck } from 'lucide-react';
 
+const RECEIPT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// "6 Sep 2026, 2:32 PM" cannot be read as any other date.
+function receiptMoment(value) {
+  const at = value ? new Date(value) : new Date();
+  if (Number.isNaN(at.getTime())) return 'Not recorded';
+  const time = at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return `${at.getDate()} ${RECEIPT_MONTHS[at.getMonth()]} ${at.getFullYear()}, ${time}`;
+}
+
 export default function ReceiptModal({ isOpen, onClose, data }) {
   const [printFormat, setPrintFormat] = useState('a4'); // 'a4' or 'thermal'
 
@@ -28,7 +38,7 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
             </div>
             <div>
               <span className="text-sm font-bold text-slate-900 block">Official Medical Receipt</span>
-              <span className="text-[11px] text-slate-500 font-mono">Invoice #{invoice?.invoice_number}</span>
+              <span className="text-[11px] text-slate-500 font-mono">Receipt {invoice?.invoice_number}</span>
             </div>
           </div>
 
@@ -43,7 +53,7 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>A4 Invoice</span>
+                <span>A4 sheet</span>
               </button>
               <button
                 type="button"
@@ -53,7 +63,7 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
                 }`}
               >
                 <Receipt className="w-3.5 h-3.5" />
-                <span>80mm Slip</span>
+                <span>80mm slip</span>
               </button>
             </div>
 
@@ -97,20 +107,33 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
             </p>
 
             <div className="mt-2 inline-block px-3 py-0.5 border border-slate-800 rounded text-[9px] font-mono font-bold uppercase tracking-widest text-slate-900 bg-slate-50">
-              OFFICIAL MEDICAL & PHARMACY TAX INVOICE
+              OFFICIAL MEDICINE & CONSULTATION RECEIPT
             </div>
           </div>
 
           {/* Metadata Grid */}
           <div className="grid grid-cols-2 gap-2 py-3 border-b border-slate-300 text-[10px]">
             <div className="space-y-0.5">
-              <p><span className="text-slate-500 font-semibold">Invoice No:</span> <strong className="font-mono text-slate-950">{invoice?.invoice_number}</strong></p>
-              <p><span className="text-slate-500 font-semibold">Date & Time:</span> <span className="font-mono">{new Date(invoice?.created_at || Date.now()).toLocaleString()}</span></p>
-              <p><span className="text-slate-500 font-semibold">Medical Officer:</span> <span>{hospital?.doctor_in_charge || 'Duty Medical Officer'}</span></p>
+              <p><span className="text-slate-500 font-semibold">Receipt No:</span> <strong className="font-mono text-slate-950">{invoice?.invoice_number}</strong></p>
+              {/* Written out in full. "9/6/2026" is 9 June to a Papua New
+                  Guinean reader and 6 September to an American one, and this
+                  is the date a patient may bring back months later to argue
+                  about what they were given. */}
+              <p><span className="text-slate-500 font-semibold">Date &amp; Time:</span> <span className="font-mono">{receiptMoment(invoice?.created_at)}</span></p>
+              {/* Whoever actually handed the medicine over. This used to print
+                  the facility's doctor-in-charge on every receipt, which named
+                  a person who had usually taken no part in the sale. */}
+              <p>
+                <span className="text-slate-500 font-semibold">Dispensed by:</span>{' '}
+                <span>{invoice?.dispensed_by_name || 'Not recorded'}</span>
+              </p>
             </div>
             <div className="text-right space-y-0.5">
               <p><span className="text-slate-500 font-semibold">Patient:</span> <strong className="text-slate-950">{invoice?.patient_name || patient?.full_name}</strong></p>
-              <p><span className="text-slate-500 font-semibold">Patient ID:</span> <span className="font-mono text-slate-800">{patient?.patient_code || 'Outpatient'}</span></p>
+              {/* The number printed on the patient's own card. The register
+                  tells them this number is theirs for life, so it is the one
+                  that has to appear on what they carry home. */}
+              <p><span className="text-slate-500 font-semibold">Hospital No:</span> <span className="font-mono text-slate-800">{patient?.hospital_number || patient?.patient_code || 'Walk-in, not registered'}</span></p>
               <p><span className="text-slate-500 font-semibold">Payment Mode:</span> <span>{invoice?.payment_method || 'Cash (Kina)'}</span></p>
             </div>
           </div>
@@ -154,7 +177,10 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
           <div className="pt-2 border-t-2 border-slate-900 space-y-1 text-[10px]">
             {invoice?.discount > 0 && (
               <div className="flex justify-between text-slate-600">
-                <span>Concession Subsidy / Discount:</span>
+                <span>
+                  Price reduction
+                  {invoice?.discount_reason ? ` (${invoice.discount_reason})` : ''}:
+                </span>
                 <span className="font-mono text-red-600">-{currency} {parseFloat(invoice.discount).toFixed(2)}</span>
               </div>
             )}
@@ -174,7 +200,9 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
               <div className="border border-slate-300 rounded p-2 bg-white text-center">
                 <div className="h-8 border-b border-slate-300 mb-1"></div>
                 <span className="font-bold uppercase text-slate-700 block">Dispensing Officer</span>
-                <span className="text-[8px] text-slate-500 font-mono">Lloyds Pharmacy Post</span>
+                <span className="text-[8px] text-slate-500 font-mono">
+                  {invoice?.dispensed_by_name || 'Name not recorded'}
+                </span>
               </div>
 
               <div className="border border-slate-300 rounded p-2 bg-white text-center">
@@ -185,7 +213,7 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
             </div>
 
             <div className="mt-4 text-[8px] text-slate-400 font-mono">
-              System Ref: LMEL-TX-{invoice?.invoice_number || '000'} • Tax Status: Company Medical Care Concession
+              System reference {invoice?.invoice_number || 'not issued'}
             </div>
           </div>
 

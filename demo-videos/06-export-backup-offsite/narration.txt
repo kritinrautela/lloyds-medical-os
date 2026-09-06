@@ -1,0 +1,9 @@
+You open protected export to create offline copies of clinic records.
+
+Entering the facility export password unlocks an encrypted audit workbook.
+
+You can also download a full encrypted database archive for safe storage.
+
+In Google Sheets backup, automated replication settings keep an offsite record.
+
+Scheduled synchronization runs quietly in the background whenever a network is connected.

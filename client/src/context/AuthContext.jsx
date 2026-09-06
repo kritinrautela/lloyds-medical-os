@@ -1,183 +1,258 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { api, setToken, getToken, setSessionLostHandler } from '../services/api';
 
 const AuthContext = createContext(null);
 
-export const defaultDemoStaff = [
-  {
-    id: 2,
-    username: 'doctor',
-    full_name: 'Chief Medical Officer',
-    role: 'Chief Medical Officer',
-    staff_id: 'LMEL-DOC-002',
-    department: 'Emergency & Tropical Medicine',
-    avatar: '👨‍⚕️',
-    color: 'emerald'
-  },
-  {
-    id: 3,
-    username: 'nurse',
-    full_name: 'Senior Triage Nurse',
-    role: 'Senior Triage Nurse',
-    staff_id: 'LMEL-NUR-003',
-    department: 'Outpatient & Acute Triage',
-    avatar: '👩‍⚕️',
-    color: 'amber'
-  },
-  {
-    id: 4,
-    username: 'pharmacist',
-    full_name: 'Registered Chief Pharmacist',
-    role: 'Registered Pharmacist',
-    staff_id: 'LMEL-PHM-004',
-    department: 'Pharmacy & Medical Depot',
-    avatar: '💊',
-    color: 'cyan'
-  },
-  {
-    id: 5,
-    username: 'labtech',
-    full_name: 'Pathology & RDT Specialist',
-    role: 'Pathology Technician',
-    staff_id: 'LMEL-LAB-005',
-    department: 'Diagnostic Laboratory',
-    avatar: '🧪',
-    color: 'purple'
-  },
-  {
-    id: 6,
-    username: 'safety',
-    full_name: 'HSE Mine Health Officer',
-    role: 'HSE Safety Officer',
-    staff_id: 'LMEL-HSE-006',
-    department: 'Mine Occupational Safety',
-    avatar: '⛑️',
-    color: 'rose'
-  },
-  {
-    id: 1,
-    username: 'admin',
-    full_name: 'Hospital Operations Director',
-    role: 'Administrator',
-    staff_id: 'LMEL-ADM-001',
-    department: 'Clinical Governance & Administration',
-    avatar: '🛡️',
-    color: 'blue'
+const STORAGE_KEY = 'lloyds_staff_user';
+
+/*
+ * Who is signed in, and what they are allowed to do.
+ *
+ * Everything this system records — a diagnosis, a medicine handed over, a price
+ * reduced, a stock write-off — is recorded against the name held here. That
+ * makes this the foundation the whole audit trail rests on, so it holds to
+ * four rules:
+ *
+ *  - Nobody is signed in until they sign in. There is no default user.
+ *  - A password is checked by the server, every time. There is no local
+ *    shortcut, no built-in password and no way to become another member of
+ *    staff without their password.
+ *  - The session is a token the server issued and stores. What is kept in this
+ *    browser is a copy for convenience; the server decides whether it is still
+ *    a session, and says so on every single request.
+ *  - The list of permissions below comes from the server and is used only to
+ *    decide what to draw. It is not the enforcement. Hiding a button prevents
+ *    an honest mistake; the server refusing the request is what stops the rest.
+ *
+ * An earlier version of this file kept a list of staff members in the browser,
+ * signed everyone in as a doctor automatically, allowed switching to any
+ * account including an administrator with one click, and accepted a password
+ * written into the source when the server said no. Any one of those makes the
+ * audit trail meaningless, because an entry recorded against a name would no
+ * longer be evidence that that person did it.
+ */
+
+function readStored() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
   }
-];
+}
+
+function writeStored(payload) {
+  try {
+    if (payload) localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* A browser with storage blocked still works; the session just ends on reload. */
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lloyds_staff_user');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Could not parse saved user:', e);
-    }
-    // Default fallback to Chief Medical Officer so offline clinic starts smoothly
-    return defaultDemoStaff[0];
-  });
+  const stored = readStored();
+  const [currentUser, setCurrentUser] = useState(stored?.user || null);
+  const [capabilities, setCapabilities] = useState(stored?.capabilities || []);
+  const [sections, setSections] = useState(stored?.sections || []);
+  const [landing, setLanding] = useState(stored?.landing || null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
-  const [staffUsers, setStaffUsers] = useState(defaultDemoStaff);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [notice, setNotice] = useState(null);
 
-  // Load all registered staff accounts from server on startup
-  const refreshStaffList = async () => {
-    try {
-      const res = await api.getStaffUsers();
-      if (res?.users && res.users.length > 0) {
-        setStaffUsers(res.users);
-      }
-    } catch (e) {
-      // Offline fallback: keep default demo staff
-    }
-  };
-
-  useEffect(() => {
-    refreshStaffList();
+  const applySession = useCallback((res) => {
+    setCurrentUser(res.user);
+    setCapabilities(res.capabilities || []);
+    setSections(res.sections || []);
+    setLanding(res.landing || null);
+    setMustChangePassword(!!res.must_change_password);
+    writeStored({
+      user: res.user,
+      capabilities: res.capabilities || [],
+      sections: res.sections || [],
+      landing: res.landing || null
+    });
   }, []);
 
-  const login = async (username, password) => {
+  const clearSession = useCallback(() => {
+    setCurrentUser(null);
+    setCapabilities([]);
+    setSections([]);
+    setLanding(null);
+    setMustChangePassword(false);
+    setToken(null);
+    writeStored(null);
+  }, []);
+
+  // Any request that comes back unauthorised ends the session everywhere at
+  // once, rather than leaving half the screen showing data nobody may see.
+  useEffect(() => {
+    setSessionLostHandler((message) => {
+      clearSession();
+      setNotice(message || 'Your session has ended. Sign in again to carry on.');
+    });
+    return () => setSessionLostHandler(null);
+  }, [clearSession]);
+
+  /*
+   * On startup the token in this browser is offered to the server, which
+   * answers with the person it belongs to or with nothing. A session that has
+   * expired, or an account an administrator has since disabled, does not
+   * survive a page reload.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await api.getBootstrapStatus().catch(() => null);
+        if (!cancelled && status?.needs_setup) {
+          setNeedsSetup(true);
+          clearSession();
+          return;
+        }
+
+        if (!getToken()) { clearSession(); return; }
+
+        const res = await api.getSession();
+        if (!cancelled && res?.user) applySession(res);
+      } catch (err) {
+        // A 401 has already cleared the session through the handler above.
+        // Any other failure means the server is unreachable, and a clinic
+        // should not be locked out of its own records by a network fault:
+        // the stored copy stands until the next successful request.
+        if (err?.status === 401 && !cancelled) clearSession();
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [applySession, clearSession]);
+
+  const login = useCallback(async (username, password) => {
     setLoading(true);
+    setNotice(null);
     try {
       const res = await api.login({ username, password });
-      if (res?.user) {
-        setCurrentUser(res.user);
-        localStorage.setItem('lloyds_staff_user', JSON.stringify(res.user));
-        setIsAuthModalOpen(false);
-        return { success: true, user: res.user };
-      }
-      throw new Error(res?.message || 'Login failed');
+      if (!res?.user || !res?.token) throw new Error(res?.message || 'Sign-in failed.');
+      setToken(res.token);
+      applySession(res);
+      setIsAuthModalOpen(false);
+      return { success: true, user: res.user };
     } catch (err) {
-      // Offline instant demo bypass if password is lloyds2026
-      if (password === 'lloyds2026') {
-        const found = staffUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-        if (found) {
-          setCurrentUser(found);
-          localStorage.setItem('lloyds_staff_user', JSON.stringify(found));
-          setIsAuthModalOpen(false);
-          return { success: true, user: found };
-        }
-      }
-      return { success: false, message: err.message };
+      // A failed sign-in fails. There is deliberately no fallback path here.
+      return { success: false, message: err.message || 'Sign-in failed.' };
     } finally {
       setLoading(false);
     }
-  };
+  }, [applySession]);
 
-  const switchAccount = (user) => {
-    setCurrentUser(user);
-    localStorage.setItem('lloyds_staff_user', JSON.stringify(user));
-    setIsAuthModalOpen(false);
-  };
-
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     setLoading(true);
     try {
       const res = await api.register(userData);
-      if (res?.user) {
-        await refreshStaffList();
-        setCurrentUser(res.user);
-        localStorage.setItem('lloyds_staff_user', JSON.stringify(res.user));
-        setIsAuthModalOpen(false);
-        return { success: true, user: res.user };
-      }
-      throw new Error(res?.message || 'Registration failed');
+      if (!res?.user) throw new Error(res?.message || 'The account could not be created.');
+      return { success: true, user: res.user };
     } catch (err) {
       return { success: false, message: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
-    // Open auth modal to choose next shift worker or log in
-    setIsAuthModalOpen(true);
-  };
+  /*
+   * Creating the very first account on a new installation. There is no
+   * administrator yet to authorise it, which is precisely why the server only
+   * allows it while the staff list is empty.
+   */
+  const completeSetup = useCallback(async (userData) => {
+    setLoading(true);
+    try {
+      const res = await api.register(userData);
+      if (!res?.user) throw new Error(res?.message || 'The account could not be created.');
+      const signIn = await api.login({ username: userData.username, password: userData.password });
+      if (signIn?.token) {
+        setToken(signIn.token);
+        applySession(signIn);
+      }
+      setNeedsSetup(false);
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [applySession]);
 
-  return (
-    <AuthContext.Provider value={{
-      currentUser,
-      staffUsers,
-      isAuthModalOpen,
-      setIsAuthModalOpen,
-      loading,
-      login,
-      register,
-      switchAccount,
-      logout,
-      refreshStaffList
-    }}>
-      {children}
-    </AuthContext.Provider>
+  const changeOwnPassword = useCallback(async (currentPassword, newPassword) => {
+    setLoading(true);
+    try {
+      await api.changeOwnPassword(currentPassword, newPassword);
+      setMustChangePassword(false);
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    // Tell the server first so the session is destroyed rather than merely
+    // forgotten by this browser, then clear locally whatever the answer.
+    await api.logout().catch(() => {});
+    clearSession();
+  }, [clearSession]);
+
+  // The idle guard's sign-out: the same as a sign-out, with a note on the
+  // sign-in screen saying why it happened.
+  const signOutIdle = useCallback(async (message) => {
+    await api.logout().catch(() => {});
+    clearSession();
+    setNotice(message);
+  }, [clearSession]);
+
+  // What the interface is allowed to draw. Never what the server is allowed to do.
+  const can = useCallback(
+    (capability) => capabilities.includes(capability),
+    [capabilities]
   );
+
+  const value = useMemo(() => ({
+    currentUser,
+    isSignedIn: !!currentUser,
+    capabilities,
+    sections,
+    landing,
+    can,
+    mustChangePassword,
+    needsSetup,
+    notice,
+    dismissNotice: () => setNotice(null),
+    checking,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    loading,
+    login,
+    register,
+    completeSetup,
+    changeOwnPassword,
+    logout,
+    signOutIdle
+  }), [
+    currentUser, capabilities, sections, landing, can, mustChangePassword, needsSetup,
+    notice, checking, isAuthModalOpen, loading, login, register, completeSetup,
+    changeOwnPassword, logout, signOutIdle
+  ]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

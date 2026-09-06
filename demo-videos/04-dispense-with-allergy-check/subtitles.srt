@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:04,275
+At the dispensing counter, you select
+the patient from the queue or register.
+
+2
+00:00:04,275 --> 00:00:08,661
+You search for the prescribed medication
+and specify the quantity to hand over.
+
+3
+00:00:08,661 --> 00:00:13,657
+Because the patient has a penicillin
+allergy, a red safety alert warns against
+dispensing.
+
+4
+00:00:13,657 --> 00:00:18,765
+After consulting the clinician, you
+confirm the clinical check and acknowledge
+the decision.
+
+5
+00:00:18,765 --> 00:00:23,040
+You complete the dispensing to update
+stock and generate an official receipt.

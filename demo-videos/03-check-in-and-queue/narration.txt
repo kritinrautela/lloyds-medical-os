@@ -1,0 +1,9 @@
+From the top bar, you check a patient into the outpatient queue.
+
+You select the patient, state the presenting complaint, and assign a triage priority.
+
+In the outpatient queue, clinicians monitor waiting times and open visits.
+
+You record triage observations including blood pressure, pulse, and temperature.
+
+The visit moves forward through consultation to pharmacy as care is delivered.

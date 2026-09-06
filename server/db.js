@@ -1,4 +1,5 @@
 const sqlite3 = require('sqlite3').verbose();
+const { formatHospitalNumber } = require('./lib/patientId');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -67,7 +68,7 @@ async function initDatabase() {
         currency_symbol TEXT DEFAULT 'K',
         currency_code TEXT DEFAULT 'PGK',
         receipt_footer TEXT,
-        export_password TEXT DEFAULT 'png_health_2026',
+        export_password TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -198,6 +199,22 @@ async function initDatabase() {
 
     // 8. Cloud & Google Sheets Sync Configuration
     await runQuery(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME NOT NULL,
+        device TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    await runQuery(`
+      CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)
+    `);
+
+    await runQuery(`
       CREATE TABLE IF NOT EXISTS cloud_sync_config (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         provider TEXT DEFAULT 'Google Sheets',
@@ -323,6 +340,131 @@ async function initDatabase() {
     await addColumnIfMissing('dispensations', 'dispensed_by_role', 'TEXT');
     await addColumnIfMissing('visits', 'checked_in_by', 'TEXT');
 
+    // A price reduction is the one pharmacy action that moves stock without
+    // moving money, so it must carry a stated reason and a named authoriser.
+    await addColumnIfMissing('dispensations', 'discount_reason', 'TEXT');
+    await addColumnIfMissing('dispensations', 'discount_authorised_by', 'TEXT');
+
+    // The lifetime hospital number, the patient photograph, and who did the
+    // registering. See server/lib/patientId.js for why the number carries a
+    // check digit.
+    await addColumnIfMissing('patients', 'hospital_number', 'TEXT');
+    await addColumnIfMissing('patients', 'photo_path', 'TEXT');
+    await addColumnIfMissing('patients', 'photo_taken_at', 'DATETIME');
+    await addColumnIfMissing('patients', 'photo_taken_by', 'TEXT');
+    await addColumnIfMissing('patients', 'registered_by', 'TEXT');
+    // A new installation is seeded with sample records so the software can be
+    // demonstrated and trained on. live_since is stamped the moment those
+    // samples are cleared, and until then the interface says plainly that the
+    // records on screen are not real patients.
+    await addColumnIfMissing('hospital_settings', 'live_since', 'DATETIME');
+    await addColumnIfMissing('hospital_settings', 'admin_pin', 'TEXT');
+
+    // A staff account can be issued with a temporary password by an
+    // administrator. This flag makes the holder replace it before they can do
+    // anything, so a password somebody else chose never stays in use.
+    await addColumnIfMissing('users', 'must_change_password', 'INTEGER DEFAULT 0');
+
+    // Earlier builds seeded every staff account with the same password, written
+    // in this file and therefore published with the source. Anyone who read the
+    // repository could sign in as the administrator. Those accounts are kept so
+    // nobody is locked out, but they are marked: the holder must choose a real
+    // password at the next sign-in before the system will let them work.
+    const SHIPPED_PASSWORD = 'lloyds2026';
+    const SHIPPED_HASH = crypto.createHash('sha256').update(SHIPPED_PASSWORD).digest('hex');
+    await runQuery(
+      'UPDATE users SET must_change_password = 1 WHERE password_hash = ?',
+      [SHIPPED_HASH]
+    );
+
+    // An account that has been signed into since has had its hash re-formed as
+    // salted scrypt, which hides the match above while the password itself is
+    // still the published one. Test those the only way a salted hash allows.
+    try {
+      const holders = await allQuery(
+        "SELECT id, password_hash FROM users WHERE must_change_password = 0 AND password_hash LIKE 'scrypt$%'"
+      );
+      for (const holder of holders || []) {
+        const [, salt, expected] = String(holder.password_hash).split('$');
+        if (!salt || !expected) continue;
+        const derived = crypto.scryptSync(SHIPPED_PASSWORD, salt, 64).toString('hex');
+        if (derived === expected) {
+          await runQuery('UPDATE users SET must_change_password = 1 WHERE id = ?', [holder.id]);
+        }
+      }
+    } catch (err) {
+      console.error('Could not audit accounts for the published password:', err.message);
+    }
+
+    // Earlier builds shipped a fixed export password in this file, so every
+    // clinic that installed the software shared one password that anybody
+    // reading the source could look up. Retire it: an administrator sets a
+    // real one in Settings, and until then the export refuses to run rather
+    // than handing out a workbook anyone can open.
+    await runQuery(
+      "UPDATE hospital_settings SET export_password = NULL WHERE export_password = 'png_health_2026'"
+    );
+    await addColumnIfMissing('hospital_settings', 'admin_email', 'TEXT');
+    // The consultation fee was hard-coded in the browser, which meant the
+    // clinic could not change its own price without an edit to the source.
+    await addColumnIfMissing('hospital_settings', 'default_consultation_fee', 'REAL');
+
+    // Off-site copy. The key is what stops a stranger who finds the web app
+    // address from writing into the clinic's spreadsheet; the photo timestamp
+    // is how the sync knows which photographs Google has not yet been given.
+    await addColumnIfMissing('cloud_sync_config', 'sync_key', 'TEXT');
+    await addColumnIfMissing('cloud_sync_config', 'sync_interval_minutes', 'INTEGER DEFAULT 15');
+    await addColumnIfMissing('cloud_sync_config', 'last_auto_attempt_at', 'DATETIME');
+    await addColumnIfMissing('cloud_sync_config', 'photos_synced_count', 'INTEGER DEFAULT 0');
+    await addColumnIfMissing('cloud_sync_config', 'drive_folder_url', 'TEXT');
+    await addColumnIfMissing('patients', 'photo_synced_at', 'DATETIME');
+  await addColumnIfMissing('cloud_sync_config', 'google_client_id', 'TEXT');
+  await addColumnIfMissing('cloud_sync_config', 'google_client_secret', 'TEXT');
+  await addColumnIfMissing('cloud_sync_config', 'google_refresh_token', 'TEXT');
+  await addColumnIfMissing('cloud_sync_config', 'google_sheet_url', 'TEXT');
+  await addColumnIfMissing('cloud_sync_config', 'google_folder_id', 'TEXT');
+  await addColumnIfMissing('cloud_sync_config', 'google_connected_at', 'DATETIME');
+  await addColumnIfMissing('cloud_sync_config', 'last_summary_email_date', 'TEXT');
+
+  // Clinical registers: return visits, malaria testing, reportable diseases
+  // and fitness for work are recorded on the visit they belong to.
+  await addColumnIfMissing('visits', 'follow_up_date', 'DATE');
+  await addColumnIfMissing('visits', 'follow_up_note', 'TEXT');
+  await addColumnIfMissing('visits', 'rdt_result', 'TEXT');
+  await addColumnIfMissing('visits', 'notifiable_condition', 'TEXT');
+  await addColumnIfMissing('visits', 'fitness_status', 'TEXT');
+  await addColumnIfMissing('visits', 'fitness_restrictions', 'TEXT');
+  await addColumnIfMissing('visits', 'fitness_until', 'DATE');
+
+  // Referrals to another facility. A referral stays open until somebody
+  // records what happened to the patient, so nobody is sent away and forgotten.
+  await runQuery(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      referral_code TEXT UNIQUE NOT NULL,
+      patient_id INTEGER NOT NULL,
+      visit_id INTEGER,
+      referred_to TEXT NOT NULL,
+      department TEXT,
+      urgency TEXT DEFAULT 'Routine',
+      transport TEXT,
+      reason TEXT NOT NULL,
+      clinical_summary TEXT,
+      referred_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      outcome TEXT DEFAULT 'Awaiting outcome',
+      outcome_note TEXT,
+      outcome_by TEXT,
+      outcome_at DATETIME,
+      FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    )
+  `);
+    await runQuery(
+      "UPDATE hospital_settings SET default_consultation_fee = 0 WHERE default_consultation_fee IS NULL"
+    );
+    await backfillHospitalNumbers();
+    await ensureUniqueIndexes();
+
     // Check if seeded or needs update
     const settings = await getQuery('SELECT * FROM hospital_settings LIMIT 1');
     if (!settings) {
@@ -362,6 +504,45 @@ async function initDatabase() {
  * already carrying live patient records, so every schema change has to be
  * both additive and idempotent.
  */
+// Patients registered before the hospital number existed still need one, and
+// it has to be the same number every time this runs. Deriving it from the row
+// id makes the backfill deterministic and collision-free.
+async function backfillHospitalNumbers() {
+  try {
+    const rows = await allQuery(
+      "SELECT id FROM patients WHERE hospital_number IS NULL OR TRIM(hospital_number) = ''"
+    );
+    if (!rows || rows.length === 0) return;
+    for (const row of rows) {
+      await runQuery('UPDATE patients SET hospital_number = ? WHERE id = ?', [
+        formatHospitalNumber(row.id),
+        row.id
+      ]);
+    }
+    console.log(`Assigned a hospital number to ${rows.length} existing patient record(s)`);
+  } catch (err) {
+    console.error('Hospital number backfill failed:', err.message);
+  }
+}
+
+// A duplicate patient number would let two people share one record, so the
+// database refuses it outright rather than relying on the application to check.
+async function ensureUniqueIndexes() {
+  const indexes = [
+    ['idx_patients_hospital_number', 'patients', 'hospital_number'],
+    ['idx_patients_patient_code', 'patients', 'patient_code']
+  ];
+  for (const [name, table, column] of indexes) {
+    try {
+      await runQuery(`CREATE UNIQUE INDEX IF NOT EXISTS ${name} ON ${table}(${column})`);
+    } catch (err) {
+      // An existing duplicate blocks the index. Say so loudly: it means two
+      // records are sharing an identifier and a person has to resolve it.
+      console.error(`Could not enforce uniqueness on ${table}.${column}: ${err.message}`);
+    }
+  }
+}
+
 async function addColumnIfMissing(table, column, definition) {
   try {
     const columns = await allQuery(`PRAGMA table_info(${table})`);
@@ -393,7 +574,7 @@ async function seedInitialData() {
       'K',
       'PGK',
       'Serving the people of Papua New Guinea. Tenkyu tru na lukautim gut!',
-      'png_health_2026'
+      NULL
     )
   `);
 
@@ -405,12 +586,12 @@ async function seedInitialData() {
       'Google Sheets Cloud Sync',
       1,
       1,
-      'admin@lloydshealth.org.pg',
-      '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-      'https://script.google.com/macros/s/AKfycbx_png_lloyds_sync/exec',
       NULL,
-      'Queued for Wi-Fi Connection',
-      'System is operating in 100% offline mode. Auto-sync will trigger immediately once Wi-Fi or mobile data is detected.'
+      NULL,
+      NULL,
+      NULL,
+      'Not Configured',
+      'No off-site copy has been set up. Nothing leaves this machine until a Google Sheets endpoint is entered under Google Sheets backup.'
     )
   `);
 
@@ -508,28 +689,18 @@ async function seedInitialData() {
   console.log('Seeding complete for Papua New Guinea clinic system.');
 }
 
+/*
+ * Staff accounts are deliberately NOT seeded.
+ *
+ * This used to create six accounts that all shared one password written in
+ * this file, which meant the password was published with the source and every
+ * installation everywhere had the same administrator login. On a new database
+ * the software now has no accounts at all: the first person to open it creates
+ * the administrator account and chooses that password themselves, and every
+ * other account is made from inside Staff and access.
+ */
 async function seedUsersIfEmpty() {
-  const userCount = await getQuery('SELECT COUNT(*) as cnt FROM users');
-  if (userCount && userCount.cnt > 0) return;
-
-  console.log('Seeding official Lloyds Metals hospital staff accounts...');
-  const hash = crypto.createHash('sha256').update('lloyds2026').digest('hex');
-
-  const defaultStaff = [
-    ['admin', hash, 'Hospital Operations Director', 'admin.png@lloyds.in', 'Administrator', 'LMEL-ADM-001', 'Clinical Governance & Administration'],
-    ['doctor', hash, 'Chief Medical Officer', 'cmo.png@lloyds.in', 'Chief Medical Officer', 'LMEL-DOC-002', 'Emergency & Tropical Medicine'],
-    ['nurse', hash, 'Senior Triage Nurse', 'triage.png@lloyds.in', 'Senior Triage Nurse', 'LMEL-NUR-003', 'Outpatient & Acute Triage'],
-    ['pharmacist', hash, 'Registered Chief Pharmacist', 'pharmacy.png@lloyds.in', 'Registered Pharmacist', 'LMEL-PHM-004', 'Pharmacy & Medical Depot'],
-    ['labtech', hash, 'Pathology & RDT Specialist', 'lab.png@lloyds.in', 'Pathology Technician', 'LMEL-LAB-005', 'Diagnostic Laboratory'],
-    ['safety', hash, 'HSE Mine Health Officer', 'safety.png@lloyds.in', 'HSE Safety Officer', 'LMEL-HSE-006', 'Mine Occupational Safety']
-  ];
-
-  for (const staff of defaultStaff) {
-    await runQuery(`
-      INSERT INTO users (username, password_hash, full_name, email, role, staff_id, department)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, staff);
-  }
+  return;
 }
 
 async function seedBedsIfEmpty() {

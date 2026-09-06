@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:04,009
+You open the patient register and
+bring up the complete clinical file.
+
+2
+00:00:04,009 --> 00:00:07,674
+An allergy alert remains prominent
+across the top of the record.
+
+3
+00:00:07,674 --> 00:00:12,543
+You review the patient identity panel,
+past consultations, and dispensed
+medications.
+
+4
+00:00:12,543 --> 00:00:16,666
+The audit log tracks every entry
+recorded under the attending clinician.
+
+5
+00:00:16,666 --> 00:00:21,993
+From the screen menu, you can enlarge the
+display for bedside care and return to
+normal view.

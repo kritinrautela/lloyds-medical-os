@@ -1,6 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
+
+/*
+ * Stock movements are the pharmacy's ledger. A hand-over to a patient is
+ * already recorded by the dispensing route; everything that changes stock
+ * WITHOUT a patient attached — a delivery in, a write-off, a correction — is
+ * recorded here, because that is the movement with no receipt behind it.
+ *
+ * Reductions that are not deliveries are raised to Warning so they collect on
+ * the shift report rather than sitting unread in a long log.
+ */
+async function logStock(action, user, details, severity = 'Info') {
+  try {
+    await runQuery(
+      `INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
+       VALUES (?, ?, ?, 'Pharmacy Store', ?, ?)`,
+      [action, user || 'Unattributed', '', details, severity]
+    );
+  } catch (err) {
+    console.error('Activity log write failed:', err.message);
+  }
+}
 
 // GET /api/drugs (Search, filter by low stock, expiry, category)
 router.get('/', async (req, res) => {
@@ -64,7 +86,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/drugs (Add new medication)
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('pharmacy.addDrug'), async (req, res) => {
   try {
     const {
       name,
@@ -121,7 +143,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/drugs/:id (Update medication)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('pharmacy.addDrug'), async (req, res) => {
   try {
     const {
       name,
@@ -174,12 +196,18 @@ router.put('/:id', async (req, res) => {
 });
 
 // POST /api/drugs/:id/stock (Quick Stock Adjustment / Restock)
-router.post('/:id/stock', async (req, res) => {
+router.post('/:id/stock', requirePermission('pharmacy.adjustStock'), async (req, res) => {
   try {
-    const { change_amount, reason } = req.body;
+    const { change_amount, reason, adjusted_by } = req.body;
     const delta = parseInt(change_amount, 10);
     if (isNaN(delta) || delta === 0) {
       return res.status(400).json({ success: false, message: 'Valid non-zero change amount required' });
+    }
+    if (!String(reason || '').trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A stock change needs a stated reason before it can be recorded.'
+      });
     }
 
     const current = await getQuery('SELECT stock_quantity, name FROM drugs WHERE id = ?', [req.params.id]);
@@ -188,10 +216,17 @@ router.post('/:id/stock', async (req, res) => {
     const newStock = Math.max(0, current.stock_quantity + delta);
     await runQuery('UPDATE drugs SET stock_quantity = ? WHERE id = ?', [newStock, req.params.id]);
 
+    await logStock(
+      delta > 0 ? 'Stock received' : 'Stock removed',
+      adjusted_by,
+      `${current.name}: ${current.stock_quantity} to ${newStock} (${delta > 0 ? '+' : ''}${delta}). Reason: ${String(reason).trim()}.`,
+      delta < 0 ? 'Warning' : 'Success'
+    );
+
     const updated = await getQuery('SELECT * FROM drugs WHERE id = ?', [req.params.id]);
     res.json({
       success: true,
-      message: `Stock updated for ${current.name}: ${current.stock_quantity} -> ${newStock} (${reason || 'Adjustment'})`,
+      message: `Stock updated for ${current.name}: ${current.stock_quantity} -> ${newStock} (${String(reason).trim()})`,
       drug: updated
     });
   } catch (err) {
@@ -201,9 +236,18 @@ router.post('/:id/stock', async (req, res) => {
 });
 
 // DELETE /api/drugs/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('pharmacy.removeDrug'), async (req, res) => {
   try {
+    const drug = await getQuery('SELECT name, stock_quantity FROM drugs WHERE id = ?', [req.params.id]);
+    if (!drug) return res.status(404).json({ success: false, message: 'Medication not found' });
+
     await runQuery('DELETE FROM drugs WHERE id = ?', [req.params.id]);
+    await logStock(
+      'Medicine removed from formulary',
+      req.body?.removed_by,
+      `${drug.name} removed while ${drug.stock_quantity} units were on the shelf.`,
+      'Warning'
+    );
     res.json({ success: true, message: 'Medication removed from formulary' });
   } catch (err) {
     console.error('Delete drug error:', err);

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
 
 // GET /api/dispense (List recent dispensations)
@@ -50,7 +51,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/dispense (Execute Dispensation & Decrement Stock)
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('dispense.sell'), async (req, res) => {
   try {
     const {
       patient_id,
@@ -61,6 +62,8 @@ router.post('/', async (req, res) => {
       paid_amount,
       payment_method,
       pharmacist_notes,
+      discount_reason,
+      discount_authorised_by,
       dispensed_by_user_id,
       dispensed_by_name,
       dispensed_by_role
@@ -70,11 +73,29 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Patient name and at least one drug item are required' });
     }
 
-    // Step 1: Stock verification for all items
+    const discountValue = parseFloat(discount) || 0;
+    if (discountValue > 0 && !String(discount_reason || '').trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A reduced price needs a stated reason before it can be recorded.'
+      });
+    }
+
+    // Step 1: every item must exist, be in stock, and be in date. An expired
+    // batch is refused outright rather than warned about: a medicine past its
+    // date is not the clinic's to hand over, whatever the counter thinks.
+    const today = new Date().toISOString().slice(0, 10);
     for (const item of items) {
-      const drug = await getQuery('SELECT id, name, stock_quantity FROM drugs WHERE id = ?', [item.drug_id]);
+      const drug = await getQuery('SELECT id, name, stock_quantity, batch_number, expiry_date FROM drugs WHERE id = ?', [item.drug_id]);
       if (!drug) {
         return res.status(400).json({ success: false, message: `Medication ID ${item.drug_id} not found in formulary` });
+      }
+      if (drug.expiry_date && String(drug.expiry_date).slice(0, 10) < today) {
+        return res.status(409).json({
+          success: false,
+          code: 'EXPIRED',
+          message: `${drug.name} (batch ${drug.batch_number || 'not recorded'}) expired on ${String(drug.expiry_date).slice(0, 10)} and cannot be handed over. Remove it from the shelf and record the new batch in the formulary.`
+        });
       }
       if (drug.stock_quantity < item.quantity) {
         return res.status(400).json({
@@ -101,7 +122,7 @@ router.post('/', async (req, res) => {
         quantity: qty,
         unit_price: price,
         subtotal: subtotal,
-        instructions: item.instructions || 'Take as advised by medical officer'
+        instructions: (item.instructions || '').trim() || null
       });
     }
 
@@ -120,8 +141,9 @@ router.post('/', async (req, res) => {
       INSERT INTO dispensations (
         invoice_number, patient_id, visit_id, patient_name, total_amount, discount,
         paid_amount, payment_method, payment_status, pharmacist_notes,
+        discount_reason, discount_authorised_by,
         dispensed_by_user_id, dispensed_by_name, dispensed_by_role
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?, ?)
     `, [
       invoice_number,
       patient_id || null,
@@ -132,6 +154,8 @@ router.post('/', async (req, res) => {
       paidVal,
       payment_method || 'Cash (Kina)',
       pharmacist_notes || '',
+      discountVal > 0 ? String(discount_reason).trim() : null,
+      discountVal > 0 ? (discount_authorised_by || dispensed_by_name || null) : null,
       dispensed_by_user_id || null,
       dispensed_by_name || null,
       dispensed_by_role || null
@@ -182,7 +206,8 @@ router.post('/', async (req, res) => {
       dispensed_by_name || 'Unattributed',
       dispensed_by_role || 'Pharmacy',
       patient_name.trim(),
-      `${invoice_number}: ${itemSummary}. Gross ${finalTotal.toFixed(2)}, discount ${discountVal.toFixed(2)}, collected ${paidVal.toFixed(2)}.`,
+      `${invoice_number}: ${itemSummary}. Gross ${finalTotal.toFixed(2)}, discount ${discountVal.toFixed(2)}, collected ${paidVal.toFixed(2)}.` +
+        (discountVal > 0 ? ` Reason given: ${String(discount_reason).trim()}.` : ''),
       (discountVal > 0 || paidVal === 0) ? 'Warning' : 'Success'
     ]);
 

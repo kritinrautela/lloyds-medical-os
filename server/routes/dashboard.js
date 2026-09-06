@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { runQuery, getQuery, allQuery } = require('../db');
+const { requirePermission, requireAuth } = require('../middleware/auth');
 
 /*
  * Dashboard data layer.
@@ -16,6 +17,22 @@ const EXPIRY_HORIZON_DAYS = 90;
 
 // SQLite stores CURRENT_TIMESTAMP in UTC, so ages are computed in SQL where
 // both sides of the subtraction are UTC.
+// Presentations that actually drive workload in a Papua New Guinea clinic
+// serving a mining district. The list decides how recorded diagnoses are
+// grouped for the surveillance panel; it never invents a case.
+const CONDITION_GROUPS = [
+  { label: 'Malaria', match: ['malaria', 'falciparum', 'vivax', 'plasmodium'] },
+  { label: 'Respiratory infection', match: ['pneumonia', 'respiratory', 'asthma', 'bronch', 'cough'] },
+  { label: 'Diarrhoeal illness', match: ['diarrhoea', 'diarrhea', 'gastroenteritis', 'dysentery', 'cholera'] },
+  { label: 'Tuberculosis', match: ['tuberculosis', ' tb ', 'tb.', 'ptb'] },
+  { label: 'Snakebite and envenoming', match: ['snake', 'envenom', 'taipan', 'adder'] },
+  { label: 'Injury and trauma', match: ['wound', 'laceration', 'fracture', 'trauma', 'injury', 'burn', 'crush'] },
+  { label: 'Skin and soft tissue infection', match: ['abscess', 'cellulitis', 'boil', 'ulcer', 'scabies'] },
+  { label: 'Typhoid and enteric fever', match: ['typhoid', 'enteric fever'] },
+  { label: 'Heat illness and dehydration', match: ['heat exhaustion', 'heat stroke', 'dehydration'] },
+  { label: 'Maternal and antenatal', match: ['antenatal', 'pregnan', 'obstetric', 'postnatal'] }
+];
+
 const MINUTES_SINCE = (col) => `CAST((julianday('now') - julianday(${col})) * 1440 AS INTEGER)`;
 
 router.get('/stats', async (req, res) => {
@@ -206,6 +223,24 @@ router.get('/stats', async (req, res) => {
        GROUP BY drug_name ORDER BY total_dispensed DESC LIMIT 6`
     );
 
+    // Condition groups over the last 30 days. Each visit is counted once, and
+    // only if a clinician actually wrote something matching into the diagnosis
+    // or the presenting reason. This is a count of what was written down, not
+    // a laboratory-confirmed case count, and the interface says so.
+    const surveillanceWindow = (await allQuery(
+      `SELECT diagnosis, reason
+       FROM visits
+       WHERE date(visit_date) >= date('now', '-30 day')`
+    )) || [];
+
+    const conditionGroups = CONDITION_GROUPS.map((group) => {
+      const visits = surveillanceWindow.filter((v) => {
+        const text = `${v.diagnosis || ''} ${v.reason || ''}`.toLowerCase();
+        return group.match.some((term) => text.includes(term));
+      }).length;
+      return { label: group.label, visits };
+    }).filter((g) => g.visits > 0).sort((a, b) => b.visits - a.visits);
+
     // ------------------------------------------------- governance and audit
     // Who dispensed what today. This is the ledger that makes stock leaving
     // the pharmacy attributable to a named member of staff.
@@ -254,6 +289,42 @@ router.get('/stats', async (req, res) => {
        ORDER BY v.visit_date DESC`,
       [todayStr]
     );
+
+    // ------------------------------------------------ registers and returns
+    const followUpRows = await allQuery(
+      `SELECT v.id, v.follow_up_date, v.follow_up_note, v.patient_id, p.full_name AS patient_name, p.hospital_number,
+              CAST(julianday(v.follow_up_date) - julianday(date('now', 'localtime')) AS INTEGER) AS days_until,
+              (SELECT MAX(visit_date) FROM visits w WHERE w.patient_id = v.patient_id AND w.id != v.id AND w.visit_date >= v.follow_up_date) AS attended_on
+       FROM visits v JOIN patients p ON p.id = v.patient_id
+       WHERE v.follow_up_date IS NOT NULL AND v.follow_up_date <= date('now', 'localtime')
+         AND v.id = (SELECT MAX(id) FROM visits x WHERE x.patient_id = v.patient_id AND x.follow_up_date IS NOT NULL)
+       ORDER BY v.follow_up_date ASC`
+    );
+    const followUpsDue = followUpRows.filter((r) => !r.attended_on);
+    const follow_ups_due_today = followUpsDue.filter((r) => r.days_until === 0).length;
+    const follow_ups_overdue = followUpsDue.filter((r) => r.days_until < 0).length;
+
+    const openReferrals = await allQuery(
+      `SELECT r.id, r.referral_code, r.referred_to, r.urgency, r.created_at, p.full_name AS patient_name, p.hospital_number,
+              CAST(julianday('now') - julianday(r.created_at) AS INTEGER) AS days_open
+       FROM referrals r JOIN patients p ON p.id = r.patient_id
+       WHERE r.outcome = 'Awaiting outcome' ORDER BY r.created_at ASC LIMIT 50`
+    );
+
+    const { notifiable_30d } = (await getQuery(
+      `SELECT COUNT(*) AS notifiable_30d FROM visits
+       WHERE notifiable_condition IS NOT NULL AND notifiable_condition != '' AND date(visit_date) >= date('now', '-30 day')`
+    )) || { notifiable_30d: 0 };
+    const { notifiable_today } = (await getQuery(
+      `SELECT COUNT(*) AS notifiable_today FROM visits
+       WHERE notifiable_condition IS NOT NULL AND notifiable_condition != '' AND visit_date = ?`, [todayStr]
+    )) || { notifiable_today: 0 };
+
+    const { unfit_open } = (await getQuery(
+      `SELECT COUNT(*) AS unfit_open FROM visits
+       WHERE fitness_status IN ('Unfit for work', 'Fit with restrictions')
+         AND fitness_until IS NOT NULL AND fitness_until >= date('now', 'localtime')`
+    )) || { unfit_open: 0 };
 
     const settings = await getQuery('SELECT * FROM hospital_settings LIMIT 1');
     const syncConfig = await getQuery('SELECT * FROM cloud_sync_config LIMIT 1');
@@ -334,6 +405,11 @@ router.get('/stats', async (req, res) => {
       success: true,
       generated_at: new Date().toISOString(),
       stats: {
+        // The client reads only the stats object, so the timestamp is repeated
+        // inside it. The board prints how old its figures are rather than
+        // implying they are live.
+        generated_at: new Date().toISOString(),
+
         // census
         total_patients,
         new_patients_today,
@@ -376,6 +452,9 @@ router.get('/stats', async (req, res) => {
         footfallTrend,
         topDiagnoses,
         topMedicines,
+        conditionGroups,
+        conditionGroupsWindowDays: 30,
+        conditionGroupsVisitsConsidered: surveillanceWindow.length,
 
         // governance
         dispensingByStaff,
@@ -383,6 +462,11 @@ router.get('/stats', async (req, res) => {
         endOfDayToday: eodToday || null,
         unreconciledDays,
         exportProtected: !!(settings && settings.export_password && settings.export_password.length > 0),
+        liveSince: (settings && settings.live_since) || null,
+        // A brand new installation carries sample records so staff can be
+        // trained before the clinic opens. Until they are cleared the board
+        // says so, rather than letting invented patients read as real ones.
+        sampleDataPresent: !(settings && settings.live_since),
         lastExport: lastExport || null,
         cloudSync: syncConfig
           ? {
@@ -405,6 +489,16 @@ router.get('/stats', async (req, res) => {
         staffPresence,
         staff_online,
 
+        // registers and returns
+        followUpsDue: followUpsDue.slice(0, 20),
+        follow_ups_due_today,
+        follow_ups_overdue,
+        openReferrals,
+        open_referrals: openReferrals.length,
+        notifiable_30d,
+        notifiable_today,
+        unfit_open,
+
         // notes and safety
         shiftNotes,
         incidents,
@@ -424,21 +518,12 @@ router.get('/stats', async (req, res) => {
  * control board can show who is actually on the system right now rather than
  * who logged in at some point today.
  */
-router.post('/heartbeat', async (req, res) => {
+router.post('/heartbeat', requireAuth, async (req, res) => {
   try {
-    const { user_id, username } = req.body || {};
-    if (!user_id && !username) {
-      return res.status(400).json({ success: false, message: 'user_id or username required' });
-    }
-
-    if (user_id) {
-      await runQuery('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?', [user_id]);
-    } else {
-      await runQuery('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE username = ?', [
-        String(username).trim().toLowerCase()
-      ]);
-    }
-
+    // Presence is read from the session, not from a name in the request. The
+    // old version let anybody mark any member of staff as present, which made
+    // "staff on the system" evidence of nothing.
+    await runQuery('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?', [req.user.id]);
     res.json({ success: true, at: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -446,9 +531,13 @@ router.post('/heartbeat', async (req, res) => {
 });
 
 // POST /api/dashboard/shift-notes
-router.post('/shift-notes', async (req, res) => {
+router.post('/shift-notes', requirePermission('notes.write'), async (req, res) => {
   try {
-    const { shift_type, author_name, author_role, priority, category, title, note_content } = req.body;
+    const { shift_type, priority, category, title, note_content } = req.body;
+    // The author is whoever is signed in. A handover note is a clinical
+    // instruction to the next shift, so it has to carry a real name.
+    const author_name = req.user.full_name;
+    const author_role = req.user.role;
     if (!title || !note_content) {
       return res.status(400).json({ success: false, message: 'Title and note content are required.' });
     }
@@ -459,8 +548,8 @@ router.post('/shift-notes', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         shift_type || 'Day Shift (06:00 - 18:00)',
-        author_name || 'Duty Medical Officer',
-        author_role || 'Medical Staff',
+        author_name,
+        author_role,
         priority || 'Standard',
         category || 'General',
         title,
@@ -472,8 +561,8 @@ router.post('/shift-notes', async (req, res) => {
       `INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
        VALUES ('Shift Handover Note', ?, ?, 'Clinical Handover', ?, ?)`,
       [
-        author_name || 'Duty Medical Officer',
-        author_role || 'Medical Staff',
+        author_name,
+        author_role,
         `${priority || 'Standard'} note recorded: ${title}`,
         priority === 'Critical Emergency' ? 'Emergency' : 'Info'
       ]
@@ -487,7 +576,7 @@ router.post('/shift-notes', async (req, res) => {
 });
 
 // PUT /api/dashboard/beds/:id — admit, discharge, or change bed state
-router.put('/beds/:id', async (req, res) => {
+router.put('/beds/:id', requirePermission('beds.manage'), async (req, res) => {
   try {
     const {
       status, patient_name, patient_code, patient_id, age, gender,
@@ -551,7 +640,7 @@ router.put('/beds/:id', async (req, res) => {
            (action_type, user_name, user_role, patient_name, location, details, severity)
          VALUES ('Inpatient Admission', ?, 'Clinical Staff', ?, ?, ?, 'Warning')`,
         [
-          attending_doctor || 'Duty Medical Officer',
+          (attending_doctor || '').trim() || req.user.full_name,
           patient_name,
           `${existing.ward_name} (${existing.bed_code})`,
           `Admitted to ${existing.bed_code}. Diagnosis: ${diagnosis || 'not recorded'}. Acuity: ${acuity_level || 'not recorded'}.`
@@ -580,9 +669,22 @@ router.put('/beds/:id', async (req, res) => {
 });
 
 // POST /api/dashboard/activities — append to the audit trail
-router.post('/activities', async (req, res) => {
+/*
+ * The audit trail is the whole basis of staff accountability here, so the name
+ * on an entry has to be the name of the person who made it.
+ *
+ * This route previously accepted a name and a role in the request body and
+ * wrote them down as fact, with no sign-in required at all. Anyone on the
+ * clinic network could have written an entry under somebody else's name — the
+ * exact opposite of what an audit trail is for. The name and role now come
+ * from the session and the ones in the request body are ignored.
+ *
+ * Severity is fixed at Info. An entry the client can label "Emergency" would
+ * let a member of staff bury a real alert in noise.
+ */
+router.post('/activities', requireAuth, async (req, res) => {
   try {
-    const { action_type, user_name, user_role, patient_name, location, details, severity } = req.body;
+    const { action_type, patient_name, location, details } = req.body;
     if (!action_type || !details) {
       return res.status(400).json({ success: false, message: 'action_type and details are required' });
     }
@@ -593,12 +695,12 @@ router.post('/activities', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         action_type,
-        user_name || 'Medical Staff',
-        user_role || 'Staff',
+        req.user.full_name,
+        req.user.role,
         patient_name || null,
         location || 'Clinic Station',
         details,
-        severity || 'Info'
+        'Info'
       ]
     );
 

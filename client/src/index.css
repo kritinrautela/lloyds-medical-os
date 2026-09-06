@@ -8,25 +8,160 @@
   One rule governs colour: neutral is the default, and every hue on screen
   reports a clinical or operational state. Decorative colour on a ward screen
   causes alarm fatigue, so there is none here.
+
+  Two themes ship, because the same screen is read in two very different
+  rooms. The day theme is built for an outpatient counter under tropical
+  daylight, where a dark screen becomes a mirror. The night theme is built for
+  the ward at three in the morning, where a white screen is the brightest
+  object in the room and wrecks the reader's dark adaptation. Both carry the
+  same meaning for the same colour, and every text pair in both clears the
+  4.5:1 contrast floor.
 */
 
 @layer base {
-  :root {
+  :root,
+  [data-theme='light'] {
     color-scheme: light;
-    --bg: #F4F6F8;
-    --surface: #FFFFFF;
-    --line: #DFE4E9;
-    --ink: #101720;
+
+    --c-canvas: 244 246 248;
+    --c-surface: 255 255 255;
+    --c-subtle: 247 249 250;
+
+    --c-line: 223 228 233;
+    --c-line-soft: 234 238 241;
+    --c-line-strong: 196 204 212;
+
+    --c-ink: 16 23 32;
+    --c-ink-2: 72 84 95;
+    --c-ink-3: 107 120 133;
+    --c-ink-inverse: 255 255 255;
+
+    --c-brand: 200 16 46;
+    --c-brand-deep: 142 11 32;
+    --c-brand-wash: 253 242 243;
+
+    --c-critical: 179 18 31;
+    --c-critical-wash: 253 241 242;
+    --c-critical-line: 243 201 205;
+
+    --c-warn: 161 92 7;
+    --c-warn-wash: 253 246 234;
+    --c-warn-line: 239 217 174;
+
+    --c-ok: 11 110 79;
+    --c-ok-wash: 239 248 243;
+    --c-ok-line: 188 224 206;
+
+    --c-info: 27 79 160;
+    --c-info-wash: 239 244 252;
+    --c-info-line: 196 214 239;
+
+    /* The primary action keeps the Lloyds red at full strength in daylight. */
+    --c-primary: 200 16 46;
+    --c-primary-hover: 168 13 38;
+    --c-primary-active: 142 11 32;
+    --c-primary-fg: 255 255 255;
+
+    --c-focus: 27 79 160;
+    --c-scroll-track: 237 240 243;
+    --c-scroll-thumb: 196 204 212;
+    --c-scroll-thumb-hover: 168 179 189;
+
+    /* Identity tints. These name a department, never a clinical state, and
+       appear only on icons and navigation so they cannot be mistaken for the
+       red/amber/green that means something is wrong. */
+    --t-1: 62 86 190;    /* registry     */
+    --t-2: 13 124 137;   /* outpatients  */
+    --t-3: 141 88 20;    /* pharmacy     */
+    --t-4: 158 45 92;    /* ward         */
+    --t-5: 88 62 168;    /* governance   */
+    --t-6: 30 105 92;    /* safety       */
+    --t-wash: 0.07;      /* tint strength behind an icon */
+
+    --shadow-panel: 0 1px 2px rgba(16, 23, 32, 0.04), 0 1px 1px rgba(16, 23, 32, 0.03);
+    --shadow-raised: 0 4px 12px -2px rgba(16, 23, 32, 0.10), 0 2px 4px -2px rgba(16, 23, 32, 0.06);
+    --shadow-overlay: 0 24px 48px -12px rgba(16, 23, 32, 0.24), 0 8px 16px -8px rgba(16, 23, 32, 0.12);
+    --scrim: rgba(16, 23, 32, 0.44);
+  }
+
+  [data-theme='dark'] {
+    color-scheme: dark;
+
+    --c-canvas: 14 19 25;
+    --c-surface: 22 28 36;
+    --c-subtle: 27 34 43;
+
+    --c-line: 42 51 62;
+    --c-line-soft: 34 42 51;
+    --c-line-strong: 61 72 84;
+
+    --c-ink: 231 236 241;
+    --c-ink-2: 169 180 192;
+    --c-ink-3: 124 136 150;
+    --c-ink-inverse: 14 19 25;
+
+    --c-brand: 240 90 110;
+    --c-brand-deep: 200 16 46;
+    --c-brand-wash: 44 21 26;
+
+    /* The status scale is lightened for a dark ground. Meaning is unchanged:
+       red still means act now, amber still means check before the shift ends. */
+    --c-critical: 255 107 114;
+    --c-critical-wash: 44 21 24;
+    --c-critical-line: 74 35 40;
+
+    --c-warn: 233 162 59;
+    --c-warn-wash: 43 33 19;
+    --c-warn-line: 74 58 28;
+
+    --c-ok: 78 203 146;
+    --c-ok-wash: 16 36 28;
+    --c-ok-line: 30 69 54;
+
+    --c-info: 111 168 245;
+    --c-info-wash: 19 31 48;
+    --c-info-line: 36 56 79;
+
+    /* Red is lifted just far enough to hold white text at 4.6:1 on a dark
+       ground while still reading as the Lloyds red. */
+    --c-primary: 217 30 58;
+    --c-primary-hover: 232 45 72;
+    --c-primary-active: 200 16 46;
+    --c-primary-fg: 255 255 255;
+
+    --c-focus: 111 168 245;
+    --c-scroll-track: 22 28 36;
+    --c-scroll-thumb: 61 72 84;
+    --c-scroll-thumb-hover: 82 95 110;
+
+    --t-1: 132 154 250;
+    --t-2: 79 197 208;
+    --t-3: 228 168 74;
+    --t-4: 240 130 174;
+    --t-5: 172 146 255;
+    --t-6: 92 200 178;
+    --t-wash: 0.16;
+
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-raised: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 4px -2px rgba(0, 0, 0, 0.40);
+    --shadow-overlay: 0 24px 48px -12px rgba(0, 0, 0, 0.70), 0 8px 16px -8px rgba(0, 0, 0, 0.50);
+    --scrim: rgba(0, 0, 0, 0.62);
   }
 
   html { -webkit-text-size-adjust: 100%; }
+
+  /* Text size is a whole-interface scale, chosen per device in the top bar.
+     Scaling everything together is the only way a larger setting cannot
+     produce a label that no longer fits beside its value. */
+  html[data-textsize='large'] body { zoom: 1.15; }
+  html[data-textsize='larger'] body { zoom: 1.3; }
 
   body, #root { min-height: 100vh; }
 
   body {
     margin: 0;
-    background-color: var(--bg);
-    color: var(--ink);
+    background-color: rgb(var(--c-canvas));
+    color: rgb(var(--c-ink));
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     line-height: 1.5;
@@ -41,30 +176,30 @@
     margin: 0;
     font-weight: 600;
     letter-spacing: -0.012em;
-    color: var(--ink);
+    color: rgb(var(--c-ink));
   }
 
   :focus-visible {
-    outline: 2px solid #1B4FA0;
+    outline: 2px solid rgb(var(--c-focus));
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: #EDF0F3; }
+  ::-webkit-scrollbar-track { background: rgb(var(--c-scroll-track)); }
   ::-webkit-scrollbar-thumb {
-    background: #C4CCD4;
+    background: rgb(var(--c-scroll-thumb));
     border-radius: 999px;
-    border: 2px solid #EDF0F3;
+    border: 2px solid rgb(var(--c-scroll-track));
   }
-  ::-webkit-scrollbar-thumb:hover { background: #A8B3BD; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-scroll-thumb-hover)); }
 }
 
 @layer components {
   /* Panel is the only structural container. Flat, ruled, no glass. */
   .panel {
-    background: #FFFFFF;
-    border: 1px solid #DFE4E9;
+    background: rgb(var(--c-surface));
+    border: 1px solid rgb(var(--c-line));
     border-radius: 8px;
   }
 
@@ -74,16 +209,16 @@
     justify-content: space-between;
     gap: 12px;
     padding: 11px 16px;
-    border-bottom: 1px solid #EAEEF1;
+    border-bottom: 1px solid rgb(var(--c-line-soft));
   }
 
   .panel-title {
     font-size: 13px;
     font-weight: 600;
-    color: #101720;
+    color: rgb(var(--c-ink));
   }
 
-  .panel-note { font-size: 11px; color: #6B7885; }
+  .panel-note { font-size: 11px; color: rgb(var(--c-ink-3)); }
 
   /* Data tables carry the clinical detail. */
   .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -95,21 +230,21 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #6B7885;
-    background: #F7F9FA;
-    border-bottom: 1px solid #DFE4E9;
+    color: rgb(var(--c-ink-3));
+    background: rgb(var(--c-subtle));
+    border-bottom: 1px solid rgb(var(--c-line));
     white-space: nowrap;
   }
 
   .data-table tbody td {
     padding: 9px 16px;
-    border-bottom: 1px solid #EAEEF1;
-    color: #48545F;
+    border-bottom: 1px solid rgb(var(--c-line-soft));
+    color: rgb(var(--c-ink-2));
     vertical-align: middle;
   }
 
   .data-table tbody tr:last-child td { border-bottom: 0; }
-  .data-table tbody tr:hover td { background: #F9FAFB; }
+  .data-table tbody tr:hover td { background: rgb(var(--c-subtle)); }
   .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
   /* Status pill. The text always carries the meaning; colour reinforces it. */
@@ -126,23 +261,24 @@
     white-space: nowrap;
   }
 
-  .pill-neutral  { background: #F0F3F5; color: #48545F; border-color: #DFE4E9; }
-  .pill-ok       { background: #EFF8F3; color: #0B6E4F; border-color: #BCE0CE; }
-  .pill-info     { background: #EFF4FC; color: #1B4FA0; border-color: #C4D6EF; }
-  .pill-warn     { background: #FDF6EA; color: #A15C07; border-color: #EFD9AE; }
-  .pill-critical { background: #FDF1F2; color: #B3121F; border-color: #F3C9CD; }
+  .pill-neutral  { background: rgb(var(--c-subtle)); color: rgb(var(--c-ink-2)); border-color: rgb(var(--c-line)); }
+  .pill-ok       { background: rgb(var(--c-ok-wash)); color: rgb(var(--c-ok)); border-color: rgb(var(--c-ok-line)); }
+  .pill-info     { background: rgb(var(--c-info-wash)); color: rgb(var(--c-info)); border-color: rgb(var(--c-info-line)); }
+  .pill-warn     { background: rgb(var(--c-warn-wash)); color: rgb(var(--c-warn)); border-color: rgb(var(--c-warn-line)); }
+  .pill-critical { background: rgb(var(--c-critical-wash)); color: rgb(var(--c-critical)); border-color: rgb(var(--c-critical-line)); }
 
   .btn {
     display: inline-flex;
+    white-space: nowrap;
     align-items: center;
     justify-content: center;
     gap: 6px;
     height: 32px;
     padding: 0 12px;
-    border: 1px solid #DFE4E9;
+    border: 1px solid rgb(var(--c-line));
     border-radius: 6px;
-    background: #FFFFFF;
-    color: #101720;
+    background: rgb(var(--c-surface));
+    color: rgb(var(--c-ink));
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
@@ -150,13 +286,17 @@
     transition: background-color 120ms ease, border-color 120ms ease;
   }
 
-  .btn:hover { background: #F4F6F8; border-color: #C4CCD4; }
-  .btn:active { background: #EDF0F3; }
+  .btn:hover { background: rgb(var(--c-subtle)); border-color: rgb(var(--c-line-strong)); }
+  .btn:active { background: rgb(var(--c-canvas)); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .btn-primary { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
-  .btn-primary:hover { background: #A80D26; border-color: #A80D26; }
-  .btn-primary:active { background: #8E0B20; }
+  .btn-primary {
+    background: rgb(var(--c-primary));
+    border-color: rgb(var(--c-primary));
+    color: rgb(var(--c-primary-fg));
+  }
+  .btn-primary:hover { background: rgb(var(--c-primary-hover)); border-color: rgb(var(--c-primary-hover)); }
+  .btn-primary:active { background: rgb(var(--c-primary-active)); }
 
   .btn-sm { height: 26px; padding: 0 9px; font-size: 12px; }
   .btn-lg { height: 38px; padding: 0 16px; font-size: 14px; }
@@ -165,16 +305,20 @@
     width: 100%;
     height: 34px;
     padding: 0 10px;
-    border: 1px solid #DFE4E9;
+    border: 1px solid rgb(var(--c-line));
     border-radius: 6px;
-    background: #FFFFFF;
-    color: #101720;
+    background: rgb(var(--c-surface));
+    color: rgb(var(--c-ink));
     font-size: 13px;
     font-family: inherit;
   }
 
-  .field::placeholder { color: #8A95A0; }
-  .field:focus { outline: 2px solid #1B4FA0; outline-offset: -1px; border-color: #1B4FA0; }
+  .field::placeholder { color: rgb(var(--c-ink-3)); }
+  .field:focus {
+    outline: 2px solid rgb(var(--c-focus));
+    outline-offset: -1px;
+    border-color: rgb(var(--c-focus));
+  }
   textarea.field { height: auto; padding: 8px 10px; line-height: 1.5; }
   select.field { padding-right: 6px; }
 
@@ -183,15 +327,28 @@
     margin-bottom: 4px;
     font-size: 11px;
     font-weight: 600;
-    color: #48545F;
+    color: rgb(var(--c-ink-2));
   }
 
   /* A value the database does not hold is shown as an em dash, never guessed. */
-  .unrecorded { color: #9AA4AE; }
+  .unrecorded { color: rgb(var(--c-ink-3)); }
+
+  /* Modal scrim, themed so the night shift is not flashed by a bright overlay. */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--scrim);
+  }
 }
 
 /* Legacy bridge: pages not yet migrated still carry dark utility classes from
-   the previous theme. Neutralise them so nothing renders as a black slab. */
+   the previous theme. Map them onto the current tokens so nothing renders as
+   an unreadable slab in either theme. */
 .light-theme .bg-slate-900,
 .light-theme .bg-slate-950,
 .light-theme .bg-\[\#040812\],
@@ -203,7 +360,7 @@
 .light-theme .bg-\[\#0F2744\],
 .light-theme .bg-\[\#0A1B35\],
 .light-theme .bg-\[\#091528\] {
-  background-color: #FFFFFF !important;
+  background-color: rgb(var(--c-surface)) !important;
 }
 
 .light-theme .border-slate-800,
@@ -211,26 +368,74 @@
 .light-theme .border-slate-800\/80,
 .light-theme .border-slate-700\/80,
 .light-theme .border-white\/10 {
-  border-color: #DFE4E9 !important;
+  border-color: rgb(var(--c-line)) !important;
 }
 
 .light-theme .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]),
 .light-theme .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #EAEEF1 !important;
+  border-color: rgb(var(--c-line-soft)) !important;
 }
 
 .light-theme .hover\:bg-slate-800\/40:hover,
 .light-theme .hover\:bg-slate-800:hover,
 .light-theme .hover\:bg-slate-900\/60:hover {
-  background-color: #F4F6F8 !important;
+  background-color: rgb(var(--c-subtle)) !important;
 }
 
-.light-theme th.text-slate-400 { color: #6B7885 !important; }
+.light-theme th.text-slate-400 { color: rgb(var(--c-ink-3)) !important; }
+
+/* In the night theme those same pages would otherwise print near-black text on
+   a near-black panel, so the legacy ink classes are remapped as well. */
+[data-theme='dark'] .light-theme .text-slate-900,
+[data-theme='dark'] .light-theme .text-slate-800,
+[data-theme='dark'] .light-theme .text-black {
+  color: rgb(var(--c-ink)) !important;
+}
+
+[data-theme='dark'] .light-theme .text-slate-700,
+[data-theme='dark'] .light-theme .text-slate-600 {
+  color: rgb(var(--c-ink-2)) !important;
+}
+
+[data-theme='dark'] .light-theme .text-slate-500,
+[data-theme='dark'] .light-theme .text-slate-400 {
+  color: rgb(var(--c-ink-3)) !important;
+}
+
+[data-theme='dark'] .light-theme .bg-white,
+[data-theme='dark'] .light-theme .bg-slate-50,
+[data-theme='dark'] .light-theme .bg-slate-100 {
+  background-color: rgb(var(--c-surface)) !important;
+}
+
+[data-theme='dark'] .light-theme .border-slate-200,
+[data-theme='dark'] .light-theme .border-slate-300,
+[data-theme='dark'] .light-theme .border-slate-100 {
+  border-color: rgb(var(--c-line)) !important;
+}
 
 /* Clinical print engine — A4 sheets for the register, patient record,
-   receipt and shift audit. */
+   receipt and shift audit. Paper is always the day palette; a night-shift
+   export must not come out of the printer as a black rectangle. */
 @media print {
   @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
+
+  :root, [data-theme='dark'], [data-theme='light'] {
+    color-scheme: light;
+    --c-canvas: 255 255 255;
+    --c-surface: 255 255 255;
+    --c-subtle: 247 249 250;
+    --c-line: 223 228 233;
+    --c-line-soft: 234 238 241;
+    --c-line-strong: 196 204 212;
+    --c-ink: 16 23 32;
+    --c-ink-2: 72 84 95;
+    --c-ink-3: 107 120 133;
+    --c-critical: 179 18 31;
+    --c-warn: 161 92 7;
+    --c-ok: 11 110 79;
+    --c-info: 27 79 160;
+  }
 
   html, body {
     background: #ffffff !important;
@@ -302,4 +507,157 @@
   .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
   .page-break-before { page-break-before: always !important; break-before: page !important; }
   .page-break-after { page-break-after: always !important; break-after: page !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Accent.
+
+   The accent carries the facility's identity: the active navigation item, the
+   primary button, the header band. It is deliberately kept off every panel
+   that reports a clinical figure, so a green accent can never be misread as a
+   green "within range" reading. Lloyds red is the default.
+   --------------------------------------------------------------------------- */
+
+[data-accent='ocean'] {
+  --c-primary: 21 92 168;
+  --c-primary-hover: 17 76 141;
+  --c-primary-active: 13 60 112;
+  --c-brand: 21 92 168;
+  --c-brand-deep: 13 60 112;
+  --c-brand-wash: 238 244 251;
+}
+
+[data-theme='dark'][data-accent='ocean'] {
+  --c-primary: 42 118 204;
+  --c-primary-hover: 60 138 226;
+  --c-primary-active: 30 98 176;
+  --c-brand: 118 172 246;
+  --c-brand-deep: 42 118 204;
+  --c-brand-wash: 19 31 48;
+}
+
+[data-accent='teal'] {
+  --c-primary: 12 106 100;
+  --c-primary-hover: 9 88 83;
+  --c-primary-active: 7 71 67;
+  --c-brand: 12 106 100;
+  --c-brand-deep: 7 71 67;
+  --c-brand-wash: 237 247 246;
+}
+
+[data-theme='dark'][data-accent='teal'] {
+  --c-primary: 20 138 129;
+  --c-primary-hover: 27 160 149;
+  --c-primary-active: 16 115 107;
+  --c-brand: 82 200 188;
+  --c-brand-deep: 20 138 129;
+  --c-brand-wash: 14 37 36;
+}
+
+[data-accent='graphite'] {
+  --c-primary: 51 65 82;
+  --c-primary-hover: 39 51 65;
+  --c-primary-active: 30 40 51;
+  --c-brand: 51 65 82;
+  --c-brand-deep: 30 40 51;
+  --c-brand-wash: 241 244 247;
+}
+
+[data-theme='dark'][data-accent='graphite'] {
+  --c-primary: 84 100 119;
+  --c-primary-hover: 102 119 139;
+  --c-primary-active: 68 82 99;
+  --c-brand: 160 175 192;
+  --c-brand-deep: 84 100 119;
+  --c-brand-wash: 30 38 47;
+}
+
+/* ---------------------------------------------------------------------------
+   Surface treatment and motion.
+   --------------------------------------------------------------------------- */
+
+.panel {
+  box-shadow: var(--shadow-panel);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+/* The identity band. One quiet wash of the accent behind the facility name and
+   the primary navigation header, and nowhere near a clinical figure. */
+.identity-band {
+  background-image:
+    linear-gradient(180deg, rgb(var(--c-brand) / 0.09), rgb(var(--c-brand) / 0) 78%),
+    linear-gradient(90deg, rgb(var(--c-brand) / 0.06), rgb(var(--c-brand) / 0) 55%);
+}
+
+.identity-rule {
+  height: 2px;
+  background-image: linear-gradient(90deg,
+    rgb(var(--c-brand)) 0%,
+    rgb(var(--c-brand) / 0.35) 32%,
+    rgb(var(--c-brand) / 0) 72%);
+}
+
+/* Tinted icon chip. The tint names a department; it never reports a state. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgb(var(--chip) / 0.28);
+  background: rgb(var(--chip) / var(--t-wash));
+  color: rgb(var(--chip));
+  flex: none;
+}
+
+.chip-1 { --chip: var(--t-1); }
+.chip-2 { --chip: var(--t-2); }
+.chip-3 { --chip: var(--t-3); }
+.chip-4 { --chip: var(--t-4); }
+.chip-5 { --chip: var(--t-5); }
+.chip-6 { --chip: var(--t-6); }
+.chip-brand { --chip: var(--c-brand); }
+.chip-ok { --chip: var(--c-ok); }
+.chip-warn { --chip: var(--c-warn); }
+.chip-critical { --chip: var(--c-critical); }
+.chip-info { --chip: var(--c-info); }
+
+/* A metric cell lifts very slightly on hover so it reads as pressable without
+   the whole board floating. */
+.metric-cell {
+  position: relative;
+  transition: background-color 140ms ease;
+}
+
+.metric-cell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgb(var(--chip, var(--c-brand)));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.metric-cell:hover::after { transform: scaleX(1); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.enter { animation: rise 220ms ease-out both; }
+.enter-1 { animation-delay: 30ms; }
+.enter-2 { animation-delay: 60ms; }
+.enter-3 { animation-delay: 90ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter { animation: none; }
+  .metric-cell::after { transition: none; }
+  .panel { transition: none; }
+  * { scroll-behavior: auto !important; }
 }
