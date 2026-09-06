@@ -60,7 +60,10 @@ router.post('/', async (req, res) => {
       discount,
       paid_amount,
       payment_method,
-      pharmacist_notes
+      pharmacist_notes,
+      dispensed_by_user_id,
+      dispensed_by_name,
+      dispensed_by_role
     } = req.body;
 
     if (!patient_name || !items || !Array.isArray(items) || items.length === 0) {
@@ -116,8 +119,9 @@ router.post('/', async (req, res) => {
     const dispResult = await runQuery(`
       INSERT INTO dispensations (
         invoice_number, patient_id, visit_id, patient_name, total_amount, discount,
-        paid_amount, payment_method, payment_status, pharmacist_notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?)
+        paid_amount, payment_method, payment_status, pharmacist_notes,
+        dispensed_by_user_id, dispensed_by_name, dispensed_by_role
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?)
     `, [
       invoice_number,
       patient_id || null,
@@ -127,7 +131,10 @@ router.post('/', async (req, res) => {
       discountVal,
       paidVal,
       payment_method || 'Cash (Kina)',
-      pharmacist_notes || ''
+      pharmacist_notes || '',
+      dispensed_by_user_id || null,
+      dispensed_by_name || null,
+      dispensed_by_role || null
     ]);
 
     const dispensationId = dispResult.lastID;
@@ -160,6 +167,24 @@ router.post('/', async (req, res) => {
         UPDATE visits SET status = 'Completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?
       `, [visit_id]);
     }
+
+    // Record the movement in the tamper-evident audit trail. Discounted or
+    // unpaid transactions are raised to Warning so they surface at shift close.
+    const itemSummary = preparedItems
+      .map((i) => `${i.drug_name} x${i.quantity}`)
+      .join(', ');
+
+    await runQuery(`
+      INSERT INTO activity_logs (
+        action_type, user_name, user_role, patient_name, location, details, severity
+      ) VALUES ('Medication Dispensed', ?, ?, ?, 'Pharmacy Counter', ?, ?)
+    `, [
+      dispensed_by_name || 'Unattributed',
+      dispensed_by_role || 'Pharmacy',
+      patient_name.trim(),
+      `${invoice_number}: ${itemSummary}. Gross ${finalTotal.toFixed(2)}, discount ${discountVal.toFixed(2)}, collected ${paidVal.toFixed(2)}.`,
+      (discountVal > 0 || paidVal === 0) ? 'Warning' : 'Success'
+    ]);
 
     const fullInvoice = await getQuery('SELECT * FROM dispensations WHERE id = ?', [dispensationId]);
     const settings = await getQuery('SELECT * FROM hospital_settings LIMIT 1');
