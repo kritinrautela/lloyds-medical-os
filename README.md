@@ -24,42 +24,44 @@ Most modern hospital software requires constant high-speed internet, cloud subsc
 
 ---
 
-## 🚀 Quick Start
+## ⚡ Quick Start: 3 Easy Steps
 
-You can get the entire system running in less than 60 seconds.
+Running Lloyds Medical OS on any computer takes **less than 60 seconds** with **zero configuration**:
 
-### Option 1: 1-Click Launch (No coding required)
+### 1️⃣ Step 1: Get the Folder
+- **Direct Download (Easiest):** Click the green **Code** button at the top of this GitHub page and select **[Download ZIP](https://github.com/kritinrautela/lloyds-medical-os/archive/refs/heads/main.zip)**, then unzip it on your computer.
+- **Or via Git:**
+  ```bash
+  git clone https://github.com/kritinrautela/lloyds-medical-os.git
+  cd lloyds-medical-os
+  ```
 
-If you downloaded the folder or are running from a USB drive:
+### 2️⃣ Step 2: Double-Click the Launcher
+Open the folder and simply double-click the file for your computer:
+- **On Windows:** `Start_Hospital_Windows.bat`
+- **On Mac:** `Start_Hospital_Mac.command`
 
-- **Windows:** Double-click `Start_Hospital_Windows.bat`
-- **Mac:** Double-click `Start_Hospital_Mac.command`
+> 💡 **Everything is Automatic:** You do not need to install anything beforehand. If your computer doesn't have Node.js or packages installed, the launcher automatically downloads and sets up everything in the background! It also creates a **"Lloyds Medical OS"** shortcut on your Desktop so you can launch it with 1 click anytime.
 
-> 💡 **Zero Setup Required:** If Node.js or packages are missing on a new computer, the launcher automatically downloads and sets up everything in the background, creates a desktop shortcut (`Lloyds Medical OS`), and opens the browser for you!
+### 3️⃣ Step 3: Log In & Use
+Your web browser will pop open automatically to:  
+👉 **`http://localhost:4000`**
 
-Your web browser will open automatically to **`http://localhost:4000`**.
+Log in using:
+- **Username:** `admin` (or `doctor`, `triage_officer`, `pharmacist`)
+- **Password:** `lloyds2026`
+
+That's it! You are ready to manage patient check-in, triage, doctor consultations, and pharmacy sales completely offline.
 
 ---
 
-### Option 2: Run with Terminal (For Developers)
-
-Make sure you have [Node.js](https://nodejs.org/) (v18+) installed:
-
+### 💻 Developer Option (Terminal)
+If you prefer using the terminal:
 ```bash
-# 1. Clone the repository
-git clone https://github.com/kritinrautela/lloyds-medical-os.git
-cd lloyds-medical-os
-
-# 2. Install all dependencies (Backend + Frontend)
-npm run setup
-
-# 3. Start the application
-npm start
+npm run setup    # One-click install for server & client
+npm start        # Launches production server on http://localhost:4000
+# or for active development: npm run dev
 ```
-
-Open **`http://localhost:4000`** in your browser.
-
-> **Tip for Developers:** To run with hot-reload during coding, use `npm run dev`.
 
 ---
 
