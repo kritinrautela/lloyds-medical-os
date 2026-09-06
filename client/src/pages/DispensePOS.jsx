@@ -197,11 +197,11 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
     <div className="space-y-6 animate-fadeIn">
       {/* Header Bar */}
       <div>
-        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-cyan-400" />
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <ShoppingCart className="w-5 h-5 text-cyan-600" />
           <span>Pharmacy Dispensing Counter (POS)</span>
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500 mt-0.5">
           Select patient, prescribe formulary medications, auto-decrement stock, and produce official printed receipts.
         </p>
       </div>
@@ -212,15 +212,15 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
         <div className="lg:col-span-2 space-y-6">
           
           {/* Patient Selection Card */}
-          <div className="glass-panel p-5 rounded-3xl space-y-4">
-            <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-cyan-700 uppercase tracking-wider flex items-center gap-2">
               <User className="w-4 h-4" />
               <span>1. Patient Assignment</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] text-slate-300 mb-1">Select Existing Registered Patient</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Select Existing Registered Patient</label>
                 <select
                   value={selectedPatientId}
                   onChange={(e) => {
@@ -229,7 +229,7 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
                     const match = patients.find(p => p.id === parseInt(id, 10));
                     if (match) setManualPatientName(match.full_name);
                   }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 >
                   <option value="">-- Choose Patient from Database --</option>
                   {patients.map((p) => (
@@ -241,28 +241,28 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-300 mb-1">Or Direct Outpatient Name</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Or Direct Outpatient Name</label>
                 <input
                   type="text"
                   placeholder="Enter patient name if unregistered..."
                   value={manualPatientName}
                   onChange={(e) => setManualPatientName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 />
               </div>
             </div>
 
             {selectedPatientId && (
-              <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-cyan-50/80 border border-cyan-200 text-xs flex items-center justify-between">
                 <div>
-                  <span className="text-cyan-300 font-bold">{manualPatientName}</span>
-                  <span className="text-slate-400 ml-2">
+                  <span className="text-cyan-900 font-bold">{manualPatientName}</span>
+                  <span className="text-slate-600 ml-2">
                     {patients.find(p => p.id === parseInt(selectedPatientId, 10))?.allergies ? 
                       `Allergies: ${patients.find(p => p.id === parseInt(selectedPatientId, 10)).allergies}` : 'No known allergies'}
                   </span>
                 </div>
                 {visitId && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 font-mono font-bold">
                     Linked to OPD Visit #{visitId}
                   </span>
                 )}
@@ -271,19 +271,19 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
           </div>
 
           {/* Medication Selector Card */}
-          <div className="glass-panel p-5 rounded-3xl space-y-4">
-            <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-cyan-700 uppercase tracking-wider flex items-center gap-2">
               <Plus className="w-4 h-4" />
               <span>2. Add Medication to Dispense</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-[11px] text-slate-300 mb-1">Medication from Formulary *</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Medication from Formulary *</label>
                 <select
                   value={selectedDrugId}
                   onChange={(e) => setSelectedDrugId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 >
                   <option value="">-- Select Medication --</option>
                   {drugs.map((d) => (
@@ -295,14 +295,14 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-300 mb-1">Quantity *</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Quantity *</label>
                 <input
                   type="number"
                   min="1"
                   max={activeDrug ? activeDrug.stock_quantity : 999}
                   value={qty}
                   onChange={(e) => setQty(parseInt(e.target.value, 10) || 1)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono font-bold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono font-bold"
                 />
               </div>
 
@@ -310,42 +310,42 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full py-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all"
+                  className="w-full py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
                 >
                   Add to Cart
                 </button>
               </div>
 
               <div className="sm:col-span-4">
-                <label className="block text-[11px] text-slate-300 mb-1">Dosage Schedule / Patient Instructions</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Dosage Schedule / Patient Instructions</label>
                 <input
                   type="text"
                   placeholder="e.g. 1 tablet twice daily after meals for 3 days / 2 puffs inhaled when breathless"
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 />
               </div>
             </div>
 
             {activeDrug && (
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs flex items-center justify-between">
-                <span className="text-slate-400">Available Batch: <strong className="text-slate-200">{activeDrug.batch_number || 'N/A'}</strong> (Exp: {activeDrug.expiry_date})</span>
-                <span className="font-mono text-cyan-400">Unit Price: {currency} {activeDrug.unit_price.toFixed(2)}</span>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                <span className="text-slate-600">Available Batch: <strong className="text-slate-900">{activeDrug.batch_number || 'N/A'}</strong> (Exp: {activeDrug.expiry_date})</span>
+                <span className="font-mono text-cyan-700 font-bold">Unit Price: {currency} {activeDrug.unit_price.toFixed(2)}</span>
               </div>
             )}
           </div>
 
           {/* Cart Items Table */}
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-            <div className="px-5 py-3 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+          <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm">
+            <div className="px-5 py-3 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Dispensation Cart ({cart.length} Item{cart.length !== 1 ? 's' : ''})
               </span>
               {cart.length > 0 && (
                 <button
                   onClick={() => setCart([])}
-                  className="text-[11px] text-red-400 hover:text-red-300 font-semibold"
+                  className="text-[11px] text-red-600 hover:text-red-700 font-semibold cursor-pointer"
                 >
                   Clear All
                 </button>
@@ -355,7 +355,7 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
+                  <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-600 font-bold uppercase text-[10px]">
                     <th className="py-2.5 px-4">Item & Instructions</th>
                     <th className="py-2.5 px-4 text-center">Qty</th>
                     <th className="py-2.5 px-4 text-right">Price</th>
@@ -363,33 +363,33 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
                     <th className="py-2.5 px-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {cart.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="py-8 text-center text-slate-500 italic">
+                      <td colSpan="5" className="py-8 text-center text-slate-400 italic">
                         No medications added to cart yet. Select a drug above.
                       </td>
                     </tr>
                   ) : (
                     cart.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/30">
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4">
-                          <div className="font-bold text-white text-sm">{item.name}</div>
-                          <div className="text-[10px] text-cyan-400 font-mono">{item.instructions}</div>
+                          <div className="font-bold text-slate-900 text-sm">{item.name}</div>
+                          <div className="text-[10px] text-cyan-700 font-mono font-medium">{item.instructions}</div>
                         </td>
-                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-200">
+                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
                           {item.quantity}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono text-slate-300">
+                        <td className="py-3 px-4 text-right font-mono text-slate-600">
                           {currency} {item.unit_price.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">
+                        <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">
                           {currency} {item.subtotal.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => removeFromCart(idx)}
-                            className="p-1 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -405,33 +405,33 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
         </div>
 
         {/* Right 1 Col: Billing & Checkout Summary */}
-        <div className="glass-panel p-6 rounded-3xl h-fit space-y-5 border border-cyan-500/20">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-800">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+        <div className="bg-white p-6 rounded-3xl h-fit space-y-5 border border-slate-200/90 shadow-md">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-200">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
             <span>Financial & Billing Breakdown</span>
           </h3>
 
           <div className="space-y-2.5 text-xs">
-            <div className="flex items-center justify-between text-slate-300">
-              <span>Items Total:</span>
-              <span className="font-mono font-semibold">{currency} {subtotal.toFixed(2)}</span>
+            <div className="flex items-center justify-between text-slate-600">
+              <span className="font-medium">Items Total:</span>
+              <span className="font-mono font-semibold text-slate-900">{currency} {subtotal.toFixed(2)}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-slate-300">Discount ({currency}):</span>
+              <span className="text-slate-600 font-medium">Discount ({currency}):</span>
               <input
                 type="number"
                 min="0"
                 step="0.5"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-right text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-right text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 font-mono font-semibold"
               />
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-base font-bold text-white">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-base font-bold text-slate-900">
               <span>Grand Total ({settings?.currency_code || 'PGK'}):</span>
-              <span className="text-xl font-mono text-emerald-400">
+              <span className="text-xl font-mono text-emerald-600 font-bold">
                 {currency} {finalTotal.toFixed(2)}
               </span>
             </div>
@@ -439,11 +439,11 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
 
           {/* Payment Method */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Payment Method</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Payment Method</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             >
               <option value="Cash (Kina)">Cash (Kina - PGK)</option>
               <option value="Card / EFTPOS">Card / EFTPOS</option>
@@ -454,13 +454,13 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Dispensing Officer Notes</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Dispensing Officer Notes</label>
             <textarea
               rows="2"
               placeholder="e.g. Advised to return if fever persists past 3 days..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
@@ -468,10 +468,10 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
           <button
             onClick={handleCompleteDispense}
             disabled={cart.length === 0}
-            className={`w-full py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
+            className={`w-full py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all ${
               cart.length === 0
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 hover:scale-[1.02] active:scale-95 shadow-cyan-500/25'
+                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white hover:scale-[1.02] active:scale-95 shadow-cyan-500/20 cursor-pointer'
             }`}
           >
             <Printer className="w-4 h-4" />

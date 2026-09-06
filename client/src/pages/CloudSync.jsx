@@ -144,11 +144,11 @@ export default function CloudSync({ settings, isOnline }) {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-display font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <Cloud className="w-5 h-5 text-cyan-600" />
             <span>Google Account & Cloud Sheets Auto-Sync Engine</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 mt-0.5">
             Replicates local SQLite medical databases to Google Drive & Google Sheets with pre-generated formula calculation models.
           </p>
         </div>
@@ -156,7 +156,7 @@ export default function CloudSync({ settings, isOnline }) {
         <div className="flex items-center gap-2.5">
           <button
             onClick={openGoogleSheetDirect}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-emerald-700 border border-emerald-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
           >
             <span>Open Google Sheet</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -164,7 +164,7 @@ export default function CloudSync({ settings, isOnline }) {
           <button
             onClick={handleTriggerSync}
             disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-400 text-slate-950 font-display font-extrabold text-xs shadow-glow-cyan hover:scale-[1.02] active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
             <span>{syncing ? 'Syncing with Google Cloud...' : 'Sync to Google Sheets Now'}</span>
@@ -174,32 +174,32 @@ export default function CloudSync({ settings, isOnline }) {
 
       {/* Sync Step Progress Overlay (if syncing) */}
       {syncing && (
-        <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-2 animate-pulse">
-          <div className="flex items-center justify-between text-xs font-bold text-cyan-300">
+        <div className="p-4 rounded-2xl bg-cyan-50 border border-cyan-200 space-y-2 animate-pulse">
+          <div className="flex items-center justify-between text-xs font-bold text-cyan-900">
             <span>Google Cloud Sync in Progress...</span>
             <span>Step {syncStep} of 4</span>
           </div>
-          <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-teal-400 to-cyan-400 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-300"
               style={{ width: `${(syncStep / 4) * 100}%` }}
             />
           </div>
-          <div className="text-[11px] text-slate-400 flex justify-between font-mono">
-            <span className={syncStep >= 1 ? 'text-cyan-300 font-bold' : ''}>1. SQLite Snapshot</span>
-            <span className={syncStep >= 2 ? 'text-cyan-300 font-bold' : ''}>2. Google Token Auth</span>
-            <span className={syncStep >= 3 ? 'text-cyan-300 font-bold' : ''}>3. Inject Sheet Formulas</span>
-            <span className={syncStep >= 4 ? 'text-cyan-300 font-bold' : ''}>4. Completed</span>
+          <div className="text-[11px] text-slate-500 flex justify-between font-mono">
+            <span className={syncStep >= 1 ? 'text-cyan-700 font-bold' : ''}>1. SQLite Snapshot</span>
+            <span className={syncStep >= 2 ? 'text-cyan-700 font-bold' : ''}>2. Google Token Auth</span>
+            <span className={syncStep >= 3 ? 'text-cyan-700 font-bold' : ''}>3. Inject Sheet Formulas</span>
+            <span className={syncStep >= 4 ? 'text-cyan-700 font-bold' : ''}>4. Completed</span>
           </div>
         </div>
       )}
 
       {/* Google Account Connection Card */}
-      <div className="glass-panel p-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-r from-[#071326] to-[#0A1B35]">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             {/* Google Logo Avatar */}
-            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-lg shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shadow-xs shrink-0">
               <svg className="w-6 h-6" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                 <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
@@ -210,18 +210,18 @@ export default function CloudSync({ settings, isOnline }) {
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-display font-extrabold text-white text-base">
+                <h3 className="font-bold text-slate-900 text-base">
                   Google Workspace & Drive Integration
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   CONNECTED
                 </span>
               </div>
-              <p className="text-xs text-slate-300 font-mono mt-0.5">
+              <p className="text-xs text-slate-600 font-mono mt-0.5">
                 {config?.google_account_email || 'Not connected yet'}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Drive Backup Directory: <code className="text-cyan-400 font-mono">/Lloyds_Healthcare_PNG_Backups/</code>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Drive Backup Directory: <code className="text-cyan-800 bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200 font-mono">/Lloyds_Healthcare_PNG_Backups/</code>
               </p>
             </div>
           </div>
@@ -229,7 +229,7 @@ export default function CloudSync({ settings, isOnline }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsSignInModalOpen(true)}
-              className="px-4 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-display font-bold text-xs shadow-md transition-all flex items-center gap-2"
+              className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs shadow-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <span>Switch Google Account</span>
             </button>
@@ -238,18 +238,18 @@ export default function CloudSync({ settings, isOnline }) {
       </div>
 
       {/* Pre-Generated Formula Engine Architecture Showcase */}
-      <div className="glass-panel p-6 rounded-3xl space-y-4 border border-cyan-500/20">
-        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+      <div className="bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-cyan-600" />
               <span>Pre-Generated Google Sheets Mathematical Formulas</span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 mt-0.5">
               When synced, the Google Sheet is automatically structured with live formulas so totals calculate natively inside Google Docs.
             </p>
           </div>
-          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200">
             Active Formula Engine
           </span>
         </div>
@@ -293,16 +293,16 @@ export default function CloudSync({ settings, isOnline }) {
               desc: 'Audits total units of pharmaceuticals dispensed.'
             }
           ].map((item, idx) => (
-            <div key={idx} className="p-3.5 rounded-2xl bg-slate-900/70 border border-white/[0.06] text-xs space-y-1">
-              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 font-display">
+            <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-1">
+              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-500">
                 <span>{item.sheet}</span>
-                <span className="text-emerald-400">FORMULA</span>
+                <span className="text-emerald-700">FORMULA</span>
               </div>
-              <div className="font-semibold text-white">{item.label}</div>
-              <div className="p-1.5 rounded-lg bg-slate-950 font-mono text-[11px] text-cyan-300 select-all overflow-x-auto">
+              <div className="font-bold text-slate-900">{item.label}</div>
+              <div className="p-1.5 rounded-lg bg-white border border-slate-200 font-mono text-[11px] text-cyan-800 select-all overflow-x-auto shadow-2xs">
                 {item.formula}
               </div>
-              <p className="text-[10px] text-slate-400 leading-normal">{item.desc}</p>
+              <p className="text-[10px] text-slate-500 leading-normal">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -312,14 +312,14 @@ export default function CloudSync({ settings, isOnline }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2 Cols: Target Spreadsheet ID & Automation */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-3xl space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-            <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
-              <Link className="w-4 h-4 text-cyan-400" />
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Link className="w-4 h-4 text-cyan-600" />
               <span>Google Sheet Target & Background Triggers</span>
             </h3>
             {isSaved && (
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Saved!
               </span>
             )}
@@ -327,7 +327,7 @@ export default function CloudSync({ settings, isOnline }) {
 
           <form onSubmit={handleSaveConfig} className="space-y-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1">
                 Target Google Spreadsheet ID (or Google Drive Folder ID)
               </label>
               <input
@@ -335,15 +335,15 @@ export default function CloudSync({ settings, isOnline }) {
                 value={googleSheetId}
                 onChange={(e) => setGoogleSheetId(e.target.value)}
                 placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
+              <p className="text-[10px] text-slate-500 mt-1">
                 Spreadsheet will receive patient logs, OPD visits, and inventory sheets with pre-generated formulas.
               </p>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1">
                 Google Apps Script Webhook Endpoint (Optional Direct Append)
               </label>
               <input
@@ -351,15 +351,15 @@ export default function CloudSync({ settings, isOnline }) {
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
                 placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono"
               />
             </div>
 
             {/* Auto-Sync on Wi-Fi Toggle */}
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-white/[0.06] flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
               <div>
-                <span className="font-bold text-white text-xs">Auto-Sync to Google Drive when Wi-Fi connects</span>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <span className="font-bold text-slate-900 text-xs">Auto-Sync to Google Drive when Wi-Fi connects</span>
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   Whenever clinic PC reconnects to Wi-Fi, pending shift records automatically flush to Google Cloud.
                 </p>
               </div>
@@ -367,14 +367,14 @@ export default function CloudSync({ settings, isOnline }) {
                 type="checkbox"
                 checked={autoSyncOnWifi}
                 onChange={(e) => setAutoSyncOnWifi(e.target.checked)}
-                className="w-4 h-4 accent-cyan-500 cursor-pointer"
+                className="w-4 h-4 accent-cyan-600 cursor-pointer"
               />
             </div>
 
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-display font-extrabold text-xs shadow-glow-cyan"
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer active:scale-95 transition-all"
               >
                 Save Cloud Configuration
               </button>
@@ -383,34 +383,34 @@ export default function CloudSync({ settings, isOnline }) {
         </div>
 
         {/* Right 1 Col: Air-Gapped USB Buffer Status */}
-        <div className="glass-panel p-6 rounded-3xl h-fit space-y-4 border border-cyan-500/20">
-          <h3 className="text-sm font-display font-bold text-white flex items-center gap-2 pb-2 border-b border-white/[0.06]">
-            <FolderSync className="w-4 h-4 text-cyan-400" />
+        <div className="bg-white p-6 rounded-3xl h-fit space-y-4 border border-slate-200/90 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+            <FolderSync className="w-4 h-4 text-cyan-600" />
             <span>Air-Gapped Pen Drive Buffer</span>
           </h3>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed">
             In remote Papua New Guinea aid posts with zero Wi-Fi, changes accumulate securely in the local SQLite transaction buffer.
           </p>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-400">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+            <div className="flex justify-between text-slate-600">
               <span>Today's Visits in Buffer:</span>
-              <strong className="text-cyan-400 font-mono">{syncState?.buffer?.today_visits_queued || 0}</strong>
+              <strong className="text-cyan-700 font-mono">{syncState?.buffer?.today_visits_queued || 0}</strong>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-slate-600">
               <span>Today's Sales in Buffer:</span>
-              <strong className="text-emerald-400 font-mono">{syncState?.buffer?.today_sales_queued || 0}</strong>
+              <strong className="text-emerald-700 font-mono">{syncState?.buffer?.today_sales_queued || 0}</strong>
             </div>
-            <div className="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
+            <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200">
               <span>Buffer Integrity:</span>
-              <span className="text-emerald-400 font-semibold font-mono">100% OK</span>
+              <span className="text-emerald-700 font-bold font-mono">100% OK</span>
             </div>
           </div>
 
           <button
             onClick={downloadOfflinePacket}
-            className="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export Offline Cloud Bundle (.json)</span>
@@ -420,12 +420,12 @@ export default function CloudSync({ settings, isOnline }) {
       </div>
 
       {/* Sync Activity Log */}
-      <div className="glass-panel p-6 rounded-3xl space-y-3">
-        <h3 className="text-sm font-display font-bold text-white">Google Cloud Sync Audit Trail</h3>
+      <div className="bg-white p-6 rounded-3xl space-y-3 border border-slate-200/90 shadow-sm">
+        <h3 className="text-sm font-bold text-slate-900">Google Cloud Sync Audit Trail</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs font-mono">
             <thead>
-              <tr className="border-b border-white/[0.06] text-slate-400 uppercase text-[10px]">
+              <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
                 <th className="py-2.5 px-3">Timestamp</th>
                 <th className="py-2.5 px-3">Operation</th>
                 <th className="py-2.5 px-3">Payload Size</th>
@@ -433,25 +433,25 @@ export default function CloudSync({ settings, isOnline }) {
                 <th className="py-2.5 px-3 font-sans">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {syncState?.recent_logs?.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-4 text-center text-slate-500 italic font-sans">No sync logs recorded yet.</td>
+                  <td colSpan="5" className="py-4 text-center text-slate-400 italic font-sans">No sync logs recorded yet.</td>
                 </tr>
               ) : (
                 syncState?.recent_logs?.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-800/30">
-                    <td className="py-2.5 px-3 text-slate-400">{new Date(log.synced_at).toLocaleString()}</td>
-                    <td className="py-2.5 px-3 text-cyan-300">{log.sync_type}</td>
-                    <td className="py-2.5 px-3 text-white font-bold">{log.records_count} records</td>
+                  <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-2.5 px-3 text-slate-600">{new Date(log.synced_at).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-cyan-800 font-bold">{log.sync_type}</td>
+                    <td className="py-2.5 px-3 text-slate-900 font-bold">{log.records_count} records</td>
                     <td className="py-2.5 px-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-sans font-bold ${
-                        log.status === 'Success' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        log.status === 'Success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}>
                         {log.status}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-sans text-slate-300 text-[11px] truncate max-w-sm">{log.message}</td>
+                    <td className="py-2.5 px-3 font-sans text-slate-600 text-[11px] truncate max-w-sm">{log.message}</td>
                   </tr>
                 ))
               )}
@@ -462,10 +462,10 @@ export default function CloudSync({ settings, isOnline }) {
 
       {/* Google Account Sign-In Modal */}
       {isSignInModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-md bg-[#0F2744] border border-cyan-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 animate-scaleIn">
-            <div className="text-center pb-4 border-b border-slate-700">
-              <div className="w-12 h-12 rounded-2xl bg-white mx-auto flex items-center justify-center shadow-md mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fadeIn">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden p-6 animate-scaleIn">
+            <div className="text-center pb-4 border-b border-slate-100">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center shadow-xs mb-2">
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                   <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
@@ -473,30 +473,30 @@ export default function CloudSync({ settings, isOnline }) {
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                 </svg>
               </div>
-              <h3 className="text-base font-display font-bold text-white">Sign in with Google</h3>
-              <p className="text-xs text-slate-400">Authorize Google Drive & Sheets automatic clinical sync</p>
+              <h3 className="text-base font-bold text-slate-900">Sign in with Google</h3>
+              <p className="text-xs text-slate-500">Authorize Google Drive & Sheets automatic clinical sync</p>
             </div>
 
             <form onSubmit={handleGoogleSignIn} className="mt-4 space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Staff / Facility Google Email *</label>
+                <label className="block font-semibold text-slate-700 mb-1">Staff / Facility Google Email *</label>
                 <input
                   type="email"
                   required
                   value={customGoogleEmail}
                   onChange={(e) => setCustomGoogleEmail(e.target.value)}
                   placeholder="e.g. clinic.admin@lloydshealth.org.pg"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Staff Member Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">Staff Member Name</label>
                 <input
                   type="text"
                   value={customGoogleName}
                   onChange={(e) => setCustomGoogleName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500"
                 />
               </div>
 
@@ -504,13 +504,13 @@ export default function CloudSync({ settings, isOnline }) {
                 <button
                   type="button"
                   onClick={() => setIsSignInModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-display font-extrabold shadow-md flex items-center gap-2"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold shadow-md cursor-pointer flex items-center gap-2"
                 >
                   <span>Authorize Google Account</span>
                 </button>

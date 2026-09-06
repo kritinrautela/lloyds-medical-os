@@ -76,17 +76,17 @@ export default function Settings({ settings, onUpdateSettings }) {
       {/* Header Bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <SettingsIcon className="w-5 h-5 text-cyan-600" />
             <span>Hospital Profile & Clinic Configuration</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 mt-0.5">
             Customize clinic identification, official receipt headers, and default export credentials.
           </p>
         </div>
 
         {isSaved && (
-          <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+          <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
             <CheckCircle2 className="w-4 h-4" />
             <span>Settings Saved!</span>
           </span>
@@ -95,172 +95,172 @@ export default function Settings({ settings, onUpdateSettings }) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Hospital Branding & Identity */}
-        <div className="glass-panel p-6 rounded-3xl space-y-4 border border-slate-800">
-          <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-800">
-            <Building2 className="w-4 h-4" />
+        <div className="bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
+          <h3 className="text-xs font-bold text-cyan-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+            <Building2 className="w-4 h-4 text-cyan-600" />
             <span>Hospital Identification & Header</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Hospital / Clinic Official Name *</label>
+              <label className="block font-semibold text-slate-700 mb-1">Hospital / Clinic Official Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-semibold text-sm"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-semibold text-sm transition-all"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Tagline / Mission</label>
+              <label className="block font-semibold text-slate-700 mb-1">Tagline / Mission</label>
               <input
                 type="text"
                 value={formData.tagline}
                 onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Doctor in Charge *</label>
+              <label className="block font-semibold text-slate-700 mb-1">Doctor in Charge *</label>
               <input
                 type="text"
                 required
                 value={formData.doctor_in_charge}
                 onChange={(e) => setFormData({ ...formData, doctor_in_charge: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Health Department Registration / License #</label>
+              <label className="block font-semibold text-slate-700 mb-1">Health Department Registration / License #</label>
               <input
                 type="text"
                 value={formData.reg_number}
                 onChange={(e) => setFormData({ ...formData, reg_number: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono transition-all"
               />
             </div>
           </div>
         </div>
 
         {/* Location & Contact Info */}
-        <div className="glass-panel p-6 rounded-3xl space-y-4 border border-slate-800">
-          <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-800">
-            <MapPin className="w-4 h-4" />
+        <div className="bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
+          <h3 className="text-xs font-bold text-cyan-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+            <MapPin className="w-4 h-4 text-cyan-600" />
             <span>Location & Contact Details (Papua New Guinea)</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Province</label>
+              <label className="block font-semibold text-slate-700 mb-1">Province</label>
               <input
                 type="text"
                 value={formData.province}
                 onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">District / Sub-district</label>
+              <label className="block font-semibold text-slate-700 mb-1">District / Sub-district</label>
               <input
                 type="text"
                 value={formData.district}
                 onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Country</label>
+              <label className="block font-semibold text-slate-700 mb-1">Country</label>
               <input
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div className="sm:col-span-3">
-              <label className="block font-semibold text-slate-300 mb-1">Physical Address / Facility Location</label>
+              <label className="block font-semibold text-slate-700 mb-1">Physical Address / Facility Location</label>
               <input
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Phone Contact</label>
+              <label className="block font-semibold text-slate-700 mb-1">Phone Contact</label>
               <input
                 type="text"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono transition-all"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Email Address</label>
+              <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono transition-all"
               />
             </div>
           </div>
         </div>
 
         {/* Currency & Financial Formatting */}
-        <div className="glass-panel p-6 rounded-3xl space-y-4 border border-slate-800">
-          <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-800">
-            <DollarSign className="w-4 h-4" />
+        <div className="bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
+          <h3 className="text-xs font-bold text-cyan-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
+            <DollarSign className="w-4 h-4 text-cyan-600" />
             <span>Currency & Receipt Formatting</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Currency Symbol</label>
+              <label className="block font-semibold text-slate-700 mb-1">Currency Symbol</label>
               <input
                 type="text"
                 value={formData.currency_symbol}
                 onChange={(e) => setFormData({ ...formData, currency_symbol: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono font-bold transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Currency Code (ISO)</label>
+              <label className="block font-semibold text-slate-700 mb-1">Currency Code (ISO)</label>
               <input
                 type="text"
                 value={formData.currency_code}
                 onChange={(e) => setFormData({ ...formData, currency_code: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono transition-all"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Receipt Footer Message</label>
+              <label className="block font-semibold text-slate-700 mb-1">Receipt Footer Message</label>
               <input
                 type="text"
                 value={formData.receipt_footer}
                 onChange={(e) => setFormData({ ...formData, receipt_footer: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-300 mb-1">Default Password for Protected Excel Export</label>
+              <label className="block font-semibold text-slate-700 mb-1">Default Password for Protected Excel Export</label>
               <input
                 type="text"
                 value={formData.export_password}
                 onChange={(e) => setFormData({ ...formData, export_password: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 font-mono transition-all"
               />
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function Settings({ settings, onUpdateSettings }) {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 hover:scale-[1.02] active:scale-95 transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{loading ? 'Saving Settings...' : 'Save Hospital Configuration'}</span>

@@ -110,20 +110,20 @@ export default function HospitalSpatialMap({ stats, onSelectStation }) {
   };
 
   return (
-    <div className="bg-[#0B1528] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6 hud-panel">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-red-500" />
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-red-600" />
             <span>Interactive Hospital Spatial Concession Map (Markham Valley Facility)</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Click any station to inspect live clinical activities, assigned medical officers, and patient occupancy.
           </p>
         </div>
 
-        <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-emerald-400 flex items-center gap-2 self-start sm:self-auto">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center gap-2 self-start sm:self-auto shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           <span>LIVE SPATIAL TELEMETRY</span>
         </span>
       </div>
@@ -135,23 +135,23 @@ export default function HospitalSpatialMap({ stats, onSelectStation }) {
           const isSelected = activeZone === zone.id;
 
           const colorStyles = {
-            red: isSelected ? 'border-red-500 bg-red-950/40 shadow-lg shadow-red-950/40' : 'border-slate-800 bg-[#070D18] hover:border-red-500/50',
-            amber: isSelected ? 'border-amber-500 bg-amber-950/40 shadow-lg shadow-amber-950/40' : 'border-slate-800 bg-[#070D18] hover:border-amber-500/50',
-            emerald: isSelected ? 'border-emerald-500 bg-emerald-950/40 shadow-lg shadow-emerald-950/40' : 'border-slate-800 bg-[#070D18] hover:border-emerald-500/50',
-            cyan: isSelected ? 'border-cyan-500 bg-cyan-950/40 shadow-lg shadow-cyan-950/40' : 'border-slate-800 bg-[#070D18] hover:border-cyan-500/50',
-            purple: isSelected ? 'border-purple-500 bg-purple-950/40 shadow-lg shadow-purple-950/40' : 'border-slate-800 bg-[#070D18] hover:border-purple-500/50',
-            blue: isSelected ? 'border-blue-500 bg-blue-950/40 shadow-lg shadow-blue-950/40' : 'border-slate-800 bg-[#070D18] hover:border-blue-500/50',
-            rose: isSelected ? 'border-rose-500 bg-rose-950/40 shadow-lg shadow-rose-950/40' : 'border-slate-800 bg-[#070D18] hover:border-rose-500/50'
+            red: isSelected ? 'border-red-500 bg-red-50/80 shadow-md shadow-red-500/10 ring-2 ring-red-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-red-300 hover:bg-white',
+            amber: isSelected ? 'border-amber-500 bg-amber-50/80 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-amber-300 hover:bg-white',
+            emerald: isSelected ? 'border-emerald-500 bg-emerald-50/80 shadow-md shadow-emerald-500/10 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-emerald-300 hover:bg-white',
+            cyan: isSelected ? 'border-cyan-500 bg-cyan-50/80 shadow-md shadow-cyan-500/10 ring-2 ring-cyan-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-cyan-300 hover:bg-white',
+            purple: isSelected ? 'border-purple-500 bg-purple-50/80 shadow-md shadow-purple-500/10 ring-2 ring-purple-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-purple-300 hover:bg-white',
+            blue: isSelected ? 'border-blue-500 bg-blue-50/80 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-blue-300 hover:bg-white',
+            rose: isSelected ? 'border-rose-500 bg-rose-50/80 shadow-md shadow-rose-500/10 ring-2 ring-rose-500/20' : 'border-slate-200 bg-slate-50/70 hover:border-rose-300 hover:bg-white'
           };
 
           const iconColors = {
-            red: 'text-red-400 bg-red-600/20',
-            amber: 'text-amber-400 bg-amber-600/20',
-            emerald: 'text-emerald-400 bg-emerald-600/20',
-            cyan: 'text-cyan-400 bg-cyan-600/20',
-            purple: 'text-purple-400 bg-purple-600/20',
-            blue: 'text-blue-400 bg-blue-600/20',
-            rose: 'text-rose-400 bg-rose-600/20'
+            red: 'text-red-600 bg-red-100 border border-red-200',
+            amber: 'text-amber-600 bg-amber-100 border border-amber-200',
+            emerald: 'text-emerald-600 bg-emerald-100 border border-emerald-200',
+            cyan: 'text-cyan-600 bg-cyan-100 border border-cyan-200',
+            purple: 'text-purple-600 bg-purple-100 border border-purple-200',
+            blue: 'text-blue-600 bg-blue-100 border border-blue-200',
+            rose: 'text-rose-600 bg-rose-100 border border-rose-200'
           };
 
           return (
@@ -167,24 +167,24 @@ export default function HospitalSpatialMap({ stats, onSelectStation }) {
                   <div className={`p-2 rounded-lg ${iconColors[zone.color]}`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                     {zone.status}
                   </span>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-red-600 transition-colors">
                     {zone.name}
                   </h4>
-                  <p className="text-[11px] text-slate-400 truncate mt-0.5 font-mono">
+                  <p className="text-[11px] text-slate-600 truncate mt-0.5 font-mono font-medium">
                     {zone.activeCount}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-2.5 border-t border-slate-800/80 mt-2.5 flex items-center justify-between text-[10px]">
+              <div className="pt-2.5 border-t border-slate-200/80 mt-2.5 flex items-center justify-between text-[10px]">
                 <span className="text-slate-500">Station Lead</span>
-                <span className="font-semibold text-slate-300 truncate max-w-[110px]">{zone.lead}</span>
+                <span className="font-semibold text-slate-800 truncate max-w-[110px]">{zone.lead}</span>
               </div>
             </button>
           );
@@ -192,27 +192,27 @@ export default function HospitalSpatialMap({ stats, onSelectStation }) {
       </div>
 
       {/* Selected Station Deep Dive Inspector */}
-      <div className="p-4 rounded-xl bg-[#070D18] border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-start gap-3">
-          <div className="p-2.5 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30 shrink-0">
+          <div className="p-2.5 rounded-xl bg-red-100 text-red-600 border border-red-200 shrink-0">
             <Activity className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-black text-white">{selectedData.name}</h4>
-              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+              <h4 className="text-sm font-black text-slate-900">{selectedData.name}</h4>
+              <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 {selectedData.status}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed font-medium">
               {selectedData.details}
             </p>
           </div>
         </div>
 
         <div className="text-right shrink-0">
-          <span className="text-[10px] text-slate-500 uppercase font-mono block">Station Personnel</span>
-          <span className="text-xs font-bold text-red-400">{selectedData.lead}</span>
+          <span className="text-[10px] text-slate-500 uppercase font-mono block font-bold">Station Personnel</span>
+          <span className="text-xs font-bold text-red-600">{selectedData.lead}</span>
         </div>
       </div>
     </div>

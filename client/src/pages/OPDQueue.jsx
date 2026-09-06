@@ -117,9 +117,9 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
       return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white animate-pulse">EMERGENCY</span>;
     }
     if (priority === 'Urgent') {
-      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">URGENT</span>;
+      return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">URGENT</span>;
     }
-    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">Standard</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">Standard</span>;
   };
 
   return (
@@ -127,11 +127,11 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Activity className="w-5 h-5 text-cyan-600" />
             <span>Today's OPD Queue & Clinical Triage</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 mt-0.5">
             Real-time outpatient tracker: record clinical vitals, diagnose conditions, and advance triage flow.
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsPrintRegisterOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all shadow-glow-cyan cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-95"
             title="Print today's OPD register and clinical log"
           >
             <Printer className="w-4 h-4" />
@@ -147,7 +147,7 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
           </button>
           <button
             onClick={onOpenCheckIn}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Check-in Patient</span>
@@ -165,12 +165,12 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
               onClick={() => setStatusFilter(tab)}
               className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
                 statusFilter === tab
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-300 font-bold shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
               <span>{tab}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === tab ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'}`}>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${statusFilter === tab ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {count}
               </span>
             </button>
@@ -179,11 +179,11 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
       </div>
 
       {/* Queue Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+      <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <th className="py-3 px-4">Visit #</th>
                 <th className="py-3 px-4">Patient</th>
                 <th className="py-3 px-4">Chief Complaint / Notes</th>
@@ -193,42 +193,42 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400">Loading today's queue...</td>
+                  <td colSpan="7" className="py-8 text-center text-slate-500">Loading today's queue...</td>
                 </tr>
               ) : filteredVisits.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400">
+                  <td colSpan="7" className="py-8 text-center text-slate-500">
                     No patients currently in this stage.
                   </td>
                 </tr>
               ) : (
                 filteredVisits.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-cyan-400">
+                  <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-cyan-600">
                       {v.visit_code}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-bold text-white text-sm">{v.patient_name}</div>
-                      <div className="text-[10px] text-slate-400">{v.age} Yrs • {v.gender} • <span className="text-cyan-400">{v.patient_code}</span></div>
+                      <div className="font-bold text-slate-900 text-sm">{v.patient_name}</div>
+                      <div className="text-[10px] text-slate-500 font-medium">{v.age} Yrs • {v.gender} • <span className="text-cyan-700 font-semibold">{v.patient_code}</span></div>
                     </td>
                     <td className="py-3 px-4 max-w-xs">
-                      <p className="text-slate-200 font-medium">{v.reason}</p>
+                      <p className="text-slate-800 font-medium">{v.reason}</p>
                       {v.diagnosis && (
-                        <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">Dx: {v.diagnosis}</p>
+                        <p className="text-emerald-700 text-[11px] font-bold mt-0.5 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block">Dx: {v.diagnosis}</p>
                       )}
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px]">
                       {v.bp || v.temp || v.pulse || v.spo2 ? (
-                        <div className="space-y-0.5 text-slate-300">
+                        <div className="space-y-0.5 text-slate-700">
                           {v.bp && <div>BP: {v.bp}</div>}
                           {v.temp && <div>Temp: {v.temp}</div>}
-                          {v.spo2 && <div>SpO2: <span className="text-cyan-400 font-bold">{v.spo2}</span></div>}
+                          {v.spo2 && <div>SpO2: <span className="text-cyan-700 font-bold">{v.spo2}</span></div>}
                         </div>
                       ) : (
-                        <span className="text-slate-500 italic">No vitals recorded</span>
+                        <span className="text-slate-400 italic">No vitals recorded</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -240,12 +240,12 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                         onChange={(e) => handleStatusChange(v.id, e.target.value)}
                         className={`text-xs font-semibold rounded-lg px-2.5 py-1 border focus:outline-none transition-colors ${
                           v.status === 'Completed'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                             : v.status === 'At Pharmacy'
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            ? 'bg-purple-50 text-purple-700 border-purple-300'
                             : v.status === 'In Consultation'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                            ? 'bg-amber-50 text-amber-700 border-amber-300'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                       >
                         <option value="Waiting">Waiting</option>
@@ -261,7 +261,7 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                         <button
                           onClick={() => openVitalsModal(v)}
                           title="Record Vitals & Diagnosis"
-                          className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold flex items-center gap-1 transition-all"
                         >
                           <FileEdit className="w-3.5 h-3.5" />
                           <span>Vitals / Notes</span>
@@ -271,7 +271,7 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                           <button
                             onClick={() => onOpenDispenseForPatient({ id: v.patient_id, full_name: v.patient_name, visit_id: v.id })}
                             title="Dispense Medications"
-                            className="p-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 transition-all"
+                            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-all"
                           >
                             <ShoppingCart className="w-3.5 h-3.5" />
                           </button>
@@ -288,15 +288,15 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
 
       {/* Vitals & Clinical Examination Modal */}
       {editingVisit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#0F2744] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden my-8 animate-scaleIn">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-900/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden my-8 animate-scaleIn">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div>
-                <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider">Clinical Examination</span>
-                <h3 className="text-base font-bold text-white">{editingVisit.patient_name}</h3>
-                <p className="text-xs text-slate-400">Chief Complaint: {editingVisit.reason}</p>
+                <span className="text-[10px] font-mono text-cyan-600 font-bold uppercase tracking-wider">Clinical Examination</span>
+                <h3 className="text-base font-bold text-slate-900">{editingVisit.patient_name}</h3>
+                <p className="text-xs text-slate-500">Chief Complaint: {editingVisit.reason}</p>
               </div>
-              <button onClick={() => setEditingVisit(null)} className="p-1.5 text-slate-400 hover:text-white rounded-lg">
+              <button onClick={() => setEditingVisit(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -304,68 +304,68 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
             <form onSubmit={(e) => handleVitalsSubmit(e, false)} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               {/* Vitals Grid */}
               <div>
-                <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-cyan-700 uppercase tracking-wider mb-2">
                   Vital Signs (Triage)
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Blood Pressure</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Blood Pressure</label>
                     <input
                       type="text"
                       placeholder="e.g. 120/80"
                       value={vitalsData.bp}
                       onChange={(e) => setVitalsData({ ...vitalsData, bp: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Pulse Rate</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Pulse Rate</label>
                     <input
                       type="text"
                       placeholder="e.g. 84 bpm"
                       value={vitalsData.pulse}
                       onChange={(e) => setVitalsData({ ...vitalsData, pulse: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Body Temp (°C)</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Body Temp (°C)</label>
                     <input
                       type="text"
                       placeholder="e.g. 38.6°C"
                       value={vitalsData.temp}
                       onChange={(e) => setVitalsData({ ...vitalsData, temp: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Oxygen Sat (SpO2)</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Oxygen Sat (SpO2)</label>
                     <input
                       type="text"
                       placeholder="e.g. 98%"
                       value={vitalsData.spo2}
                       onChange={(e) => setVitalsData({ ...vitalsData, spo2: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Resp. Rate</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Resp. Rate</label>
                     <input
                       type="text"
                       placeholder="e.g. 18 /min"
                       value={vitalsData.resp_rate}
                       onChange={(e) => setVitalsData({ ...vitalsData, resp_rate: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">Weight (kg)</label>
+                    <label className="block text-[11px] text-slate-600 font-medium mb-1">Weight (kg)</label>
                     <input
                       type="text"
                       placeholder="e.g. 68 kg"
                       value={vitalsData.weight}
                       onChange={(e) => setVitalsData({ ...vitalsData, weight: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
                     />
                   </div>
                 </div>
@@ -374,34 +374,34 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
               {/* Diagnosis & Notes */}
               <div className="space-y-3 pt-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Clinical Diagnosis (PNG Protocol)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Clinical Diagnosis (PNG Protocol)</label>
                   <input
                     type="text"
                     placeholder="e.g. Falciparum Malaria / Acute Bronchitis / Gastroenteritis"
                     value={vitalsData.diagnosis}
                     onChange={(e) => setVitalsData({ ...vitalsData, diagnosis: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Doctor Clinical Observations & Notes</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Doctor Clinical Observations & Notes</label>
                   <textarea
                     rows="3"
                     placeholder="Physical exam findings, medication recommendations..."
                     value={vitalsData.doctor_notes}
                     onChange={(e) => setVitalsData({ ...vitalsData, doctor_notes: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Triage Priority</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Triage Priority</label>
                     <select
                       value={vitalsData.triage_priority}
                       onChange={(e) => setVitalsData({ ...vitalsData, triage_priority: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                     >
                       <option value="Standard">Standard</option>
                       <option value="Urgent">Urgent</option>
@@ -410,37 +410,37 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Consultation Fee ({currency})</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Consultation Fee ({currency})</label>
                     <input
                       type="number"
                       step="0.5"
                       value={vitalsData.consultation_fee}
                       onChange={(e) => setVitalsData({ ...vitalsData, consultation_fee: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-700 flex flex-col sm:flex-row justify-end gap-2.5">
+              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setEditingVisit(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs"
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs transition-colors"
                 >
                   Save Vitals Only
                 </button>
                 <button
                   type="button"
                   onClick={(e) => handleVitalsSubmit(e, true)}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
                   <span>Save & Send to Pharmacy</span>

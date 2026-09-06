@@ -28,23 +28,23 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
   if (!isOpen || !patient) return null;
 
   return (
-    <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-      <div className="printable-modal-card relative w-full max-w-xl bg-[#091528] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-6">
+    <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+      <div className="printable-modal-card relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-6">
         
         {/* Actions Bar (Hidden on Print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/90">
           <div>
-            <span className="text-sm font-display font-bold text-white block">Patient Digital Health Card</span>
-            <span className="text-xs text-slate-400 font-mono">{patient.patient_code}</span>
+            <span className="text-sm font-display font-black text-slate-900 block">Patient Digital Health Card</span>
+            <span className="text-xs text-slate-500 font-mono">{patient.patient_code}</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs">
+            <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
               <button
                 type="button"
                 onClick={() => setCardMode('print')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                  cardMode === 'print' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  cardMode === 'print' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -53,8 +53,8 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
               <button
                 type="button"
                 onClick={() => setCardMode('preview')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                  cardMode === 'preview' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  cardMode === 'preview' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <CreditCard className="w-3.5 h-3.5" />
@@ -64,14 +64,14 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
 
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-display font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Card</span>
             </button>
             <button 
               onClick={onClose} 
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

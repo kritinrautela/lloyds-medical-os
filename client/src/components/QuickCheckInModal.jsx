@@ -53,25 +53,25 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
   const currency = settings?.currency_symbol || 'K';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-[#0F2744] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-scaleIn">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden p-6 animate-scaleIn">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white">OPD Patient Check-In</h3>
+            <UserCheck className="w-4 h-4 text-cyan-600" />
+            <h3 className="text-sm font-bold text-slate-900">OPD Patient Check-In</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Select Patient *</label>
+            <label className="block font-semibold text-slate-700 mb-1">Select Patient *</label>
             <select
               value={selectedPatientId}
               onChange={(e) => setSelectedPatientId(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             >
               <option value="">-- Choose Patient --</option>
               {patients.map((p) => (
@@ -83,24 +83,24 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Chief Complaint / Reason for Visit *</label>
+            <label className="block font-semibold text-slate-700 mb-1">Chief Complaint / Reason for Visit *</label>
             <input
               type="text"
               required
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. High fever & chills / Cough / Medication refill"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Triage Priority</label>
+              <label className="block font-semibold text-slate-700 mb-1">Triage Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               >
                 <option value="Standard">Standard</option>
                 <option value="Urgent">Urgent</option>
@@ -109,24 +109,24 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Consultation Fee ({currency})</label>
+              <label className="block font-semibold text-slate-700 mb-1">Consultation Fee ({currency})</label>
               <input
                 type="number"
                 step="0.5"
                 value={consultationFee}
                 onChange={(e) => setConsultationFee(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Attending Medical Officer</label>
+            <label className="block font-semibold text-slate-700 mb-1">Attending Medical Officer</label>
             <input
               type="text"
               value={doctorName}
               onChange={(e) => setDoctorName(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
@@ -134,14 +134,14 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
+              className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
             >
               {submitting ? 'Checking in...' : 'Add to OPD Queue'}
             </button>

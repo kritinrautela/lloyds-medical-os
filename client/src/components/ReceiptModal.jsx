@@ -16,30 +16,30 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
   return (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
+      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-900/40 backdrop-blur-xs overflow-y-auto"
     >
-      <div className={`printable-modal-card relative w-full ${printFormat === 'thermal' ? 'max-w-md' : 'max-w-2xl'} bg-[#091528] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-4 transition-all`}>
+      <div className={`printable-modal-card relative w-full ${printFormat === 'thermal' ? 'max-w-md' : 'max-w-2xl'} bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-4 transition-all`}>
         
         {/* Modal Top Bar (Hidden during print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-sm font-display font-bold text-white block">Official Medical Receipt</span>
-              <span className="text-[11px] text-slate-400 font-mono">Invoice #{invoice?.invoice_number}</span>
+              <span className="text-sm font-bold text-slate-900 block">Official Medical Receipt</span>
+              <span className="text-[11px] text-slate-500 font-mono">Invoice #{invoice?.invoice_number}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Format Selector */}
-            <div className="flex bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs">
+            <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
               <button
                 type="button"
                 onClick={() => setPrintFormat('a4')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                  printFormat === 'a4' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  printFormat === 'a4' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -48,8 +48,8 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
               <button
                 type="button"
                 onClick={() => setPrintFormat('thermal')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                  printFormat === 'thermal' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  printFormat === 'thermal' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Receipt className="w-3.5 h-3.5" />
@@ -59,14 +59,14 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
 
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

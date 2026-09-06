@@ -14,35 +14,35 @@ export default function PrintablePatientRecordModal({ isOpen, onClose, data, set
   return (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
+      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-900/40 backdrop-blur-xs overflow-y-auto"
     >
-      <div className="printable-modal-card relative w-full max-w-4xl bg-[#091528] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-4">
+      <div className="printable-modal-card relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-4">
         
         {/* Top Control Bar (Hidden on Print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/90">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <div className="p-2 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-200">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-display font-bold text-white">Patient Medical Record & Clinical History</h3>
-              <p className="text-xs text-slate-400 font-mono">Unique ID: {patient.patient_code}</p>
+              <h3 className="text-sm font-display font-black text-slate-900">Patient Medical Record & Clinical History</h3>
+              <p className="text-xs text-slate-500 font-mono">Unique ID: {patient.patient_code}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-display font-extrabold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-display font-extrabold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Printer className="w-4 h-4" />
               <span>Print Medical File (A4 / PDF)</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

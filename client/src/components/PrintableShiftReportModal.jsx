@@ -23,33 +23,33 @@ export default function PrintableShiftReportModal({ isOpen, onClose, data, setti
   return (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
+      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-900/40 backdrop-blur-xs overflow-y-auto"
     >
-      <div className="printable-modal-card relative w-full max-w-4xl bg-[#091528] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden my-4">
+      <div className="printable-modal-card relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-4">
         
         {/* Top Control Bar (Hidden on Print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-display font-bold text-white">Daily Shift Financial & Clinical Audit Report</h3>
-              <p className="text-xs text-slate-400">Institutional print-ready A4 document format</p>
+              <h3 className="text-sm font-bold text-slate-900">Daily Shift Financial & Clinical Audit Report</h3>
+              <p className="text-xs text-slate-500">Institutional print-ready A4 document format</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Printer className="w-4 h-4" />
               <span>Print Audit Report (A4 / PDF)</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

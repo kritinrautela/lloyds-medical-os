@@ -88,7 +88,7 @@ function HospitalAppContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-transparent text-slate-100 selection:bg-red-600 selection:text-white">
+    <div className="flex min-h-screen bg-slate-50/50 bg-gradient-to-br from-slate-50 via-white to-sky-50/30 text-slate-800 selection:bg-red-600 selection:text-white light-theme">
       {/* Navigation Sidebar with Official Lloyds Branding */}
       <Sidebar 
         activeTab={activeTab} 

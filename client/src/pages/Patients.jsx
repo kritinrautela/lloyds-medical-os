@@ -144,18 +144,18 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Users className="w-5 h-5 text-cyan-600" />
             <span>Patient Registry & Health Records</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 mt-0.5">
             Search patient records, check-in to OPD queue, and generate printable digital health QR cards.
           </p>
         </div>
 
         <button
           onClick={() => setIsRegisterOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Register New Patient</span>
@@ -171,7 +171,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Name, Patient ID (PAT-PNG-...), Village, or Phone..."
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition-all"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all shadow-2xs"
           />
         </div>
 
@@ -179,7 +179,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
           <select
             value={provinceFilter}
             onChange={(e) => setProvinceFilter(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 shadow-2xs"
           >
             <option value="">All PNG Provinces</option>
             {pngProvinces.map((p, i) => (
@@ -190,11 +190,11 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
       </div>
 
       {/* Patients Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+      <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <th className="py-3 px-4">Code</th>
                 <th className="py-3 px-4">Patient Name</th>
                 <th className="py-3 px-4">Demographics</th>
@@ -204,45 +204,45 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400">Loading patients from local SQLite database...</td>
+                  <td colSpan="7" className="py-8 text-center text-slate-500">Loading patients from local SQLite database...</td>
                 </tr>
               ) : patients.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400">
+                  <td colSpan="7" className="py-8 text-center text-slate-500">
                     No patients found matching your search.
                   </td>
                 </tr>
               ) : (
                 patients.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-cyan-400">
+                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-cyan-600">
                       {p.patient_code}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-bold text-white text-sm">{p.full_name}</div>
-                      <div className="text-[10px] text-slate-400">{p.medical_history ? p.medical_history.slice(0, 35) + '...' : 'No prior history'}</div>
+                      <div className="font-bold text-slate-900 text-sm">{p.full_name}</div>
+                      <div className="text-[10px] text-slate-500 font-medium">{p.medical_history ? p.medical_history.slice(0, 35) + '...' : 'No prior history'}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="text-slate-200">{p.age} Yrs • {p.gender}</div>
-                      <div className="text-[10px] font-semibold text-emerald-400">Blood: {p.blood_group || 'N/A'}</div>
+                      <div className="text-slate-800 font-medium">{p.age} Yrs • {p.gender}</div>
+                      <div className="text-[10px] font-bold text-emerald-700">Blood: {p.blood_group || 'N/A'}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="text-slate-300 font-medium">{p.address_or_village || '-'}</div>
-                      <div className="text-[10px] text-slate-400">{p.district ? `${p.district}, ` : ''}{p.province}</div>
+                      <div className="text-slate-800 font-medium">{p.address_or_village || '-'}</div>
+                      <div className="text-[10px] text-slate-500">{p.district ? `${p.district}, ` : ''}{p.province}</div>
                     </td>
-                    <td className="py-3 px-4 text-slate-300 font-mono">
+                    <td className="py-3 px-4 text-slate-700 font-mono">
                       {p.phone || '-'}
                     </td>
                     <td className="py-3 px-4">
                       {p.allergies && p.allergies !== 'None' ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-300 border border-red-500/30">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
                           {p.allergies}
                         </span>
                       ) : (
-                        <span className="text-slate-500 text-[11px]">None</span>
+                        <span className="text-slate-400 text-[11px]">None</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -251,7 +251,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                         <button
                           onClick={() => onCheckInPatient(p)}
                           title="Check into today's OPD Queue"
-                          className="px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-[11px] font-semibold transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[11px] font-semibold transition-all cursor-pointer"
                         >
                           Check-in
                         </button>
@@ -259,15 +259,15 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                         <button
                           onClick={() => setSelectedPatientForCard(p)}
                           title="View Digital Health Card"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
                         >
-                          <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+                          <QrCode className="w-3.5 h-3.5 text-cyan-600" />
                         </button>
                         {/* View History */}
                         <button
                           onClick={() => viewHistory(p.id)}
                           title="View Medical Timeline"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
@@ -275,7 +275,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                         <button
                           onClick={() => handleDelete(p.id, p.full_name)}
                           title="Delete Record"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -291,14 +291,14 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
 
       {/* Register New Patient Modal */}
       {isRegisterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-[#0F2744] border border-slate-700 rounded-3xl shadow-2xl overflow-hidden my-8 animate-scaleIn">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/80 bg-slate-900/70">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-cyan-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden my-8 animate-scaleIn">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-cyan-600" />
                 <span>New Patient Registration (Papua New Guinea)</span>
               </h3>
-              <button onClick={() => setIsRegisterOpen(false)} className="p-1.5 text-slate-400 hover:text-white rounded-lg">
+              <button onClick={() => setIsRegisterOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -306,19 +306,19 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
             <form onSubmit={handleRegisterSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     placeholder="e.g. Paulus Kurum"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Age (Years) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Age (Years) *</label>
                   <input
                     type="number"
                     required
@@ -327,16 +327,16 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                     placeholder="e.g. 34"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Gender *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Gender *</label>
                   <select
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -345,22 +345,22 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Phone Number</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="e.g. +675 7123 4567"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Blood Group</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Blood Group</label>
                   <select
                     value={formData.blood_group}
                     onChange={(e) => setFormData({ ...formData, blood_group: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   >
                     <option value="O+">O+</option>
                     <option value="O-">O-</option>
@@ -375,11 +375,11 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">PNG Province</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">PNG Province</label>
                   <select
                     value={formData.province}
                     onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   >
                     {pngProvinces.map((p, i) => (
                       <option key={i} value={p}>{p}</option>
@@ -388,72 +388,72 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">District / Sub-district</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">District / Sub-district</label>
                   <input
                     type="text"
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                     placeholder="e.g. Lae Urban / Hagen Central"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Village / Settlement Address</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Village / Settlement Address</label>
                   <input
                     type="text"
                     value={formData.address_or_village}
                     onChange={(e) => setFormData({ ...formData, address_or_village: e.target.value })}
                     placeholder="e.g. Boundary Road Compound 4 / Kwikila Bush Camp"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Known Drug Allergies</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Known Drug Allergies</label>
                   <input
                     type="text"
                     value={formData.allergies}
                     onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
                     placeholder="e.g. Penicillin, Sulphonamides (Bactrim), Aspirin, or None"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Emergency Contact</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Emergency Contact</label>
                   <input
                     type="text"
                     value={formData.emergency_contact}
                     onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
                     placeholder="e.g. Brother: John (+675 7123 9999)"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Medical Background / History</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Medical Background / History</label>
                   <textarea
                     rows="2"
                     value={formData.medical_history}
                     onChange={(e) => setFormData({ ...formData, medical_history: e.target.value })}
                     placeholder="e.g. Past malaria in 2024, hypertension, asthma, diabetes..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-700 flex justify-end gap-3">
+              <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsRegisterOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
                 >
                   Save Patient
                 </button>
@@ -465,51 +465,51 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
 
       {/* Patient History Drawer */}
       {selectedPatientHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg h-full bg-[#0A1B35] border-l border-slate-700 p-6 flex flex-col justify-between overflow-y-auto animate-slideLeft">
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-xs">
+          <div className="w-full max-w-lg h-full bg-white border-l border-slate-200 p-6 flex flex-col justify-between overflow-y-auto animate-slideLeft shadow-2xl">
             <div>
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <div>
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider">Patient Medical Record</span>
-                  <h3 className="text-lg font-bold text-white">{selectedPatientHistory.patient.full_name}</h3>
-                  <p className="text-xs text-slate-400 font-mono">{selectedPatientHistory.patient.patient_code}</p>
+                  <span className="text-[10px] font-mono text-cyan-600 font-bold uppercase tracking-wider">Patient Medical Record</span>
+                  <h3 className="text-lg font-bold text-slate-900">{selectedPatientHistory.patient.full_name}</h3>
+                  <p className="text-xs text-slate-500 font-mono">{selectedPatientHistory.patient.patient_code}</p>
                 </div>
                 <button
                   onClick={() => setSelectedPatientHistory(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Patient Basic Details */}
-              <div className="grid grid-cols-2 gap-3 my-4 p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 text-xs">
-                <div><span className="text-slate-400">Age / Gender:</span> <strong className="text-white">{selectedPatientHistory.patient.age} Yrs / {selectedPatientHistory.patient.gender}</strong></div>
-                <div><span className="text-slate-400">Blood:</span> <strong className="text-emerald-400">{selectedPatientHistory.patient.blood_group}</strong></div>
-                <div><span className="text-slate-400">Phone:</span> <span className="text-slate-200">{selectedPatientHistory.patient.phone || '-'}</span></div>
-                <div><span className="text-slate-400">Village:</span> <span className="text-slate-200">{selectedPatientHistory.patient.address_or_village || '-'}</span></div>
-                <div className="col-span-2 text-red-400 font-medium">Allergies: {selectedPatientHistory.patient.allergies || 'None'}</div>
+              <div className="grid grid-cols-2 gap-3 my-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                <div><span className="text-slate-500 font-medium">Age / Gender:</span> <strong className="text-slate-900 font-bold ml-1">{selectedPatientHistory.patient.age} Yrs / {selectedPatientHistory.patient.gender}</strong></div>
+                <div><span className="text-slate-500 font-medium">Blood:</span> <strong className="text-emerald-700 font-bold ml-1">{selectedPatientHistory.patient.blood_group}</strong></div>
+                <div><span className="text-slate-500 font-medium">Phone:</span> <span className="text-slate-800 ml-1">{selectedPatientHistory.patient.phone || '-'}</span></div>
+                <div><span className="text-slate-500 font-medium">Village:</span> <span className="text-slate-800 ml-1">{selectedPatientHistory.patient.address_or_village || '-'}</span></div>
+                <div className="col-span-2 text-red-600 font-semibold">Allergies: {selectedPatientHistory.patient.allergies || 'None'}</div>
               </div>
 
               {/* Past Visits Timeline */}
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-cyan-600" />
                 <span>Visit & Triage History ({selectedPatientHistory.visits?.length || 0})</span>
               </h4>
 
               <div className="space-y-3 mb-6">
                 {selectedPatientHistory.visits?.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic">No past visits recorded.</p>
+                  <p className="text-xs text-slate-400 italic">No past visits recorded.</p>
                 ) : (
                   selectedPatientHistory.visits.map((v) => (
-                    <div key={v.id} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1">
+                    <div key={v.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                       <div className="flex items-center justify-between font-semibold">
-                        <span className="text-cyan-300">{v.visit_date} • {v.visit_code}</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">{v.status}</span>
+                        <span className="text-cyan-700 font-bold">{v.visit_date} • {v.visit_code}</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-medium">{v.status}</span>
                       </div>
-                      <p className="text-slate-200 font-medium">Reason: {v.reason}</p>
-                      {v.diagnosis && <p className="text-emerald-300 text-[11px]">Diagnosis: {v.diagnosis}</p>}
-                      <div className="text-[10px] text-slate-400 flex flex-wrap gap-2 pt-1 font-mono">
+                      <p className="text-slate-800 font-medium">Reason: {v.reason}</p>
+                      {v.diagnosis && <p className="text-emerald-700 font-bold text-[11px]">Diagnosis: {v.diagnosis}</p>}
+                      <div className="text-[10px] text-slate-500 flex flex-wrap gap-2 pt-1 font-mono">
                         {v.bp && <span>BP: {v.bp}</span>}
                         {v.temp && <span>Temp: {v.temp}</span>}
                         {v.pulse && <span>Pulse: {v.pulse}</span>}
@@ -521,42 +521,42 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
               </div>
 
               {/* Past Prescriptions */}
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-teal-400" />
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-teal-600" />
                 <span>Pharmacy Dispensing History ({selectedPatientHistory.dispensations?.length || 0})</span>
               </h4>
 
               <div className="space-y-2">
                 {selectedPatientHistory.dispensations?.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic">No past pharmacy records.</p>
+                  <p className="text-xs text-slate-400 italic">No past pharmacy records.</p>
                 ) : (
                   selectedPatientHistory.dispensations.map((d) => (
-                    <div key={d.id} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1">
+                    <div key={d.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-cyan-400 font-bold">{d.invoice_number}</span>
-                        <span className="font-bold text-white">{settings?.currency_symbol || 'K'} {d.paid_amount.toFixed(2)}</span>
+                        <span className="font-mono text-cyan-700 font-bold">{d.invoice_number}</span>
+                        <span className="font-bold text-slate-900">{settings?.currency_symbol || 'K'} {d.paid_amount.toFixed(2)}</span>
                       </div>
-                      <p className="text-slate-300 text-[11px]">{d.drugs_summary}</p>
-                      <span className="text-[10px] text-slate-500">{new Date(d.created_at).toLocaleDateString()}</span>
+                      <p className="text-slate-700 text-[11px]">{d.drugs_summary}</p>
+                      <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString()}</span>
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-2">
               <button
                 onClick={() => setSelectedPatientForCard(selectedPatientHistory.patient)}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5"
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Print Patient QR Card"
               >
-                <QrCode className="w-3.5 h-3.5" />
+                <QrCode className="w-3.5 h-3.5 text-cyan-600" />
                 <span>QR Card</span>
               </button>
 
               <button
                 onClick={() => setSelectedPatientForRecordPrint(selectedPatientHistory)}
-                className="px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                className="px-3 py-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 title="Print Full Patient Medical File"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -568,7 +568,7 @@ export default function Patients({ settings, onCheckInPatient, refreshStats }) {
                   onCheckInPatient(selectedPatientHistory.patient);
                   setSelectedPatientHistory(null);
                 }}
-                className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 transition-all"
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs cursor-pointer active:scale-95 transition-all"
               >
                 Check-in Today
               </button>

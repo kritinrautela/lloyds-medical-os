@@ -82,24 +82,24 @@ export function EmergencyResponseTimer({ onLogEvent }) {
     <div className={`p-5 rounded-2xl border flex flex-col justify-between h-full transition-all duration-300 ${
       isActive 
         ? isOvertime 
-          ? 'bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-500/40 shadow-xl shadow-red-500/20' 
-          : 'bg-gradient-to-br from-amber-500/20 to-orange-600/10 border-amber-500/40 shadow-xl shadow-amber-500/20'
-        : 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20'
+          ? 'bg-gradient-to-br from-red-50 to-rose-100/60 border-red-300 shadow-lg shadow-red-500/10' 
+          : 'bg-gradient-to-br from-amber-50 to-orange-100/60 border-amber-300 shadow-lg shadow-amber-500/10'
+        : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-sm'
     }`}>
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${isActive ? (isOvertime ? 'bg-red-500/20' : 'bg-amber-500/20') : 'bg-emerald-500/20'}`}>
-              <Timer className={`w-5 h-5 ${isActive ? (isOvertime ? 'text-red-400' : 'text-amber-400') : 'text-emerald-400'}`} />
+            <div className={`p-2 rounded-xl ${isActive ? (isOvertime ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600') : 'bg-emerald-100 text-emerald-600'}`}>
+              <Timer className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Emergency Response Timer</h4>
-              <p className="text-[10px] text-slate-400">Target: 5 minutes</p>
+              <h4 className="text-sm font-bold text-slate-900">Emergency Response Timer</h4>
+              <p className="text-[10px] text-slate-500">Target: 5 minutes</p>
             </div>
           </div>
           {isActive && (
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-              isOvertime ? 'bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              isOvertime ? 'bg-red-100 text-red-700 border border-red-200 animate-pulse' : 'bg-amber-100 text-amber-700 border border-amber-200'
             }`}>
               {isOvertime ? 'OVERTIME' : 'ACTIVE CLOCK'}
             </span>
@@ -111,24 +111,24 @@ export function EmergencyResponseTimer({ onLogEvent }) {
             value={protocol}
             onChange={(e) => setProtocol(e.target.value)}
             disabled={isActive}
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium truncate"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-100 font-medium truncate"
           >
             {protocols.map((p) => (
-              <option key={p} value={p} className="bg-slate-900 text-white">{p}</option>
+              <option key={p} value={p} className="bg-white text-slate-800">{p}</option>
             ))}
           </select>
         </div>
 
         <div className="text-center py-2">
           <p className={`text-4xl font-black font-mono tracking-tight ${
-            isActive ? (isOvertime ? 'text-red-400 animate-pulse' : 'text-amber-400') : 'text-emerald-400'
+            isActive ? (isOvertime ? 'text-red-600 animate-pulse' : 'text-amber-600') : 'text-emerald-600'
           }`}>
             {formatTime(elapsed)}
           </p>
-          <div className="mt-2 w-full bg-black/30 h-2 rounded-full overflow-hidden">
+          <div className="mt-2 w-full bg-slate-200 h-2 rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all duration-1000 ${
-                isOvertime ? 'bg-gradient-to-r from-red-500 to-red-400' : 'bg-gradient-to-r from-amber-500 to-orange-400'
+                isOvertime ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-amber-500 to-orange-500'
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -136,34 +136,34 @@ export function EmergencyResponseTimer({ onLogEvent }) {
         </div>
       </div>
 
-      <div className="flex gap-2 mt-3 pt-2 border-t border-white/5">
+      <div className="flex gap-2 mt-3 pt-2 border-t border-slate-200">
         <button
           onClick={handleToggleTimer}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             isActive 
-              ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
-              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+              ? 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
           }`}
         >
           {isActive ? 'Stop Timer' : 'Start Response'}
         </button>
         <button
           onClick={handleResetTimer}
-          className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all"
+          className="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 text-xs font-bold transition-all cursor-pointer"
         >
           Reset
         </button>
         {elapsed > 0 && !isActive && !hasLogged && (
           <button
             onClick={handleLogToBlackBox}
-            className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 text-white text-xs font-bold transition-all shadow-md"
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
             title="Log event to Black Box"
           >
             Log
           </button>
         )}
         {hasLogged && (
-          <span className="px-2 py-2 text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+          <span className="px-2 py-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" /> Logged
           </span>
         )}
@@ -182,22 +182,22 @@ export function DailyGoalsTracker({ stats, onNavigate, onOpenCheckIn, onSelectTa
   ];
 
   const colorMap = {
-    emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', bar: 'from-emerald-500 to-emerald-400' },
-    cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-400', bar: 'from-cyan-500 to-cyan-400' },
-    purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', bar: 'from-purple-500 to-purple-400' },
-    amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', bar: 'from-amber-500 to-amber-400' }
+    emerald: { bg: 'bg-emerald-50 text-emerald-600', border: 'border-emerald-200', text: 'text-emerald-700', bar: 'from-emerald-500 to-teal-500' },
+    cyan: { bg: 'bg-cyan-50 text-cyan-600', border: 'border-cyan-200', text: 'text-cyan-700', bar: 'from-cyan-500 to-blue-500' },
+    purple: { bg: 'bg-purple-50 text-purple-600', border: 'border-purple-200', text: 'text-purple-700', bar: 'from-purple-500 to-indigo-500' },
+    amber: { bg: 'bg-amber-50 text-amber-600', border: 'border-amber-200', text: 'text-amber-700', bar: 'from-amber-500 to-orange-500' }
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0B1528]/80 to-[#070D18]/90 backdrop-blur-xl border border-white/5 shadow-2xl h-full flex flex-col justify-between">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
       <div>
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="p-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/20">
-            <Award className="w-5 h-5 text-amber-400" />
+          <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+            <Award className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">Daily Clinical Goals</h4>
-            <p className="text-[10px] text-slate-400">Tap any goal to navigate to duty module</p>
+            <h4 className="text-sm font-bold text-slate-900">Daily Clinical Goals</h4>
+            <p className="text-[10px] text-slate-500">Tap any goal to navigate to duty module</p>
           </div>
         </div>
 
@@ -212,29 +212,29 @@ export function DailyGoalsTracker({ stats, onNavigate, onOpenCheckIn, onSelectTa
               <button 
                 key={goal.id} 
                 onClick={() => { sounds.playClick(); if (goal.action) goal.action(); }}
-                className="w-full text-left p-3 rounded-xl bg-black/20 hover:bg-white/5 border border-white/5 hover:border-white/15 transition-all group"
+                className="w-full text-left p-3 rounded-xl bg-slate-50/80 hover:bg-slate-100/90 border border-slate-200/80 transition-all group cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
                     <Icon className={`w-4 h-4 ${c.text}`} />
-                    <span className="text-xs font-semibold text-white group-hover:text-slate-100">{goal.label}</span>
+                    <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-950">{goal.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className={`text-xs font-mono font-bold ${c.text}`}>
                       {goal.isCurrency ? `K ${(goal.current || 0).toFixed(0)}` : goal.current}
                     </span>
-                    {isComplete && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                    {isComplete && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                   </div>
                 </div>
-                <div className="w-full bg-black/30 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                   <div 
                     className={`bg-gradient-to-r ${c.bar} h-full rounded-full transition-all duration-700`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-[9px] text-slate-500">Progress: {Math.round(percentage)}%</span>
-                  <span className="text-[9px] text-slate-500">
+                  <span className="text-[9px] text-slate-500 font-medium">Progress: {Math.round(percentage)}%</span>
+                  <span className="text-[9px] text-slate-500 font-medium">
                     Target: {goal.isCurrency ? `K ${goal.target}` : goal.target}
                   </span>
                 </div>
@@ -270,20 +270,20 @@ export function PatientFlowJourney({ stats, onNavigate }) {
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0B1528]/80 to-[#070D18]/90 backdrop-blur-xl border border-white/5 shadow-2xl">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-            <Activity className="w-5 h-5 text-cyan-400" />
+          <div className="p-2 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200">
+            <Activity className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">Patient Journey Flow</h4>
-            <p className="text-[10px] text-slate-400">{total} active patient steps • Click any stage to open OPD queue</p>
+            <h4 className="text-sm font-bold text-slate-900">Patient Journey Flow</h4>
+            <p className="text-[10px] text-slate-500">{total} active patient steps • Click any stage to open OPD queue</p>
           </div>
         </div>
         <button 
           onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-          className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 transition-colors"
+          className="text-xs text-cyan-600 hover:text-cyan-700 font-bold flex items-center gap-1 transition-colors cursor-pointer"
         >
           View Live OPD <ChevronRight className="w-4 h-4" />
         </button>
@@ -297,11 +297,11 @@ export function PatientFlowJourney({ stats, onNavigate }) {
             const count = getCount(stage.key);
             const percentage = total > 0 ? (count / total) * 100 : 0;
             const colorClasses = {
-              amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-400 hover:border-amber-400',
-              cyan: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30 text-cyan-400 hover:border-cyan-400',
-              purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400 hover:border-purple-400',
-              emerald: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-400 hover:border-emerald-400',
-              blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400 hover:border-blue-400'
+              amber: 'from-amber-50 to-amber-100/80 border-amber-200 text-amber-600 hover:border-amber-400',
+              cyan: 'from-cyan-50 to-cyan-100/80 border-cyan-200 text-cyan-600 hover:border-cyan-400',
+              purple: 'from-purple-50 to-purple-100/80 border-purple-200 text-purple-600 hover:border-purple-400',
+              emerald: 'from-emerald-50 to-emerald-100/80 border-emerald-200 text-emerald-600 hover:border-emerald-400',
+              blue: 'from-blue-50 to-blue-100/80 border-blue-200 text-blue-600 hover:border-blue-400'
             };
 
             return (
@@ -310,18 +310,18 @@ export function PatientFlowJourney({ stats, onNavigate }) {
                   onClick={() => handleStageClick(stage.key)}
                   className="flex flex-col items-center gap-2 relative z-10 group cursor-pointer"
                 >
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colorClasses[stage.color]} border flex items-center justify-center transition-all group-hover:scale-110 shadow-lg`}>
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colorClasses[stage.color]} border flex items-center justify-center transition-all group-hover:scale-110 shadow-sm`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <div className="text-center">
-                    <p className={`text-lg font-black font-mono ${colorClasses[stage.color].split(' ').pop()}`}>{count}</p>
-                    <p className="text-[10px] text-slate-400 group-hover:text-white transition-colors">{stage.label}</p>
+                    <p className={`text-lg font-black font-mono ${colorClasses[stage.color].split(' ').slice(2,3).join(' ')}`}>{count}</p>
+                    <p className="text-[10px] text-slate-500 group-hover:text-slate-900 transition-colors font-medium">{stage.label}</p>
                   </div>
                 </button>
                 {i < stages.length - 1 && (
-                  <div className="flex-1 h-0.5 bg-gradient-to-r from-white/10 to-white/5 mx-1 relative">
+                  <div className="flex-1 h-1 bg-slate-100 mx-2 relative rounded-full overflow-hidden">
                     <div 
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full"
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full"
                       style={{ width: `${Math.max(percentage, 5)}%` }}
                     />
                   </div>
@@ -381,10 +381,10 @@ export function DepartmentPerformance({ stats, onNavigate, onSelectTab }) {
   ];
 
   const colorMap = {
-    red: { bg: 'from-red-500/15 to-red-600/5', border: 'border-red-500/25 hover:border-red-500/50', text: 'text-red-400', icon: 'bg-red-500/20' },
-    amber: { bg: 'from-amber-500/15 to-amber-600/5', border: 'border-amber-500/25 hover:border-amber-500/50', text: 'text-amber-400', icon: 'bg-amber-500/20' },
-    cyan: { bg: 'from-cyan-500/15 to-cyan-600/5', border: 'border-cyan-500/25 hover:border-cyan-500/50', text: 'text-cyan-400', icon: 'bg-cyan-500/20' },
-    purple: { bg: 'from-purple-500/15 to-purple-600/5', border: 'border-purple-500/25 hover:border-purple-500/50', text: 'text-purple-400', icon: 'bg-purple-500/20' }
+    red: { bg: 'from-rose-50 to-white', border: 'border-rose-200 hover:border-rose-300', text: 'text-rose-700', icon: 'bg-rose-100 text-rose-600' },
+    amber: { bg: 'from-amber-50 to-white', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700', icon: 'bg-amber-100 text-amber-600' },
+    cyan: { bg: 'from-cyan-50 to-white', border: 'border-cyan-200 hover:border-cyan-300', text: 'text-cyan-700', icon: 'bg-cyan-100 text-cyan-600' },
+    purple: { bg: 'from-purple-50 to-white', border: 'border-purple-200 hover:border-purple-300', text: 'text-purple-700', icon: 'bg-purple-100 text-purple-600' }
   };
 
   return (
@@ -396,25 +396,25 @@ export function DepartmentPerformance({ stats, onNavigate, onSelectTab }) {
           <button 
             key={dept.name} 
             onClick={() => { sounds.playClick(); dept.onClick(); }}
-            className={`p-4 rounded-2xl bg-gradient-to-br ${c.bg} border ${c.border} backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group text-left cursor-pointer`}
+            className={`p-4 rounded-2xl bg-gradient-to-br ${c.bg} border ${c.border} shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md group text-left cursor-pointer`}
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-xl ${c.icon}`}>
-                <Icon className={`w-4 h-4 ${c.text}`} />
+                <Icon className="w-4 h-4" />
               </div>
               {dept.trendUp !== null && (
-                <span className={`text-[10px] font-bold ${dept.trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                <span className={`text-[10px] font-bold ${dept.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {dept.trendUp ? '↑' : '↓'} {dept.trend}
                 </span>
               )}
               {dept.trendUp === null && (
-                <span className="text-[10px] font-bold text-slate-400">{dept.trend}</span>
+                <span className="text-[10px] font-bold text-slate-500">{dept.trend}</span>
               )}
             </div>
-            <p className={`text-2xl font-black font-mono ${c.text}`}>{dept.metric}</p>
+            <p className={`text-2xl font-black font-mono tracking-tight ${c.text}`}>{dept.metric}</p>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-[11px] font-semibold text-white group-hover:text-white/90">{dept.name}</span>
-              <span className="text-[10px] text-slate-400">{dept.label}</span>
+              <span className="text-xs font-bold text-slate-800">{dept.name}</span>
+              <span className="text-[10px] text-slate-500">{dept.label}</span>
             </div>
           </button>
         );
@@ -485,25 +485,25 @@ export function AlertNotificationCenter({ stats, onNavigate, onSelectTab }) {
   }
 
   const colorMap = {
-    red: { bg: 'bg-red-500/10 hover:bg-red-500/20', border: 'border-red-500/20 hover:border-red-500/40', text: 'text-red-400', icon: 'bg-red-500/20' },
-    amber: { bg: 'bg-amber-500/10 hover:bg-amber-500/20', border: 'border-amber-500/20 hover:border-amber-500/40', text: 'text-amber-400', icon: 'bg-amber-500/20' },
-    emerald: { bg: 'bg-emerald-500/10 hover:bg-emerald-500/20', border: 'border-emerald-500/20 hover:border-emerald-500/40', text: 'text-emerald-400', icon: 'bg-emerald-500/20' }
+    red: { bg: 'bg-rose-50/80 hover:bg-rose-100/80', border: 'border-rose-200 hover:border-rose-300', text: 'text-rose-700', icon: 'bg-rose-100 text-rose-600' },
+    amber: { bg: 'bg-amber-50/80 hover:bg-amber-100/80', border: 'border-amber-200 hover:border-amber-300', text: 'text-amber-700', icon: 'bg-amber-100 text-amber-600' },
+    emerald: { bg: 'bg-emerald-50/80 hover:bg-emerald-100/80', border: 'border-emerald-200 hover:border-emerald-300', text: 'text-emerald-700', icon: 'bg-emerald-100 text-emerald-600' }
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0B1528]/80 to-[#070D18]/90 backdrop-blur-xl border border-white/5 shadow-2xl">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
       <div className="flex items-center gap-2.5 mb-4">
-        <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 relative">
-          <Bell className="w-5 h-5 text-red-400" />
+        <div className="p-2 rounded-xl bg-red-50 text-red-600 border border-red-200 relative">
+          <Bell className="w-5 h-5" />
           {alerts.length > 0 && alerts[0].type !== 'success' && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center animate-pulse">
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[8px] font-bold flex items-center justify-center animate-pulse">
               {alerts.length}
             </span>
           )}
         </div>
         <div>
-          <h4 className="text-sm font-bold text-white">Clinical Alert Center</h4>
-          <p className="text-[10px] text-slate-400">{alerts.length} active notifications • Tap to take action</p>
+          <h4 className="text-sm font-bold text-slate-900">Clinical Alert Center</h4>
+          <p className="text-[10px] text-slate-500">{alerts.length} active notifications • Tap to take action</p>
         </div>
       </div>
 
@@ -518,13 +518,13 @@ export function AlertNotificationCenter({ stats, onNavigate, onSelectTab }) {
               className={`w-full text-left p-3 rounded-xl ${c.bg} border ${c.border} flex items-center gap-3 transition-all hover:scale-[1.01] group cursor-pointer`}
             >
               <div className={`p-2 rounded-lg ${c.icon}`}>
-                <Icon className={`w-4 h-4 ${c.text}`} />
+                <Icon className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-white group-hover:text-white/90">{alert.title}</p>
-                <p className="text-[10px] text-slate-400 truncate">{alert.message}</p>
+                <p className="text-xs font-bold text-slate-900">{alert.title}</p>
+                <p className="text-[10px] text-slate-500 truncate">{alert.message}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
             </button>
           );
         })}
@@ -642,34 +642,34 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
   ];
 
   const colorMap = {
-    red: { bg: 'from-red-500/15 to-red-600/5', border: 'border-red-500/30', text: 'text-red-400', badge: 'bg-red-500/20 text-red-300' },
-    cyan: { bg: 'from-cyan-500/15 to-cyan-600/5', border: 'border-cyan-500/30', text: 'text-cyan-400', badge: 'bg-cyan-500/20 text-cyan-300' },
-    purple: { bg: 'from-purple-500/15 to-purple-600/5', border: 'border-purple-500/30', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-300' },
-    amber: { bg: 'from-amber-500/15 to-amber-600/5', border: 'border-amber-500/30', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-300' },
-    emerald: { bg: 'from-emerald-500/15 to-emerald-600/5', border: 'border-emerald-500/30', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300' }
+    red: { bg: 'from-rose-50 to-white', border: 'border-rose-200', text: 'text-rose-700', badge: 'bg-rose-100 text-rose-700' },
+    cyan: { bg: 'from-cyan-50 to-white', border: 'border-cyan-200', text: 'text-cyan-700', badge: 'bg-cyan-100 text-cyan-700' },
+    purple: { bg: 'from-purple-50 to-white', border: 'border-purple-200', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700' },
+    amber: { bg: 'from-amber-50 to-white', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
+    emerald: { bg: 'from-emerald-50 to-white', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700' }
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0B1528]/80 to-[#070D18]/90 backdrop-blur-xl border border-white/5 shadow-2xl h-full flex flex-col justify-between">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 relative">
-              <HeartPulse className="w-5 h-5 text-red-400" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="p-2 rounded-xl bg-red-50 text-red-600 border border-red-200 relative">
+              <HeartPulse className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Vitals Monitor Grid</h4>
-              <p className="text-[10px] text-slate-400">{currentPatient.location}</p>
+              <h4 className="text-sm font-bold text-slate-900">Vitals Monitor Grid</h4>
+              <p className="text-[10px] text-slate-500">{currentPatient.location}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-slate-400 bg-black/30 px-2 py-1 rounded-lg border border-white/5">
+            <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
             <button
               onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-              className="text-[10px] font-bold text-red-400 hover:text-red-300 px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 transition-colors"
+              className="text-[10px] font-bold text-red-600 hover:text-red-700 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
             >
               OPD Queue →
             </button>
@@ -681,10 +681,10 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
           <select
             value={selectedPatientIndex}
             onChange={(e) => { sounds.playClick(); setSelectedPatientIndex(Number(e.target.value)); }}
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-semibold truncate cursor-pointer hover:border-white/20 transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-100 font-semibold truncate cursor-pointer hover:border-slate-300 transition-colors"
           >
             {patientVitalsList.map((p, idx) => (
-              <option key={p.id} value={idx} className="bg-slate-900 text-white">
+              <option key={p.id} value={idx} className="bg-white text-slate-800">
                 {p.name} — [{p.location}]
               </option>
             ))}
@@ -701,7 +701,7 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
             return (
               <div 
                 key={vital.label} 
-                className={`p-3 rounded-xl bg-gradient-to-br ${c.bg} border ${c.border} flex flex-col justify-between min-h-[120px] transition-all hover:scale-[1.02] relative overflow-hidden group`}
+                className={`p-3 rounded-xl bg-gradient-to-br ${c.bg} border ${c.border} flex flex-col justify-between min-h-[120px] transition-all hover:scale-[1.02] shadow-2xs relative overflow-hidden group`}
               >
                 {vital.isWarning && (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -722,7 +722,7 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
 
                 {/* Footer: Label & Status Badge */}
                 <div className="text-center w-full space-y-1">
-                  <p className="text-[10px] text-slate-300 font-medium truncate">{vital.label}</p>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">{vital.label}</p>
                   <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${c.badge}`}>
                     {vital.status}
                   </span>
@@ -748,37 +748,37 @@ export function WeatherAlertBanner() {
   });
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 border border-amber-500/20 backdrop-blur-xl">
+    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 border border-amber-200 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30">
-            <ThermometerSun className="w-6 h-6 text-amber-400" />
+          <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-600">
+            <ThermometerSun className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-white">Environmental Health & Heat Stress</h4>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
+              <h4 className="text-sm font-bold text-slate-900">Environmental Health & Heat Stress</h4>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
                 {weather.alertLevel}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              {weather.alert} — Wet Bulb Globe Temperature (WBGT) is <strong className="text-amber-400">{weather.wbgt}°C</strong> at Markham Pit 3. 15-min hydration rotation active.
+            <p className="text-xs text-slate-600 mt-0.5">
+              {weather.alert} — Wet Bulb Globe Temperature (WBGT) is <strong className="text-amber-700 font-bold">{weather.wbgt}°C</strong> at Markham Pit 3. 15-min hydration rotation active.
             </p>
           </div>
         </div>
         
         <div className="hidden md:flex items-center gap-6">
           <div className="text-center">
-            <p className="text-2xl font-black text-amber-400 font-mono">{weather.temp}°C</p>
-            <p className="text-[9px] text-slate-400 uppercase">Ambient Temp</p>
+            <p className="text-2xl font-black text-amber-700 font-mono">{weather.temp}°C</p>
+            <p className="text-[9px] text-slate-500 uppercase font-semibold">Ambient Temp</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-black text-cyan-400 font-mono">{weather.humidity}%</p>
-            <p className="text-[9px] text-slate-400 uppercase">Humidity</p>
+            <p className="text-2xl font-black text-cyan-700 font-mono">{weather.humidity}%</p>
+            <p className="text-[9px] text-slate-500 uppercase font-semibold">Humidity</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-black text-emerald-400 font-mono">{weather.wbgt}°C</p>
-            <p className="text-[9px] text-slate-400 uppercase">WBGT Index</p>
+            <p className="text-2xl font-black text-emerald-700 font-mono">{weather.wbgt}°C</p>
+            <p className="text-[9px] text-slate-500 uppercase font-semibold">WBGT Index</p>
           </div>
         </div>
       </div>
@@ -796,14 +796,14 @@ export function QuickStatsSummary({ stats, formatKina }) {
   ];
 
   const colorMap = {
-    cyan: 'text-cyan-400',
-    emerald: 'text-emerald-400',
-    green: 'text-green-400',
-    rose: 'text-rose-400'
+    cyan: 'text-cyan-700',
+    emerald: 'text-emerald-700',
+    green: 'text-emerald-700',
+    rose: 'text-rose-700'
   };
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
       {stats_data.map((stat, i) => {
         const Icon = stat.icon;
         return (
@@ -811,9 +811,9 @@ export function QuickStatsSummary({ stats, formatKina }) {
             <Icon className={`w-5 h-5 ${colorMap[stat.color]}`} />
             <div>
               <p className={`text-lg font-black font-mono ${colorMap[stat.color]}`}>{stat.value}</p>
-              <p className="text-[10px] text-slate-400">{stat.label}</p>
+              <p className="text-[10px] text-slate-500 font-medium">{stat.label}</p>
             </div>
-            {i < stats_data.length - 1 && <div className="w-px h-8 bg-white/10 ml-3" />}
+            {i < stats_data.length - 1 && <div className="w-px h-8 bg-slate-200 ml-3" />}
           </div>
         );
       })}
