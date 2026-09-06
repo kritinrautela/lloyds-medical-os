@@ -4,39 +4,53 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        dark: {
-          bg: '#040812',
-          surface: '#081120',
-          card: 'rgba(11, 22, 42, 0.75)',
-          border: 'rgba(56, 189, 248, 0.12)',
-          borderHover: 'rgba(56, 189, 248, 0.35)',
+        // Surfaces and rules. Everything structural is neutral so that any
+        // colour on screen means a clinical state and nothing else.
+        canvas: '#F4F6F8',
+        surface: '#FFFFFF',
+        subtle: '#F7F9FA',
+        line: {
+          DEFAULT: '#DFE4E9',
+          soft: '#EAEEF1',
+          strong: '#C4CCD4'
         },
+        ink: {
+          DEFAULT: '#101720',
+          2: '#48545F',
+          3: '#6B7885',
+          inverse: '#FFFFFF'
+        },
+        // Lloyds brand. Reserved for identity and the primary action only.
         brand: {
-          cyan: '#00F2FE',
-          blue: '#4FACFE',
-          teal: '#0D9488',
-          emerald: '#10B981',
-          gold: '#F59E0B',
-          rose: '#F43F5E',
-          purple: '#8B5CF6'
-        }
+          DEFAULT: '#C8102E',
+          deep: '#8E0B20',
+          wash: '#FDF2F3'
+        },
+        // Clinical status scale. Never decorative.
+        critical: { DEFAULT: '#B3121F', wash: '#FDF1F2', line: '#F3C9CD' },
+        warn:     { DEFAULT: '#A15C07', wash: '#FDF6EA', line: '#EFD9AE' },
+        ok:       { DEFAULT: '#0B6E4F', wash: '#EFF8F3', line: '#BCE0CE' },
+        info:     { DEFAULT: '#1B4FA0', wash: '#EFF4FC', line: '#C4D6EF' }
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Menlo', 'monospace']
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace']
+      },
+      fontSize: {
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }]
+      },
+      borderRadius: {
+        DEFAULT: '6px',
+        md: '8px',
+        lg: '10px'
       },
       boxShadow: {
-        'glow-cyan': '0 0 25px -5px rgba(0, 242, 254, 0.25)',
-        'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.25)',
-        'glow-amber': '0 0 25px -5px rgba(245, 158, 11, 0.25)',
-        'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.25)',
-        'glow-purple': '0 0 25px -5px rgba(139, 92, 246, 0.25)',
-        'card': '0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
+        panel: '0 1px 2px rgba(16, 23, 32, 0.04), 0 1px 1px rgba(16, 23, 32, 0.03)',
+        raised: '0 4px 12px -2px rgba(16, 23, 32, 0.10), 0 2px 4px -2px rgba(16, 23, 32, 0.06)',
+        overlay: '0 24px 48px -12px rgba(16, 23, 32, 0.24), 0 8px 16px -8px rgba(16, 23, 32, 0.12)'
       }
     },
   },

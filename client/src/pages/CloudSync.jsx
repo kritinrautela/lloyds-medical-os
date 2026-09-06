@@ -153,7 +153,15 @@ export default function CloudSync({ settings, isOnline }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => window.open(api.getGoogleDriveBundleUrl(), '_blank')}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            title="Download full JSON & CSV data pack for manual upload to Google Drive"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-600" />
+            <span>Download Drive Bundle</span>
+          </button>
           <button
             onClick={openGoogleSheetDirect}
             className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-emerald-700 border border-emerald-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"

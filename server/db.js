@@ -312,6 +312,17 @@ async function initDatabase() {
       )
     `);
 
+    // ------------------------------------------------------------------
+    // Schema migrations for databases created by an earlier version.
+    // Each is additive so an existing hospital.db upgrades in place without
+    // losing a single record.
+    // ------------------------------------------------------------------
+    await addColumnIfMissing('users', 'last_seen', 'DATETIME');
+    await addColumnIfMissing('dispensations', 'dispensed_by_user_id', 'INTEGER');
+    await addColumnIfMissing('dispensations', 'dispensed_by_name', 'TEXT');
+    await addColumnIfMissing('dispensations', 'dispensed_by_role', 'TEXT');
+    await addColumnIfMissing('visits', 'checked_in_by', 'TEXT');
+
     // Check if seeded or needs update
     const settings = await getQuery('SELECT * FROM hospital_settings LIMIT 1');
     if (!settings) {
@@ -342,6 +353,23 @@ async function initDatabase() {
     await seedActivityLogsIfEmpty();
   } catch (err) {
     console.error('Database initialization error:', err);
+  }
+}
+
+/**
+ * Adds a column to an existing table only when it is absent. SQLite has no
+ * "ADD COLUMN IF NOT EXISTS", and this system upgrades databases that are
+ * already carrying live patient records, so every schema change has to be
+ * both additive and idempotent.
+ */
+async function addColumnIfMissing(table, column, definition) {
+  try {
+    const columns = await allQuery(`PRAGMA table_info(${table})`);
+    if (!columns || columns.some((c) => c.name === column)) return;
+    await runQuery(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    console.log(`Schema upgrade: added ${table}.${column}`);
+  } catch (err) {
+    console.error(`Schema upgrade failed for ${table}.${column}:`, err.message);
   }
 }
 

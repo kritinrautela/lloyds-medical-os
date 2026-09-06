@@ -93,6 +93,7 @@ export const api = {
   // Export URLs
   getExcelExportUrl: (password = '') => `${BASE_URL}/export/excel?password=${encodeURIComponent(password)}`,
   getDbBackupUrl: () => `${BASE_URL}/export/backup-db`,
+  getGoogleDriveBundleUrl: () => `${BASE_URL}/cloud-sync/export-drive-bundle`,
   
   // Restore DB File
   restoreDb: async (file) => {

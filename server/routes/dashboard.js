@@ -199,13 +199,23 @@ router.post('/shift-notes', async (req, res) => {
 // PUT /api/dashboard/beds/:id (Update Bed Status / Admit / Discharge)
 router.put('/beds/:id', async (req, res) => {
   try {
-    const { status, patient_name, patient_code, acuity_level, diagnosis, attending_doctor, vitals_ticker, notes } = req.body;
+    const { status, patient_name, patient_code, patient_id, age, gender, acuity_level, diagnosis, attending_doctor, vitals_ticker, notes } = req.body;
     const { runQuery, getQuery } = require('../db');
+    const existing = await getQuery('SELECT * FROM inpatient_beds WHERE id = ?', [req.params.id]);
+    if (!existing) return res.status(404).json({ success: false, message: 'Bed not found' });
+
+    const isAdmitting = status === 'Occupied' && existing.status !== 'Occupied';
+    const isDischarging = status !== 'Occupied' && existing.status === 'Occupied';
+
     await runQuery(`
       UPDATE inpatient_beds SET
         status = COALESCE(?, status),
         patient_name = ?,
         patient_code = ?,
+        patient_id = ?,
+        age = ?,
+        gender = ?,
+        admission_date = CASE WHEN ? = 'Occupied' AND admission_date IS NULL THEN CURRENT_TIMESTAMP WHEN ? = 'Available' THEN NULL ELSE admission_date END,
         acuity_level = ?,
         diagnosis = ?,
         attending_doctor = ?,
@@ -214,19 +224,45 @@ router.put('/beds/:id', async (req, res) => {
       WHERE id = ?
     `, [
       status,
-      status === 'Available' ? null : patient_name,
-      status === 'Available' ? null : patient_code,
-      status === 'Available' ? null : acuity_level,
-      status === 'Available' ? null : diagnosis,
-      status === 'Available' ? null : attending_doctor,
-      status === 'Available' ? 'Ready for Admission' : vitals_ticker,
-      notes,
+      status === 'Available' ? null : (patient_name || existing.patient_name),
+      status === 'Available' ? null : (patient_code || existing.patient_code),
+      status === 'Available' ? null : (patient_id || existing.patient_id),
+      status === 'Available' ? null : (age || existing.age),
+      status === 'Available' ? null : (gender || existing.gender),
+      status,
+      status,
+      status === 'Available' ? null : (acuity_level || existing.acuity_level),
+      status === 'Available' ? null : (diagnosis || existing.diagnosis),
+      status === 'Available' ? null : (attending_doctor || existing.attending_doctor),
+      status === 'Available' ? 'Ready for Clinical Admission' : (vitals_ticker || existing.vitals_ticker),
+      notes || existing.notes,
       req.params.id
     ]);
+
+    // Log to Medico-Legal Black Box
+    if (isAdmitting) {
+      await runQuery(`
+        INSERT INTO activity_logs (action_type, user_name, user_role, patient_name, location, details, severity)
+        VALUES ('Inpatient Bed Admission', ?, 'Clinical Staff', ?, 'Inpatient Ward', ?, 'Warning')
+      `, [
+        attending_doctor || 'Chief Medical Officer',
+        patient_name || 'Inpatient',
+        `Admitted to ${existing.bed_code} (${existing.ward_name}) with diagnosis: ${diagnosis || 'Under Observation'}. Acuity: ${acuity_level || 'Moderate'}`
+      ]);
+    } else if (isDischarging) {
+      await runQuery(`
+        INSERT INTO activity_logs (action_type, user_name, user_role, patient_name, location, details, severity)
+        VALUES ('Inpatient Bed Discharge', 'Ward Nurse', 'Nursing Staff', ?, 'Inpatient Ward', ?, 'Info')
+      `, [
+        existing.patient_name || 'Patient',
+        `Discharged from ${existing.bed_code} (${existing.ward_name}). Bed transitioned to ${status}. Notes: ${notes || 'Clinical discharge clearance'}`
+      ]);
+    }
 
     const updated = await getQuery('SELECT * FROM inpatient_beds WHERE id = ?', [req.params.id]);
     res.json({ success: true, bed: updated });
   } catch (err) {
+    console.error('Update bed error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

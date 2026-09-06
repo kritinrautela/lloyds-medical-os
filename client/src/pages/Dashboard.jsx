@@ -6,7 +6,7 @@ import ActivityBlackBox from '../components/ActivityBlackBox';
 import { 
   TraumaMedevacStatusCard, PatientFlowJourney,
   DepartmentPerformance, AlertNotificationCenter, VitalsMonitorGrid,
-  WeatherAlertBanner, QuickStatsSummary
+  QuickStatsSummary
 } from '../components/DashboardWidgets';
 import { 
   Users, Activity, Pill, DollarSign, AlertTriangle, Clock, TrendingUp, 
@@ -16,7 +16,7 @@ import {
   Calendar, Building2, Radio, RefreshCw, Search, Sun, Moon, Zap, 
   ActivitySquare, BarChart3, PieChart, TrendingDown, ArrowUp, ArrowDown,
   Wifi, WifiOff, Eye, Bell, Settings, Layout, Grid, List, MapPin, Crosshair,
-  ThermometerSun, Wind, CloudRain as CloudRainIcon, Droplets, Gauge
+  ThermometerSun, Wind, CloudRain as CloudRainIcon, Droplets, Gauge,AlertOctagon
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
@@ -95,13 +95,13 @@ function GlassCard({ children, className = '', hover = true, glow = false, glowC
 // Modern Stat Card
 function StatCard({ icon: Icon, label, value, subtext, color, trend, trendValue, format = false }) {
   const colorMap = {
-    cyan: { bg: 'from-cyan-500/10 via-sky-500/5 to-white', text: 'text-cyan-600', iconBg: 'bg-cyan-50 border-cyan-200 text-cyan-600', accent: 'border-t-cyan-500', glow: 'shadow-cyan-500/15' },
-    amber: { bg: 'from-amber-500/10 via-orange-500/5 to-white', text: 'text-amber-600', iconBg: 'bg-amber-50 border-amber-200 text-amber-600', accent: 'border-t-amber-500', glow: 'shadow-amber-500/15' },
-    emerald: { bg: 'from-emerald-500/10 via-teal-500/5 to-white', text: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-600', accent: 'border-t-emerald-500', glow: 'shadow-emerald-500/15' },
-    green: { bg: 'from-emerald-500/10 via-teal-500/5 to-white', text: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-600', accent: 'border-t-emerald-500', glow: 'shadow-emerald-500/15' },
-    purple: { bg: 'from-purple-500/10 via-indigo-500/5 to-white', text: 'text-purple-600', iconBg: 'bg-purple-50 border-purple-200 text-purple-600', accent: 'border-t-purple-500', glow: 'shadow-purple-500/15' },
-    rose: { bg: 'from-rose-500/10 via-pink-500/5 to-white', text: 'text-rose-600', iconBg: 'bg-rose-50 border-rose-200 text-rose-600', accent: 'border-t-rose-500', glow: 'shadow-rose-500/15' },
-    red: { bg: 'from-red-500/10 via-rose-500/5 to-white', text: 'text-red-600', iconBg: 'bg-red-50 border-red-200 text-red-600', accent: 'border-t-red-500', glow: 'shadow-red-500/15' }
+    cyan: { bg: 'from-cyan-500/10', text: 'text-cyan-600', iconBg: 'bg-cyan-50 border-cyan-200 text-cyan-600', accent: 'border-t-cyan-500', glow: 'shadow-cyan-500/15' },
+    amber: { bg: 'from-amber-500/10', text: 'text-amber-600', iconBg: 'bg-amber-50 border-amber-200 text-amber-600', accent: 'border-t-amber-500', glow: 'shadow-amber-500/15' },
+    emerald: { bg: 'from-emerald-500/10', text: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-600', accent: 'border-t-emerald-500', glow: 'shadow-emerald-500/15' },
+    green: { bg: 'from-emerald-500/10', text: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-600', accent: 'border-t-emerald-500', glow: 'shadow-emerald-500/15' },
+    purple: { bg: 'from-purple-500/10', text: 'text-purple-600', iconBg: 'bg-purple-50 border-purple-200 text-purple-600', accent: 'border-t-purple-500', glow: 'shadow-purple-500/15' },
+    rose: { bg: 'from-rose-500/10', text: 'text-rose-600', iconBg: 'bg-rose-50 border-rose-200 text-rose-600', accent: 'border-t-rose-500', glow: 'shadow-rose-500/15' },
+    red: { bg: 'from-red-500/10', text: 'text-red-600', iconBg: 'bg-red-50 border-red-200 text-red-600', accent: 'border-t-red-500', glow: 'shadow-red-500/15' }
   };
   
   const c = colorMap[color] || colorMap.cyan;
@@ -121,7 +121,7 @@ function StatCard({ icon: Icon, label, value, subtext, color, trend, trendValue,
       group
     `}>
       {/* Subtle specular corner accent */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/60 to-transparent rounded-bl-full pointer-events-none" />
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/60 rounded-bl-full pointer-events-none" />
       
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3">
@@ -171,45 +171,6 @@ function LiveClock() {
   );
 }
 
-// Weather Widget (Simulated for PNG Mine Site)
-function WeatherWidget() {
-  const [weather] = useState({
-    temp: 32,
-    humidity: 78,
-    condition: 'Partly Cloudy',
-    wind: '12 km/h',
-    wbgt: 32.4,
-    uv: 'Very High'
-  });
-  
-  return (
-    <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white backdrop-blur-xl border border-amber-200/80 rounded-2xl p-4 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <ThermometerSun className="w-4 h-4 text-amber-500" />
-        <span className="text-xs font-bold text-slate-900">Site Conditions</span>
-        <PulseDot color="amber" size="sm" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="text-center p-2 rounded-xl bg-white border border-amber-100 shadow-2xs">
-          <p className="text-2xl font-black text-amber-600 font-mono">{weather.temp}°</p>
-          <p className="text-[9px] text-slate-500 uppercase">Temperature</p>
-        </div>
-        <div className="text-center p-2 rounded-xl bg-white border border-amber-100 shadow-2xs">
-          <p className="text-2xl font-black text-cyan-600 font-mono">{weather.humidity}%</p>
-          <p className="text-[9px] text-slate-500 uppercase">Humidity</p>
-        </div>
-        <div className="text-center p-2 rounded-xl bg-white border border-amber-100 shadow-2xs">
-          <p className="text-lg font-black text-emerald-600 font-mono">{weather.wbgt}°C</p>
-          <p className="text-[9px] text-slate-500 uppercase">WBGT Index</p>
-        </div>
-        <div className="text-center p-2 rounded-xl bg-white border border-amber-100 shadow-2xs">
-          <p className="text-lg font-black text-rose-600 font-mono">{weather.wind}</p>
-          <p className="text-[9px] text-slate-500 uppercase">Wind Speed</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // System Status Bar (Self-contained timer prevents full dashboard re-renders)
 function SystemStatusBar({ isOnline, autoRefreshEnabled, lastRefresh, onToggleRefresh, onRefresh }) {
@@ -283,6 +244,21 @@ export default function Dashboard({
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [selectedBedForAdmit, setSelectedBedForAdmit] = useState(null);
+  const [selectedBedForDischarge, setSelectedBedForDischarge] = useState(null);
+  const [admitForm, setAdmitForm] = useState({
+    patient_name: '',
+    patient_code: '',
+    acuity_level: 'Moderate',
+    diagnosis: '',
+    attending_doctor: '',
+    vitals_ticker: 'BP 120/80 • HR 76 • SpO2 98%',
+    notes: ''
+  });
+  const [dischargeForm, setDischargeForm] = useState({
+    status: 'Cleaning / Sanitizing',
+    notes: 'Clinically stabilized - Discharged to Outpatient Care'
+  });
 
   const currencySymbol = settings?.currency_symbol || 'K';
   const currencyCode = settings?.currency_code || 'PGK';
@@ -356,9 +332,60 @@ export default function Dashboard({
       setNewNoteTitle('');
       setNewNoteContent('');
       setIsNoteModalOpen(false);
-      window.location.reload();
+      if (refreshStats) refreshStats();
     } catch (err) { console.error('Failed to add shift note:', err); }
     finally { setIsSubmittingNote(false); }
+  };
+
+  const handleOpenAdmit = (bed) => {
+    sounds.playClick();
+    setSelectedBedForAdmit(bed);
+    setAdmitForm({
+      patient_name: '',
+      patient_code: `LMEL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-ADM`,
+      acuity_level: 'Moderate',
+      diagnosis: '',
+      attending_doctor: currentUser?.full_name || 'Chief Medical Officer',
+      vitals_ticker: 'BP 120/80 • HR 76 • SpO2 98%',
+      notes: ''
+    });
+  };
+
+  const handleOpenDischarge = (bed) => {
+    sounds.playClick();
+    setSelectedBedForDischarge(bed);
+    setDischargeForm({
+      status: 'Cleaning / Sanitizing',
+      notes: 'Patient clinically stabilized and cleared for discharge.'
+    });
+  };
+
+  const handleConfirmAdmit = async (e) => {
+    e.preventDefault();
+    if (!selectedBedForAdmit) return;
+    try {
+      await api.updateBedStatus(selectedBedForAdmit.id, {
+        status: 'Occupied',
+        ...admitForm
+      });
+      sounds.playSuccessChime();
+      setSelectedBedForAdmit(null);
+      if (refreshStats) refreshStats();
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleConfirmDischarge = async (e) => {
+    e.preventDefault();
+    if (!selectedBedForDischarge) return;
+    try {
+      await api.updateBedStatus(selectedBedForDischarge.id, {
+        status: dischargeForm.status,
+        notes: dischargeForm.notes
+      });
+      sounds.playSuccessChime();
+      setSelectedBedForDischarge(null);
+      if (refreshStats) refreshStats();
+    } catch (err) { alert(err.message); }
   };
 
   const handleBedStatusToggle = async (bed) => {
@@ -391,12 +418,12 @@ export default function Dashboard({
   ];
 
   const actionColors = {
-    emerald: 'from-emerald-500/15 via-teal-500/5 to-white border-emerald-200/90 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10',
-    red: 'from-red-500/15 via-rose-500/5 to-white border-red-200/90 hover:border-red-400 hover:shadow-lg hover:shadow-red-500/10',
-    cyan: 'from-cyan-500/15 via-sky-500/5 to-white border-cyan-200/90 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10',
-    purple: 'from-purple-500/15 via-indigo-500/5 to-white border-purple-200/90 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/10',
-    amber: 'from-amber-500/15 via-orange-500/5 to-white border-amber-200/90 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10',
-    blue: 'from-blue-500/15 via-indigo-500/5 to-white border-blue-200/90 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10'
+    emerald: 'from-emerald-500/15 border-emerald-200/90 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10',
+    red: 'from-red-500/15 border-red-200/90 hover:border-red-400 hover:shadow-lg hover:shadow-red-500/10',
+    cyan: 'from-cyan-500/15 border-cyan-200/90 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10',
+    purple: 'from-purple-500/15 border-purple-200/90 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/10',
+    amber: 'from-amber-500/15 border-amber-200/90 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10',
+    blue: 'from-blue-500/15 border-blue-200/90 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10'
   };
 
   const actionIconBg = {
@@ -438,8 +465,8 @@ export default function Dashboard({
             <div 
               className={`h-full rounded-full transition-all duration-1000 ease-out ${
                 currentShift.color === 'amber' 
-                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500' 
-                  : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                  : 'bg-gradient-to-r from-blue-500 to-purple-500'
               }`}
               style={{ width: `${Math.min(currentShift.progress, 100)}%` }}
             />
@@ -512,7 +539,7 @@ export default function Dashboard({
             </button>
             <button
               onClick={() => { sounds.playClick(); onOpenExport(); }}
-              className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white transition-all shadow-md shadow-red-500/20 hover:shadow-red-500/30"
+              className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 hover:from-red-500 hover:to-rose-500 text-white transition-all shadow-md shadow-red-500/20 hover:shadow-red-500/30"
               title="Download Locked Excel"
             >
               <Lock className="w-4 h-4" />
@@ -532,7 +559,7 @@ export default function Dashboard({
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="px-3 py-1 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white font-mono text-[10px] font-black uppercase tracking-widest shadow-md shadow-red-500/20">
+                <span className="px-3 py-1 rounded-lg bg-red-600 text-white font-mono text-[10px] font-black uppercase tracking-widest">
                   LLOYDS PNG
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
@@ -545,7 +572,7 @@ export default function Dashboard({
               </div>
 
               <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-                Hospital & Clinical <span className="bg-gradient-to-r from-red-600 via-rose-600 to-red-500 bg-clip-text text-transparent">Command Center</span>
+                Hospital & Clinical Dashboard
               </h1>
 
               <p className="text-sm text-slate-600 max-w-2xl leading-relaxed">
@@ -554,40 +581,12 @@ export default function Dashboard({
                 Operating 100% offline with password-protected, read-only audit controls.
               </p>
             </div>
-
-            {/* Weather Widget (Desktop) */}
-            <div className="hidden xl:block">
-              <WeatherWidget />
-            </div>
-          </div>
-
-          {/* Quick Action Launchpad */}
-          <div className="mt-6 pt-6 border-t border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.id}
-                  onClick={() => { sounds.playClick(); action.onClick(); }}
-                  className={`p-4 rounded-xl bg-gradient-to-b ${actionColors[action.color]} border transition-all duration-300 hover:scale-[1.03] hover:shadow-lg group text-left`}
-                >
-                  <div className={`w-10 h-10 rounded-xl ${actionIconBg[action.color]} flex items-center justify-center mb-3 transition-all ${action.pulse ? 'animate-pulse' : ''}`}>
-                    <Icon className="w-5 h-5 stroke-[2]" />
-                  </div>
-                  <p className="text-xs font-bold text-slate-800 group-hover:text-slate-950 transition-colors leading-tight">
-                    {action.label}
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{action.sub}</p>
-                </button>
-              );
-            })}
           </div>
         </div>
       </GlassCard>
 
       {/* WEATHER ALERT BANNER (CLICKABLE TO OPEN OHS) */}
       <div onClick={() => setSelectedDashboardTab('ohs')} className="cursor-pointer">
-        <WeatherAlertBanner />
       </div>
 
       {/* HOSPITAL OPERATIONS & CLINICAL DATA PIPELINE */}
@@ -742,8 +741,8 @@ export default function Dashboard({
                     <div 
                       className={`w-full rounded-xl transition-all duration-700 ease-out ${
                         isToday 
-                          ? 'bg-gradient-to-t from-cyan-600 via-cyan-500 to-cyan-400 shadow-md shadow-cyan-500/20' 
-                          : 'bg-gradient-to-t from-slate-300 via-slate-200 to-slate-200 group-hover:from-cyan-400 group-hover:to-cyan-300'
+                          ? 'bg-gradient-to-t from-cyan-600 shadow-md shadow-cyan-500/20' 
+                          : 'bg-gradient-to-t from-slate-300 group-hover:from-cyan-400 group-hover:to-cyan-300'
                       }`}
                       style={{ height: `${Math.max(heightPercent, 12)}%`, minHeight: '8px' }}
                     />
@@ -862,7 +861,7 @@ export default function Dashboard({
                     </div>
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
                       <div 
-                        className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-700"
+                        className="bg-gradient-to-r from-purple-500 h-full rounded-full transition-all duration-700"
                         style={{ width: `${(med.total_dispensed / maxDispensed) * 100}%` }}
                       />
                     </div>
@@ -897,7 +896,7 @@ export default function Dashboard({
           
           <div className="space-y-4">
             {/* Low Stock */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-white border border-rose-200 hover:border-rose-300 transition-all">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-rose-50 border border-rose-200 hover:border-rose-300 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-rose-100 text-rose-600">
@@ -913,7 +912,7 @@ export default function Dashboard({
             </div>
 
             {/* Expiring Soon */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-white border border-amber-200 hover:border-amber-300 transition-all">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 border border-amber-200 hover:border-amber-300 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
@@ -960,7 +959,7 @@ export default function Dashboard({
               onClick={() => handleTabChange(tab.id)}
               className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 ${
                 isActive
-                  ? 'bg-gradient-to-r from-red-600 via-red-500 to-rose-600 text-white shadow-md shadow-red-500/20 border-transparent glow-lloyds-red'
+                  ? 'bg-gradient-to-r from-red-600 text-white shadow-md shadow-red-500/20 border-transparent glow-lloyds-red'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
               }`}
             >
@@ -1018,7 +1017,7 @@ export default function Dashboard({
                     High Priority Cases Under Active Care
                   </span>
                   {stats.urgentVisits.map((v) => (
-                    <div key={v.id} className="p-4 rounded-xl bg-gradient-to-r from-red-50/80 to-white border border-red-200/90 flex items-center justify-between gap-4 hover:border-red-300 transition-all shadow-2xs">
+                    <div key={v.id} className="p-4 rounded-xl bg-gradient-to-r from-red-50/80 border border-red-200/90 flex items-center justify-between gap-4 hover:border-red-300 transition-all shadow-2xs">
                       <div className="flex items-center gap-3">
                         <div className="px-2.5 py-1 rounded-lg bg-red-100 text-red-700 font-black font-mono text-xs">
                           {v.triage_priority}
@@ -1051,9 +1050,9 @@ export default function Dashboard({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { title: 'Malaria RDT Positivity', value: '60%', detail: '(3 / 5 Tested)', badge: 'Pf Dominant', badgeColor: 'rose', progress: 60, progressColor: 'from-rose-500 to-rose-400', note: 'Coartem & Artesunate 1st-line protocol active.' },
-                  { title: 'Snakebite & Antivenom', value: '6 Vials', detail: 'Polyvalent', badge: 'Prepped', badgeColor: 'emerald', progress: 75, progressColor: 'from-emerald-500 to-emerald-400', note: 'CSL Seqirus Taipan/Death Adder at 3.8°C cold chain.' },
-                  { title: 'Mine OHS Zero Harm', value: '100%', detail: 'Fit for Work', badge: '0 LTI', badgeColor: 'emerald', progress: 100, progressColor: 'from-emerald-500 to-emerald-400', note: 'Hydration rotation enforced at Pit 3 (WBGT 32°C).' }
+                  { title: 'Malaria RDT Positivity', value: '60%', detail: '(3 / 5 Tested)', badge: 'Pf Dominant', badgeColor: 'rose', progress: 60, progressColor: 'from-rose-500 to-red-500', note: 'Coartem & Artesunate 1st-line protocol active.' },
+                  { title: 'Snakebite & Antivenom', value: '6 Vials', detail: 'Polyvalent', badge: 'Prepped', badgeColor: 'emerald', progress: 75, progressColor: 'from-emerald-500 to-teal-500', note: 'CSL Seqirus Taipan/Death Adder at 3.8°C cold chain.' },
+                  { title: 'Mine OHS Zero Harm', value: '100%', detail: 'Fit for Work', badge: '0 LTI', badgeColor: 'emerald', progress: 100, progressColor: 'from-emerald-500 to-teal-500', note: 'Hydration rotation enforced at Pit 3 (WBGT 32°C).' }
                 ].map((item, i) => (
                   <div key={i} className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-3 hover:border-slate-300 transition-all shadow-2xs">
                     <div className="flex items-center justify-between">
@@ -1182,7 +1181,7 @@ export default function Dashboard({
               return (
                 <div key={bed.id} className={`p-5 rounded-2xl border transition-all duration-300 ${
                   isOccupied 
-                    ? 'border-red-200 bg-gradient-to-b from-red-50/70 to-white shadow-md shadow-red-500/10' 
+                    ? 'border-red-200 bg-from-red-50/70 shadow-md shadow-red-500/10' 
                     : isCleaning
                     ? 'border-amber-200 bg-amber-50/60'
                     : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-md'
@@ -1220,11 +1219,14 @@ export default function Dashboard({
 
                   <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between">
                     <span className="text-[10px] text-slate-500 font-mono">{isOccupied ? bed.acuity_level : 'Status: Ready'}</span>
-                    <button onClick={() => handleBedStatusToggle(bed)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      isOccupied 
-                        ? 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200'
-                        : 'bg-red-50 hover:bg-red-600 text-red-700 hover:text-white border border-red-200'
-                    }`}>
+                    <button 
+                      onClick={() => isOccupied ? handleOpenDischarge(bed) : handleOpenAdmit(bed)} 
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isOccupied 
+                          ? 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200'
+                          : 'bg-red-50 hover:bg-red-600 text-red-700 hover:text-white border border-red-200'
+                      }`}
+                    >
                       {isOccupied ? 'Discharge' : 'Admit'}
                     </button>
                   </div>
@@ -1237,7 +1239,7 @@ export default function Dashboard({
 
       {/* TAB 4: BLACK BOX */}
       {selectedDashboardTab === 'blackbox' && (
-        <ActivityBlackBox activities={stats?.activities || []} onLogNewActivity={() => window.location.reload()} />
+        <ActivityBlackBox activities={stats?.activities || []} onLogNewActivity={() => { if (refreshStats) refreshStats(); }} />
       )}
 
       {/* TAB 5: MINE OHS */}
@@ -1329,7 +1331,7 @@ export default function Dashboard({
               </h2>
               <p className="text-xs text-slate-500 mt-1">Official clinical handover notes between Day Shift (06:00 - 18:00) and Night Shift (18:00 - 06:00).</p>
             </div>
-            <button onClick={() => { sounds.playClick(); setIsNoteModalOpen(true); }} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-red-500/25 transition-all">
+            <button onClick={() => { sounds.playClick(); setIsNoteModalOpen(true); }} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-red-500/25 transition-all">
               <Plus className="w-4 h-4" />
               + Record Handover Note
             </button>
@@ -1341,8 +1343,8 @@ export default function Dashboard({
               const isAlert = n.priority === 'Clinical Alert';
               return (
                 <div key={n.id} className={`p-5 rounded-2xl border transition-all ${
-                  isCritical ? 'bg-gradient-to-r from-red-50/90 to-rose-50/40 border-red-200 shadow-sm' 
-                  : isAlert ? 'bg-gradient-to-r from-amber-50/90 to-orange-50/40 border-amber-200 shadow-2xs'
+                  isCritical ? 'bg-gradient-to-r from-red-50/90 border-red-200 shadow-sm' 
+                  : isAlert ? 'bg-gradient-to-r from-amber-50/90 border-amber-200 shadow-2xs'
                   : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
                 }`}>
                   <div className="flex items-start justify-between gap-4">
@@ -1428,8 +1430,226 @@ export default function Dashboard({
 
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button type="button" onClick={() => setIsNoteModalOpen(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition-all">Cancel</button>
-                <button type="submit" disabled={isSubmittingNote} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-md shadow-red-500/25 disabled:opacity-50 transition-all">
+                <button type="submit" disabled={isSubmittingNote} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-md shadow-red-500/25 disabled:opacity-50 transition-all">
                   {isSubmittingNote ? 'Recording...' : 'Submit Handover Note'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADMIT INPATIENT */}
+      {selectedBedForAdmit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-red-50 to-rose-50/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black shadow-md shadow-red-500/20">
+                  <BedDouble className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    Inpatient Ward Admission
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-red-100 text-red-700">
+                      {selectedBedForAdmit.bed_number}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">{selectedBedForAdmit.ward_name} • {selectedBedForAdmit.bed_type}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedBedForAdmit(null)} 
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmAdmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Patient Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Gabriel Kua"
+                    value={admitForm.patient_name}
+                    onChange={(e) => setAdmitForm({ ...admitForm, patient_name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Patient / Worker ID</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. LMEL-2026-081"
+                    value={admitForm.patient_code}
+                    onChange={(e) => setAdmitForm({ ...admitForm, patient_code: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Clinical Acuity Level</label>
+                  <select
+                    value={admitForm.acuity_level}
+                    onChange={(e) => setAdmitForm({ ...admitForm, acuity_level: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30 font-medium"
+                  >
+                    <option value="Critical (Acuity 1)">Resuscitation / Critical (Acuity 1)</option>
+                    <option value="Emergency (Acuity 2)">Emergency / High Dependency (Acuity 2)</option>
+                    <option value="Urgent (Acuity 3)">Urgent Inpatient (Acuity 3)</option>
+                    <option value="Moderate (Acuity 4)">Moderate Observation (Acuity 4)</option>
+                    <option value="Stable (Acuity 5)">Stable Step-Down (Acuity 5)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Attending Medical Officer</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dr. Samuel Mara, CMO"
+                    value={admitForm.attending_doctor}
+                    onChange={(e) => setAdmitForm({ ...admitForm, attending_doctor: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Primary Clinical Diagnosis *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Severe P. falciparum Malaria with hyperpyrexia"
+                  value={admitForm.diagnosis}
+                  onChange={(e) => setAdmitForm({ ...admitForm, diagnosis: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Admission Vitals Ticker</label>
+                <input
+                  type="text"
+                  placeholder="e.g. BP 120/80 • HR 76 • SpO2 98% • Temp 38.6°C"
+                  value={admitForm.vitals_ticker}
+                  onChange={(e) => setAdmitForm({ ...admitForm, vitals_ticker: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Clinical Protocol & Ward Instructions</label>
+                <textarea
+                  rows={3}
+                  placeholder="IV artesunate protocol, continuous pulse oximetry, hourly fluid balance..."
+                  value={admitForm.notes}
+                  onChange={(e) => setAdmitForm({ ...admitForm, notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBedForAdmit(null)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-md shadow-red-500/25 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Confirm Inpatient Admission
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DISCHARGE INPATIENT */}
+      {selectedBedForDischarge && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    Discharge Patient & Release Bed
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800">
+                      {selectedBedForDischarge.bed_number}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">{selectedBedForDischarge.ward_name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedBedForDischarge(null)} 
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDischarge} className="p-6 space-y-4">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-900">{selectedBedForDischarge.patient_name}</span>
+                  <span className="text-slate-500 font-mono text-[10px]">{selectedBedForDischarge.patient_code}</span>
+                </div>
+                <p className="text-xs text-slate-600">Diagnosis: <span className="font-semibold text-slate-900">{selectedBedForDischarge.diagnosis || 'General Observation'}</span></p>
+                <p className="text-[11px] text-slate-500">Attending: {selectedBedForDischarge.attending_doctor || 'Medical Staff'}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">New Bed Status</label>
+                <select
+                  value={dischargeForm.status}
+                  onChange={(e) => setDischargeForm({ ...dischargeForm, status: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 font-medium"
+                >
+                  <option value="Cleaning / Sanitizing">Cleaning / Sanitizing (Terminal Disinfection Required)</option>
+                  <option value="Available">Available (Sanitized & Ready Immediate)</option>
+                  <option value="Maintenance / Quarantine">Maintenance / Isolation Quarantine</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Discharge Summary & Audit Note</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={dischargeForm.notes}
+                  onChange={(e) => setDischargeForm({ ...dischargeForm, notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  placeholder="Patient clinically cleared. Prescriptions dispensed. Bed ready for sanitization."
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBedForDischarge(null)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md shadow-emerald-500/25 transition-all cursor-pointer"
+                >
+                  Confirm Discharge
                 </button>
               </div>
             </form>

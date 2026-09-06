@@ -98,30 +98,38 @@ Lloyds Medical OS provides an end-to-end clinical workflow from the moment a pat
 - Automatic urgency flags for fever, hypertension, tachycardia, and low oxygen.
 - Real-time telemetry monitor showing clinic status.
 
-### 3. 👨‍⚕️ Doctor Consultation Suite
-- See the live waiting queue of triaged patients.
-- Review past medical history and allergies.
-- Record clinical notes, physical examination findings, and ICD diagnoses.
-- Authorize electronic prescriptions directly sent to the dispensary.
+### 3. 👨‍⚕️ Doctor Consultation Suite & Clinical Decision Support (CDS)
+- **Live Waiting Queue:** Real-time visibility into triaged patients, waiting duration, and triage priority.
+- **Automated Hemodynamic CDS:** Real-time calculation of **Shock Index (`HR / SBP`)**, **Mean Arterial Pressure (MAP)**, and **NEWS2 Risk Scoring** bar.
+- **Patient Allergy Cross-Check:** Instant pulsing warning banner if a patient has documented sensitivities (e.g. Penicillin, Sulphonamides, Aspirin).
+- **1-Click ICD-10 Diagnostic Presets:** Instant diagnostic coding for PNG regional emergencies (*Falciparum Malaria B50.9*, *Snake Venom T63.0*, *Blast Trauma T14.1*, *Heat Exhaustion T67.0*).
+- **Rapid Diagnostic Test (RDT) Ordering:** 1-click lab orders for Malaria RDT, 20-Min Whole Blood Clotting Test (20WBCT), Blood Glucose, Dengue NS1, and FBC.
+- **Electronic Prescriptions:** Authorize medication orders directly sent to the dispensary.
 
 ### 4. 💊 Pharmacy, Stock Control & POS Cashier
-- Pre-loaded with over 50 essential medicines (antimalarials, antibiotics, IV fluids, pain relief).
-- Automatic stock deduction when medication is dispensed.
-- Tracks batch numbers, low-stock warnings, and expiration dates (FEFO).
-- Built-in Point of Sale (POS) cashiering that collects fees in PNG Kina (PGK) and prints bilingual receipts.
+- Pre-loaded with essential medicines (antimalarials, CSL antivenom, antibiotics, IV fluids, analgesics).
+- Automatic inventory decrement upon prescription dispensation with batch tracking and FEFO expiry guards.
+- Point of Sale (POS) cashiering collecting consultation fees & medication costs in PNG Kina (PGK) with A4 itemized tax invoices.
 
-### 5. 🛏️ Observation Bays & Trauma Beds
-- Live status of 10 observation beds and trauma bays (Resuscitation Bay, Snakebite/Toxicology Bay, Mine Occupational Health Bay, Tropical Ward).
-- Aeromedical medevac readiness tracking for emergency helicopter evacuation.
+### 5. 🛏️ Inpatient Ward Census & Bed Management (10 Beds)
+- Interactive admission & discharge for 10 specialized ward bays (*Emergency Resuscitation, Snakebite Toxicology, Mine OHS, Tropical Medicine, Minor Surgical*).
+- Clinical Acuity categorization: *Resuscitation (Acuity 1)*, *High Dependency (Acuity 2)*, *Urgent (Acuity 3)*, *Moderate (Acuity 4)*, and *Stable (Acuity 5)*.
+- Live attending doctor tracking, telemetry vitals ticker, and decontamination/sanitization status workflow.
 
-### 6. 💰 End-of-Day Financial Balancing
+### 6. 💰 End-of-Day Financial Balancing & Shift Handover
 - Reconciles total consultation fees + pharmacy sales against physical cash in the clinic safe.
 - Enforces zero-variance balancing (`0.00`) before shift closure to prevent theft and drug diversion.
-- Prints an official A4 Shift Audit Sheet ready for doctor and supervisor signatures.
+- Shift handover digital logbook passed seamlessly across Day & Night shifts without page reloads.
 
-### 7. 🔒 Tamper-Proof Black Box & Encrypted Excel
-- **Black Box Recorder:** Every check-in, prescription change, login, and setting update is logged with exact time and staff name.
-- **AES-256 Encrypted Excel:** Export full clinical and financial data into a password-protected multi-tab Excel workbook (decryption PIN: `lloyds2026`).
+### 7. ☁️ Offline-First with Hybrid Google Drive & Sheets Sync
+- **100% Offline Local SQLite WAL:** Operates uninterrupted with zero internet access.
+- **1-Click Google Drive Data Pack:** Download a multi-table bundle (.JSON + multi-sheet CSV tables for Patients, Visits, Pharmacy, Dispensations, Inpatient Beds, and OHS Incidents).
+- **Embedded Google Sheets Formulas:** Pre-configured with `=SUM()`, `=COUNTIF()`, and `=AVERAGE()` formulas for instant cloud analytics.
+- **Automatic Wi-Fi Detection:** Background auto-sync flushes queued shift records to Google Drive and webhook endpoints the moment clinic Wi-Fi detects an active internet uplink.
+
+### 8. 🔒 Tamper-Proof Black Box & Encrypted Excel
+- **Black Box Recorder:** Every admission, prescription dispensation, check-in, and settings modification is recorded in a cryptographically sequenced audit log.
+- **AES-256 Encrypted Excel:** Generates corporate-grade, password-protected multi-tab Excel workbooks (decryption PIN: `lloyds2026`).
 
 ---
 

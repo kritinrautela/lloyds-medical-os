@@ -677,54 +677,6 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
 }
 
 // Weather Alert Banner
-export function WeatherAlertBanner() {
-  const [weather] = useState({
-    temp: 32,
-    humidity: 78,
-    wbgt: 32.4,
-    condition: 'Partly Cloudy',
-    alert: 'Heat Stress Advisory',
-    alertLevel: 'Condition Yellow'
-  });
-
-  return (
-    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 border border-amber-200 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-600">
-            <ThermometerSun className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-slate-900">Environmental Health & Heat Stress</h4>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                {weather.alertLevel}
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {weather.alert} — Wet Bulb Globe Temperature (WBGT) is <strong className="text-amber-700 font-bold">{weather.wbgt}°C</strong> at Markham Pit 3. 15-min hydration rotation active.
-            </p>
-          </div>
-        </div>
-        
-        <div className="hidden md:flex items-center gap-6">
-          <div className="text-center">
-            <p className="text-2xl font-black text-amber-700 font-mono">{weather.temp}°C</p>
-            <p className="text-[9px] text-slate-500 uppercase font-semibold">Ambient Temp</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-black text-cyan-700 font-mono">{weather.humidity}%</p>
-            <p className="text-[9px] text-slate-500 uppercase font-semibold">Humidity</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-black text-emerald-700 font-mono">{weather.wbgt}°C</p>
-            <p className="text-[9px] text-slate-500 uppercase font-semibold">WBGT Index</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Quick Stats Summary
 export function QuickStatsSummary({ stats, formatKina }) {

@@ -249,4 +249,86 @@ function postJson(targetUrl, data) {
   });
 }
 
+// GET /api/cloud-sync/export-drive-bundle (One-touch Google Drive / Sheets Backup Bundle)
+router.get('/export-drive-bundle', async (req, res) => {
+  try {
+    const settings = await getQuery('SELECT * FROM hospital_settings LIMIT 1');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const patients = await allQuery('SELECT * FROM patients ORDER BY id DESC');
+    const visits = await allQuery('SELECT * FROM visits ORDER BY id DESC LIMIT 200');
+    const drugs = await allQuery('SELECT * FROM drugs ORDER BY category, name');
+    const dispensations = await allQuery('SELECT * FROM dispensations ORDER BY id DESC LIMIT 200');
+    const beds = await allQuery('SELECT * FROM inpatient_beds ORDER BY id ASC');
+    const incidents = await allQuery('SELECT * FROM occupational_incidents ORDER BY id DESC');
+    const eodReports = await allQuery('SELECT * FROM end_of_day_reports ORDER BY id DESC LIMIT 30');
+
+    // Generate CSV for Google Sheets
+    function toCsv(rows, headers) {
+      if (!rows || !rows.length) return headers.join(',') + '\n';
+      const lines = [headers.join(',')];
+      for (const r of rows) {
+        const line = headers.map(h => {
+          const val = r[h] !== undefined && r[h] !== null ? String(r[h]).replace(/"/g, '""') : '';
+          return `"${val}"`;
+        }).join(',');
+        lines.push(line);
+      }
+      return lines.join('\n');
+    }
+
+    const driveBundle = {
+      facility: settings?.name || 'Lloyds Metals & Energy Ltd',
+      export_date: todayStr,
+      generated_at: new Date().toISOString(),
+      architecture: 'Offline-First SQLite WAL with Google Cloud Hybrid Sync',
+      summary: {
+        total_patients: patients.length,
+        total_visits: visits.length,
+        formulary_items: drugs.length,
+        total_dispensations: dispensations.length,
+        inpatient_beds_count: beds.length,
+        ohs_incidents: incidents.length
+      },
+      google_sheets_formula_presets: {
+        total_revenue: '=SUM(Dispensations!E2:E) + SUM(Visits!N2:N)',
+        total_patients_seen: '=COUNTA(Visits!A2:A)',
+        acute_triage_count: '=COUNTIF(Visits!E2:E, "Emergency") + COUNTIF(Visits!E2:E, "Urgent")',
+        low_stock_reorder_alert: '=COUNTIF(Pharmacy!F2:F, "REORDER")'
+      },
+      csv_sheets: {
+        patients: toCsv(patients, ['patient_code', 'full_name', 'age', 'gender', 'blood_group', 'allergies', 'address_or_village']),
+        visits: toCsv(visits, ['visit_code', 'patient_id', 'visit_date', 'reason', 'triage_priority', 'bp', 'pulse', 'temp', 'spo2', 'diagnosis', 'status', 'consultation_fee']),
+        pharmacy_inventory: toCsv(drugs, ['code', 'name', 'category', 'strength', 'dosage_form', 'stock_quantity', 'min_stock_alert', 'unit_price', 'expiry_date']),
+        dispensations: toCsv(dispensations, ['invoice_number', 'patient_name', 'total_amount', 'paid_amount', 'payment_status', 'created_at']),
+        inpatient_beds: toCsv(beds, ['bed_code', 'ward_name', 'status', 'patient_name', 'acuity_level', 'diagnosis', 'attending_doctor', 'admission_date']),
+        ohs_incidents: toCsv(incidents, ['incident_code', 'patient_name', 'department', 'incident_type', 'severity', 'fit_for_work_status'])
+      },
+      raw_json_data: {
+        patients,
+        visits,
+        drugs,
+        dispensations,
+        beds,
+        incidents,
+        eodReports
+      }
+    };
+
+    // Log to sync audit
+    await runQuery(`
+      INSERT INTO sync_logs (sync_type, records_count, status, message)
+      VALUES ('Google Drive Data Pack Export', ?, 'Success', 'Exported comprehensive Google Drive JSON & CSV data pack for cloud backup.')
+    `, [patients.length + visits.length + drugs.length + dispensations.length]);
+
+    const filename = `Lloyds_Hospital_GoogleDrive_Sync_${todayStr.replace(/-/g, '')}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(driveBundle, null, 2));
+  } catch (err) {
+    console.error('Export drive bundle error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
+
