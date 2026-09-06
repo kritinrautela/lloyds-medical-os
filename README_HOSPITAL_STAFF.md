@@ -1,100 +1,130 @@
-# LLOYDS METALS & ENERGY LTD (PNG OPERATIONS)
-### Clinical Operating Manual, Staff Account Guide & USB Pen-Drive Protocol
+# 🏥 Lloyds Medical OS — Clinical Staff Operating Guide
+### Standard Operating Procedures & Quick Reference Manual
+**Lloyds Metals & Energy Limited** • *Mining & Occupational Health Division*
 
 ---
 
-## 🏥 1. System Overview & Offline Portability
-This hospital management and pharmacy operating system is tailored specifically for **Lloyds Metals & Energy Ltd** remote mining operations and community clinics in **Papua New Guinea (Morobe Concession / Markham Valley)**.
+## ⚡ 1. Starting the Clinic System
 
-- **100% Offline-First**: Runs locally on any Windows PC or Mac directly from a USB flash drive (pen-drive) without requiring internet or Wi-Fi.
-- **Embedded SQLite Database**: All patient records, clinical notes, rapid test results, and pharmacy transactions persist in `server/data/hospital.db` on the flash drive.
-- **Official Lloyds Metals Branding**: Integrates the official corporate identity (`https://lloyds.in/`): black spoked-wheel emblem alongside the vibrant red (`#E31E24`) rectangular banner with bold black lettering `LLOYDS METALS`.
+The platform runs 100% locally from your computer or clinic USB flash drive. No internet connection is required.
+
+- **On Windows:** Double-click `Start_Hospital_Windows.bat`
+- **On Mac:** Double-click `Start_Hospital_Mac.command`
+
+Your default browser will open automatically to **`http://localhost:4000`**.
 
 ---
 
-## 🚀 2. Quick Launch Guide (Double-Click Execution)
+## 👥 2. Staff Roles & Default Login Passwords
 
-### On Windows:
-1. Plug in your USB Pen Drive.
-2. Double-click:
-   ```cmd
-   Start_Hospital_Windows.bat
+All default accounts use the password: **`lloyds2026`**
+
+| Role | Username | Password | Operational Duties |
+| :--- | :--- | :--- | :--- |
+| **Chief Medical Officer (Doctor)** | `doctor` | `lloyds2026` | Consultations, diagnosis, electronic prescriptions, inpatient admissions, shift sign-off |
+| **Senior Triage Nurse** | `triage_officer` | `lloyds2026` | Patient check-in, vital signs intake, rapid malaria tests, observation bay monitoring |
+| **Registered Pharmacist** | `pharmacist` | `lloyds2026` | Medication dispensing, inventory stock count, batch expiry control, POS cashiering |
+| **Clinic Administrator** | `admin` | `lloyds2026` | Staff account creation, password resets, facility accreditation, system settings |
+
+### Fast Shift Switch:
+- Click **"Switch"** in the sidebar or top navigation bar to change duty officers instantly during shift handovers.
+- Clinicians can register new staff accounts anytime under **Staff Management**.
+
+---
+
+## 📋 3. Step-by-Step Daily Patient Journey
+
+```
+[ Step 1: Check-In ] ──► [ Step 2: Triage ] ──► [ Step 3: Doctor ] ──► [ Step 4: Pharmacy ]
+```
+
+### Step 1: Patient Check-In (Triage Desk)
+1. Click the green **"Check-in"** button in the top navigation bar.
+2. Enter patient name, age, gender, and village or mine department.
+3. The system automatically creates a unique date-stamped ID (e.g. `LMEL-20260906-001`). This ensures patients with similar names are never confused.
+4. Click **"Check-in Patient"** to add them to the triage queue.
+
+### Step 2: Vital Signs & Urgency Classification (Nurse)
+1. In the **OPD & Triage Queue**, click on the patient.
+2. Enter Blood Pressure, Pulse, SpO2, Temperature, Respiration Rate, and Weight.
+3. The system highlights abnormal readings (fever, high BP, tachycardia, low oxygen) automatically.
+4. Assign Manchester urgency category (*Emergency*, *Urgent*, or *Standard*).
+5. The patient moves automatically into the Doctor's consultation waiting list.
+
+### Step 3: Medical Consultation & Electronic Prescription (Doctor)
+1. Open the **OPD & Triage Queue** and select the next waiting patient.
+2. Review the patient's recorded vitals, chief complaint, and allergy warnings.
+3. Enter clinical progress notes, physical exam findings, and diagnosis.
+4. Select medications from the Essential Medicines Formulary and specify dosage instructions.
+5. Click **"Save & Send to Pharmacy"**. The patient status updates to *At Pharmacy*.
+
+### Step 4: Medication Dispensing & POS Cashiering (Pharmacist)
+1. Open the **Dispensing POS** tab and select the patient from the prescription list.
+2. Verify medication packages, batch numbers, and expiry dates.
+3. Collect the consultation and medication fee in PNG Kina (PGK).
+4. Click **"Dispense & Print Receipt"**.
+5. The system automatically deducts stock from inventory and prints a bilingual official receipt.
+
+---
+
+## 🛏️ 4. Observation Bays & Emergency Trauma Care
+
+The clinic is equipped with a 10-bed observation and critical care matrix:
+- **Beds 1 & 2 (Emergency Resuscitation Bays):** Severe malaria IV artesunate, acute blast/trauma resuscitation.
+- **Beds 3 to 6 (Tropical Ward):** Wound care, IV hydration, post-consultation observation, isolation.
+- **Beds 7 & 8 (Mine Occupational Health Bays):** Heavy equipment crush injuries, heat stress, occupational spirometry.
+- **Bed 9 (Toxicology & Snakebite Bay):** Death Adder / Papuan Taipan 20WBCT venom testing bed.
+- **Bed 10 (Procedure Table):** Sterile suture packs and minor surgical procedures.
+
+---
+
+## 💰 5. End-of-Day Shift Closeout Protocol
+
+To prevent pharmaceutical diversion and ensure financial accountability:
+
+1. At the end of the shift, go to **Shift Reconciliation**.
+2. Count all physical cash in the clinic safe or cash drawer.
+3. Enter the physical cash count into the reconciliation box.
+4. Confirm that the system displays **`0.00 BALANCED`**.
+5. Enter shift handover notes and click **"Close & Finalize Today's Shift"**.
+6. Click **"Print Shift Audit Report"** to print the official A4 Shift Certificate.
+7. Have the Supervising Doctor and Shift Pharmacist physically sign the report.
+
+---
+
+## 💾 6. Safe USB Pen Drive Eject
+
+When running the system directly from a USB drive:
+1. Complete the End-of-Day shift closeout.
+2. Double-click the eject script:
+   - **Windows:** `Safe_Pen_Drive_Eject.bat`
+   - **Mac:** `Safe_Pen_Drive_Eject.command`
+3. This flushes all SQLite database records cleanly to the drive before unplugging, preventing file corruption.
+
+---
+
+## 📶 7. Using Tablets on Clinic Local Wi-Fi
+
+Multiple staff members can work simultaneously across different rooms:
+1. Connect all clinic computers and tablets to the same local Wi-Fi router (no internet required).
+2. On the main computer running the system, find your IP address (e.g. `192.168.1.50`).
+3. On other tablets or laptops, open the browser and enter:
    ```
-3. The server starts and launches your default browser at: `http://localhost:4000`
-
-### On macOS:
-1. Double-click:
-   ```bash
-   Start_Hospital_Mac.command
+   http://192.168.1.50:4000
    ```
+   *(Use the main computer's actual IP address)*.
 
 ---
 
-## 👥 3. Staff Accounts & Role-Based Access Control (RBAC)
-The system features end-to-end user authentication with SHA-256 offline hashing:
+## 🔒 8. Encrypted Corporate Excel Audit Export
 
-### Default Clinical Accounts (Default Password: `lloyds2026`):
-| Username | Full Name | Role | Staff ID | Department |
-| :--- | :--- | :--- | :--- | :--- |
-| `doctor` | Chief Medical Officer | Chief Medical Officer | `LMEL-DOC-002` | Emergency & Tropical Medicine |
-| `nurse` | Senior Triage Nurse | Senior Triage Nurse | `LMEL-NUR-003` | Outpatient & Acute Triage |
-| `pharmacist` | Registered Chief Pharmacist | Registered Pharmacist | `LMEL-PHM-004` | Pharmacy & Medical Depot |
-| `labtech` | Pathology & RDT Specialist | Pathology Technician | `LMEL-LAB-005` | Diagnostic Laboratory |
-| `safety` | HSE Mine Health Officer | HSE Safety Officer | `LMEL-HSE-006` | Mine Occupational Safety |
-| `admin` | Hospital Operations Director | Administrator | `LMEL-ADM-001` | Clinical Governance & Admin |
-
-### Psychological 1-Click Shift Handover (Designed for Village Staff):
-- Click **"Switch"** in the sidebar or top navigation bar to open the **Staff Access & Shift Portal**.
-- Village health workers and shift workers can switch duty with **1 tap** on their role card without typing complex credentials.
-- Clinical leads can register new staff anytime via the **"➕ New Staff Account"** tab or the **"Staff & Access Control"** page.
+To export monthly or quarterly clinic reports for corporate auditors or medical directors:
+1. Open the **Excel Export** page.
+2. Click **"Unlock Security Console"** and enter the Master PIN: **`lloyds2026`**.
+3. Download the encrypted multi-worksheet Excel workbook.
+4. All worksheets are protected against editing, locking stock counts and financial numbers.
 
 ---
 
-## 🔒 4. Anti-Theft & Read-Only Password-Protected Excel Audit
-To eliminate medication diversion, black-market drug resale (Coartem, antibiotics, painkillers), and falsification of records:
-
-1. **Dual-Layer Excel Security**:
-   - **Layer 1: AES Compound Password Encryption**: The file cannot be opened without the facility security password (Default: `png_health_2026`).
-   - **Layer 2: Worksheet Read-Only Cell Locking (`sheetProtection`)**: Every single sheet (*Executive KPIs, Observation Beds, Patients, Visits, Drug Inventory, Sales Ledger, Mine OHS*) has OpenXML cell protection enabled. **Staff can view all numbers and verify inventory, but CANNOT edit, alter, or delete rows.**
-2. **Anti-Theft Hidden Password Console**:
-   - The master password is **hidden from regular staff** in the UI so they cannot tamper with stock data or falsify drug sales.
-   - Staff can download the encrypted workbook with a single click.
-   - Only supervisors and administrators with the **Admin PIN** (`lloyds2026`) can unlock the security console to view or manage the master decryption key.
-3. **Cryptographic Anti-Tampering Fingerprint**:
-   - Each export generates a live SHA-256 digital checksum embedded in the header, locking the exact stock count and revenue snapshot.
-
----
-
-## 🛏️ 5. Observation Bay & Inpatient Bed Management (10 Beds)
-- **Bed 1**: Emergency Resuscitation Bay (Crash Bed — Severe Malaria / Artesunate IV)
-- **Bed 2**: Emergency Resuscitation Bay (Acute Trauma / Suction ready)
-- **Bed 3**: Tropical Ward (Step-Down Observation — Laceration & Wound Care)
-- **Bed 4**: Tropical Ward (Pediatric & Dehydration — Oral Rehydration Therapy)
-- **Bed 5**: Tropical Ward (Observation — Cleaned & Ready)
-- **Bed 6**: Tropical Ward (Isolation / Vector-borne Sanitization)
-- **Bed 7**: Mine OHS Bay (Industrial Trauma / Heat Stress — IV Hartmanns)
-- **Bed 8**: Mine OHS Bay (Audiometry & Spirometry Station)
-- **Bed 9**: Toxicology Bay (Taipan / Death Adder Snakebite — 20WBCT Venom Bed)
-- **Bed 10**: Minor Surgical Procedure Table (Sterile Suture Pack)
-
----
-
-## 📼 6. Live "Black Box" Action Recorder & 2D Spatial Map
-- **Black Box Recorder**: Every clinical action, consultation, drug dispensation, triage assessment, and bed admission is logged to a tamper-evident audit stream showing timestamps, staff roles, and severity flags.
-- **2D Spatial Concession Map**: Interactive visual floorplan of the 7 clinical departments (Emergency Bay, Triage Pavilion, Doctor Consult 1, Pharmacy & Vault, Pathology Lab, Inpatient Ward Beds, Mine OHS Unit) displaying live occupancy and active duty officers.
-
----
-
-## ☁️ 7. Google Cloud & Google Sheets Auto-Replication
-1. Go to **"Google Cloud Sync"**.
-2. Sign in with the clinic Google account and enter your Google Sheet ID.
-3. In remote bush camps with zero connectivity, data logs locally into SQLite.
-4. Once the laptop detects Wi-Fi or mobile hotspot, the **Auto-Sync Engine** replicates records to Google Sheets with pre-generated calculation formulas (`SUM`, `COUNTIF`, `AVERAGE`, `IF` stock alerts).
-
----
-
-## 💰 8. End-of-Day Shift Closeout & Safe Pen-Drive Eject
-1. Go to **"Shift Reconciliation"**.
-2. Tally physical PNG Kina cash against system revenue.
-3. Enter counted cash, notes, and click **"Close & Finalize Today's Shift"**.
-4. Click **"Safe Pen Drive Eject"** — SQLite caches flush cleanly to disk, generating an automated encrypted Excel backup before USB removal.
+*Lloyds Metals & Energy Limited — Mining & Occupational Health Division*  
+*Concession Operations Base • Papua New Guinea • Ref: PNG-MOH-LMEL-2026*
