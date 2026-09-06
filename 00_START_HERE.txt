@@ -19,6 +19,10 @@ drive on any Windows PC or Mac laptop.
 • ON MAC:
   Double-click:  Start_Hospital_Mac.command
 
+NOTE: If Node.js or packages are missing on the laptop, the launcher automatically
+downloads and installs everything in the background, creates a desktop icon,
+and opens your browser automatically.
+
 Your default web browser (Google Chrome / Edge / Safari) will open automatically
 to: http://localhost:4000
 

@@ -35,6 +35,8 @@ If you downloaded the folder or are running from a USB drive:
 - **Windows:** Double-click `Start_Hospital_Windows.bat`
 - **Mac:** Double-click `Start_Hospital_Mac.command`
 
+> 💡 **Zero Setup Required:** If Node.js or packages are missing on a new computer, the launcher automatically downloads and sets up everything in the background, creates a desktop shortcut (`Lloyds Medical OS`), and opens the browser for you!
+
 Your web browser will open automatically to **`http://localhost:4000`**.
 
 ---
