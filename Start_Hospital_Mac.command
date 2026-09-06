@@ -11,9 +11,14 @@ echo ""
 
 if ! command -v node &> /dev/null; then
     echo "[ERROR] Node.js is not found in PATH."
-    echo "Please ensure Node.js is installed on this Mac."
+    echo "Please download and install Node.js from https://nodejs.org"
     read -p "Press Enter to exit..."
     exit 1
+fi
+
+if [ ! -d "server/node_modules" ]; then
+    echo "[SETUP] First-time run detected. Installing dependencies automatically..."
+    npm run setup
 fi
 
 echo "[1/2] Initializing Lloyds Hospital Server & SQLite Database..."

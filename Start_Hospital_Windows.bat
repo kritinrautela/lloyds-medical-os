@@ -13,9 +13,15 @@ echo [1/3] Checking environment...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
     echo [ERROR] Node.js is not installed or not in PATH.
-    echo Please install Node.js once on this Windows laptop.
+    echo Please install Node.js once from https://nodejs.org
     pause
     exit /b
+)
+
+if not exist "%~dp0server\node_modules" (
+    echo [SETUP] First-time run detected. Installing dependencies automatically...
+    cd /d "%~dp0"
+    call npm run setup
 )
 
 echo [2/3] Starting Local Healthcare Server & SQLite Database Engine...
