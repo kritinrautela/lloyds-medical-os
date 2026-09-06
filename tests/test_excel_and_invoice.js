@@ -12,7 +12,22 @@
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = 'http://localhost:4000';
+const BASE_URL = process.env.LLOYDS_URL || 'http://localhost:4000';
+
+// The system requires a signed-in member of staff for anything clinical, and
+// the workbook needs the facility export password. Neither is written into
+// this file: a password in a test in a public repository is a password
+// everybody has. Pass them in the environment instead.
+const TEST_USER = process.env.LLOYDS_TEST_USER || '';
+const TEST_PASSWORD = process.env.LLOYDS_TEST_PASSWORD || '';
+const EXPORT_PASSWORD = process.env.LLOYDS_EXPORT_PASSWORD || '';
+
+let token = '';
+async function api(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return fetch(`${BASE_URL}${path}`, { ...options, headers });
+}
 
 async function runTests() {
   console.log('================================================================');
@@ -29,14 +44,29 @@ async function runTests() {
     const healthData = await healthRes.json();
     console.log(`[PASS] (${healthData.system} - ${healthData.mode})`);
 
+    // 1b. Sign in
+    process.stdout.write('1b. Signing in (POST /api/auth/login)... ');
+    if (!TEST_USER || !TEST_PASSWORD || !EXPORT_PASSWORD) {
+      throw new Error('Set LLOYDS_TEST_USER, LLOYDS_TEST_PASSWORD and LLOYDS_EXPORT_PASSWORD in the environment before running this suite.');
+    }
+    const loginRes = await api('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: TEST_USER, password: TEST_PASSWORD })
+    });
+    const loginData = await loginRes.json().catch(() => ({}));
+    if (!loginRes.ok || !loginData.token) throw new Error(`Sign-in failed: ${loginData.message || loginRes.status}`);
+    token = loginData.token;
+    console.log(`[PASS] (${loginData.user.full_name}, ${loginData.user.role})`);
+
     // 2. Fetch or create a test patient
     process.stdout.write('2. Checking Patient Registry... ');
-    const patientsRes = await fetch(`${BASE_URL}/api/patients`);
+    const patientsRes = await api('/api/patients');
     const patientsData = await patientsRes.json();
     let patient = patientsData.patients && patientsData.patients[0];
 
     if (!patient) {
-      const createPatRes = await fetch(`${BASE_URL}/api/patients`, {
+      const createPatRes = await api('/api/patients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -55,7 +85,7 @@ async function runTests() {
 
     // 3. Check Pharmacy Formulary
     process.stdout.write('3. Checking Drug Formulary... ');
-    const drugsRes = await fetch(`${BASE_URL}/api/drugs`);
+    const drugsRes = await api('/api/drugs');
     const drugsData = await drugsRes.json();
     const drug = drugsData.drugs && drugsData.drugs[0];
     if (!drug) throw new Error('No drugs found in formulary');
@@ -84,7 +114,7 @@ async function runTests() {
       pharmacist_notes: 'Automated test dispensation receipt verified.'
     };
 
-    const dispenseRes = await fetch(`${BASE_URL}/api/dispense`, {
+    const dispenseRes = await api('/api/dispense', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invoicePayload)
@@ -97,7 +127,7 @@ async function runTests() {
 
     // 5. Test Invoice Retrieval & Print Data
     process.stdout.write(`5. Verifying Invoice Receipt (GET /api/dispense/${createdInvoice.id})... `);
-    const invoiceGetRes = await fetch(`${BASE_URL}/api/dispense/${createdInvoice.id}`);
+    const invoiceGetRes = await api(`/api/dispense/${createdInvoice.id}`);
     if (!invoiceGetRes.ok) throw new Error(`Fetch invoice failed: ${invoiceGetRes.status}`);
     const invoiceGetData = await invoiceGetRes.json();
     if (!invoiceGetData.invoice || invoiceGetData.items.length === 0) {
@@ -107,7 +137,7 @@ async function runTests() {
 
     // 6. Test AES-256 Protected Excel Generation
     process.stdout.write('6. Testing Corporate Excel Generator (GET /api/export/excel)... ');
-    const excelRes = await fetch(`${BASE_URL}/api/export/excel?password=lloyds2026`);
+    const excelRes = await api(`/api/export/excel?password=${encodeURIComponent(EXPORT_PASSWORD)}&by=${encodeURIComponent('Automated test')}`);
     if (!excelRes.ok) throw new Error(`Excel export failed: ${excelRes.status}`);
     const excelBuffer = Buffer.from(await excelRes.arrayBuffer());
 
