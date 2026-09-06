@@ -20,3 +20,4 @@ yarn-error.log*
 .parcel-cache/
 .temp/
 .tempmediaStorage/
+tests/output/
