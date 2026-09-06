@@ -15,6 +15,84 @@
 
 ---
 
+## ⚡ Quick Start: How to Install & Run Easily
+
+The **Lloyds Medical Operating System (LMOS-PNG)** is an **offline-first, zero-cloud** medical platform. You do not need Docker, external database servers, or cloud subscriptions to run it. Everything is self-contained.
+
+### 🌟 Method 1: 1-Click Desktop Launchers (Easiest — Zero Terminal)
+
+If you downloaded the folder or plugged in the clinic USB drive, double-click the script for your computer:
+
+| Platform | Launcher File | Instructions |
+| :--- | :--- | :--- |
+| **🪟 Windows** | [`Start_Hospital_Windows.bat`](Start_Hospital_Windows.bat) | Double-click `Start_Hospital_Windows.bat`. It checks Node.js, boots the SQLite server, and opens your browser automatically. |
+| **🍎 macOS / Linux** | [`Start_Hospital_Mac.command`](Start_Hospital_Mac.command) | Double-click `Start_Hospital_Mac.command`. If prompted on first run, grant execution permission: `chmod +x Start_Hospital_Mac.command`. |
+
+---
+
+### 💻 Method 2: Fast Terminal Setup (2 Minutes)
+
+#### Prerequisites
+- **Node.js** (v18.0 or higher) installed. If needed, download free at [nodejs.org](https://nodejs.org).
+- **Git** (optional, to clone).
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/kritinrautela/lloyds-medical-os.git
+cd lloyds-medical-os
+
+# 2. One-click dependency install (Backend + Frontend)
+npm run setup
+
+# 3. Launch the Medical Operating System
+npm start
+```
+
+* **Desktop Application URL:** [`http://localhost:4000`](http://localhost:4000) (Production build) or [`http://localhost:5173`](http://localhost:5173) (Vite dev)
+* **Clinic Wi-Fi / Tablets:** `http://<YOUR_LOCAL_IP>:4000` (Allows any tablet or mobile device in the clinic to connect without internet)
+* **Local SQLite Database:** Initialized automatically in `server/data/hospital.db` with WAL mode enabled.
+
+---
+
+### 🔑 Default Master Staff Credentials (100% Offline Access)
+
+Once the application opens in your browser, log in using any of the pre-configured clinical roles (all use default password `lloyds2026`):
+
+| Role | Username | Default Password | Responsibilities & Access Level |
+| :--- | :--- | :--- | :--- |
+| **Medical Superintendent / CMO** | `doctor` | `lloyds2026` | Full clinical authority: consultations, diagnoses, prescription, trauma care |
+| **Senior Triage Nurse** | `triage_officer` | `lloyds2026` | Patient check-in, vital signs intake, malaria RDT testing, ward observation beds |
+| **Registered Pharmacist** | `pharmacist` | `lloyds2026` | Formulary inventory, stock receipts, medication dispensing POS, cash drawer |
+| **Master System Administrator** | `admin` | `lloyds2026` | User account lifecycle, credential reset, facility settings, data purge |
+| **Excel Decryption Key** | *(Master PIN)* | `lloyds2026` | Opens daily AES-256 encrypted multi-tab corporate Excel audit workbooks |
+
+---
+
+### 🗄️ End-to-End Data Pipeline: Where Does Your Data Go?
+
+Every piece of data entered into LMOS-PNG follows an explicit, verifiable local pipeline:
+
+```
+┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
+│     CLINICAL WORKFLOW     │      │   DATABASE PERSISTENCE    │      │   AUDIT & REPORTING       │
+│                           │      │                           │      │                           │
+│  Patient Registration     │────► │  SQLite 3 (WAL Mode)      │────► │  End-of-Day Shift Close   │
+│  Triage & Vitals Intake   │      │  server/data/hospital.db  │      │  Physical Cash Count      │
+│  Doctor Consultation      │      │                           │      │  Zero-Variance Balancing  │
+│  Pharmacy Dispensation    │      │  • users (SHA-256 Hash)   │      │  Printable A4 Audit Sheet │
+│  Inpatient Bed Admission  │      │  • patients & visits      │      │                           │
+│  Staff Account Management │      │  • drugs & dispensations  │      │  AES-256 Encrypted Excel  │
+│                           │      │  • activity_logs          │      │  Multi-Tab Corporate Pack │
+└───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘
+```
+
+1. **User Accounts & Credentials**: Stored directly in `server/data/hospital.db` in table `users`. Passwords are protected with salted SHA-256 cryptographic hashes.
+2. **Medico-Legal Black Box**: Every account registration, password reset, and status update is logged with a UTC timestamp to `activity_logs`.
+3. **Clinical Attribution**: Every patient encounter, vitals reading, and prescription permanently stamps the active staff member's name and `LMEL-MED-XXX` ID.
+4. **Clean Slate / Demo Purge**: To clear pre-loaded demo data for actual clinic deployment, go to **Facility Settings ➔ Purge Demo Data & Start Clean**.
+
+---
+
 ## Master Table of Contents
 1. [Executive Overview & Concession Mission](#1-executive-overview--concession-mission)
 2. [Complete Visual Showcase (18 High-Resolution Modules)](#2-complete-visual-showcase)

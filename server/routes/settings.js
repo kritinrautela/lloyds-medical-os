@@ -67,4 +67,46 @@ router.put('/', async (req, res) => {
   }
 });
 
+// POST /api/settings/reset-records (Purge demo patients, visits & test data for a completely clean start)
+router.post('/reset-records', async (req, res) => {
+  try {
+    await runQuery('DELETE FROM dispensation_items');
+    await runQuery('DELETE FROM dispensations');
+    await runQuery('DELETE FROM visits');
+    await runQuery('DELETE FROM patients');
+    await runQuery('DELETE FROM shift_handover_notes');
+    await runQuery('DELETE FROM occupational_incidents');
+    await runQuery('DELETE FROM activity_logs');
+    await runQuery(`
+      UPDATE inpatient_beds SET
+        status = 'Available',
+        patient_id = NULL,
+        patient_name = NULL,
+        patient_code = NULL,
+        age = NULL,
+        gender = NULL,
+        admission_date = NULL,
+        acuity_level = NULL,
+        diagnosis = NULL,
+        attending_doctor = NULL,
+        vitals_ticker = 'Ready for Admission',
+        notes = 'Sanitized and ready for admission.'
+    `);
+
+    // Log initialization event
+    await runQuery(`
+      INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
+      VALUES ('Clinical Reset', 'Hospital Administration', 'Administrator', 'Operations Terminal', 'Demo records cleared. Hospital system operating in 100% clean production mode.', 'Info')
+    `);
+
+    res.json({ 
+      success: true, 
+      message: 'All test and demo records cleared successfully. Hospital is now in a 100% clean production state.' 
+    });
+  } catch (err) {
+    console.error('Reset records error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

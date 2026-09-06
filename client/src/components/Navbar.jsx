@@ -17,19 +17,10 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-export default function Navbar({ 
-  settings, 
-  onQuickSearch, 
-  onOpenCheckIn, 
-  onOpenDispense, 
-  onOpenExport,
-  onOpenEmergencyAlert
-}) {
-  const { currentUser, setIsAuthModalOpen } = useAuth();
-  const [searchVal, setSearchVal] = useState('');
+// Isolated clock component avoids re-rendering whole navbar every second
+function NavbarClock() {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -41,6 +32,27 @@ export default function Navbar({
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  return (
+    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs font-mono shadow-sm">
+      <Clock className="w-3.5 h-3.5 text-red-500" />
+      <span className="text-slate-900 font-bold">{timeStr}</span>
+      <span className="text-slate-500 text-[10px]">({dateStr})</span>
+    </div>
+  );
+}
+
+export default function Navbar({ 
+  settings, 
+  onQuickSearch, 
+  onOpenCheckIn, 
+  onOpenDispense, 
+  onOpenExport,
+  onOpenEmergencyAlert
+}) {
+  const { currentUser, setIsAuthModalOpen } = useAuth();
+  const [searchVal, setSearchVal] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -84,11 +96,7 @@ export default function Navbar({
       {/* Right Controls, Telemetry & User Menu */}
       <div className="flex items-center gap-2.5">
         {/* Clock & Shift Indicator */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs font-mono shadow-sm">
-          <Clock className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-slate-900 font-bold">{timeStr}</span>
-          <span className="text-slate-500 text-[10px]">({dateStr})</span>
-        </div>
+        <NavbarClock />
 
         {/* Quick Check-In Button (Green Gradient) */}
         <button
@@ -127,8 +135,8 @@ export default function Navbar({
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center gap-2 p-1.5 pl-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all text-left shadow-sm"
           >
-            <div className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-sm font-bold text-red-600">
-              {currentUser?.avatar || '👨‍⚕️'}
+            <div className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
+              <Stethoscope className="w-3.5 h-3.5 text-red-600" />
             </div>
             <div className="hidden sm:block text-left pr-1">
               <span className="text-xs font-bold text-slate-900 block leading-tight truncate max-w-[130px]">

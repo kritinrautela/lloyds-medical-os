@@ -9,7 +9,10 @@ import {
   DollarSign, 
   Lock, 
   CheckCircle2, 
-  Save
+  Save,
+  Trash2,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -71,6 +74,28 @@ export default function Settings({ settings, onUpdateSettings }) {
     }
   };
 
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+
+  const handleResetRecords = async () => {
+    if (!window.confirm("Are you sure you want to clear all sample/demo clinical records? This will reset all patient visits, prescriptions, and queue entries to a 100% clean blank state. (Your staff logins and pharmacy medicines will remain safe).")) {
+      return;
+    }
+
+    try {
+      setIsResetting(true);
+      const res = await api.resetRecords();
+      setResetMessage(res.message || 'Records cleared successfully.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err) {
+      alert('Failed to reset records: ' + err.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header Bar */}
@@ -124,10 +149,9 @@ export default function Settings({ settings, onUpdateSettings }) {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Doctor in Charge *</label>
+              <label className="block font-semibold text-slate-700 mb-1">Doctor In Charge</label>
               <input
                 type="text"
-                required
                 value={formData.doctor_in_charge}
                 onChange={(e) => setFormData({ ...formData, doctor_in_charge: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
@@ -135,7 +159,7 @@ export default function Settings({ settings, onUpdateSettings }) {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Health Department Registration / License #</label>
+              <label className="block font-semibold text-slate-700 mb-1">PNG NDOH Registration / License #</label>
               <input
                 type="text"
                 value={formData.reg_number}
@@ -146,14 +170,24 @@ export default function Settings({ settings, onUpdateSettings }) {
           </div>
         </div>
 
-        {/* Location & Contact Info */}
+        {/* Geographic Location */}
         <div className="bg-white p-6 rounded-3xl space-y-4 border border-slate-200/90 shadow-sm">
           <h3 className="text-xs font-bold text-cyan-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
             <MapPin className="w-4 h-4 text-cyan-600" />
-            <span>Location & Contact Details (Papua New Guinea)</span>
+            <span>Clinic Location & Contacts</span>
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="sm:col-span-2">
+              <label className="block font-semibold text-slate-700 mb-1">Street Address or Settlement Details</label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
+              />
+            </div>
+
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Province</label>
               <input
@@ -165,7 +199,7 @@ export default function Settings({ settings, onUpdateSettings }) {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">District / Sub-district</label>
+              <label className="block font-semibold text-slate-700 mb-1">District</label>
               <input
                 type="text"
                 value={formData.district}
@@ -184,18 +218,8 @@ export default function Settings({ settings, onUpdateSettings }) {
               />
             </div>
 
-            <div className="sm:col-span-3">
-              <label className="block font-semibold text-slate-700 mb-1">Physical Address / Facility Location</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
-              />
-            </div>
-
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Phone Contact</label>
+              <label className="block font-semibold text-slate-700 mb-1">Phone Numbers</label>
               <input
                 type="text"
                 value={formData.phone}
@@ -278,6 +302,38 @@ export default function Settings({ settings, onUpdateSettings }) {
           </button>
         </div>
       </form>
+
+      {/* Clean Hospital State / Purge Demo Records Panel */}
+      <div className="bg-white p-6 rounded-3xl border border-rose-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Purge Demo Data & Start Clean</h3>
+              <p className="text-xs text-slate-500">
+                Clear all sample patients, visits, queue records, and test dispensations so new staff logins operate with a 100% clean production hospital state.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetRecords}
+            disabled={isResetting}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+          >
+            {isResetting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            <span>{isResetting ? 'Clearing...' : 'Clear Demo Records'}</span>
+          </button>
+        </div>
+        {resetMessage && (
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{resetMessage}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

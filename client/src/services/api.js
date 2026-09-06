@@ -15,7 +15,6 @@ async function request(endpoint, options = {}) {
     }
     return data;
   } catch (err) {
-    console.error(`API Error on ${endpoint}:`, err);
     throw err;
   }
 }
@@ -26,6 +25,9 @@ export const api = {
   register: (userData) => request('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   getStaffUsers: () => request('/auth/users'),
   updateStaffUser: (id, data) => request(`/auth/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteStaffUser: (id) => request(`/auth/users/${id}`, { method: 'DELETE' }),
+  resetStaffPassword: (id, password) => request(`/auth/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) }),
+  toggleStaffStatus: (id) => request(`/auth/users/${id}/toggle-status`, { method: 'POST' }),
 
   // Dashboard & Bed Management
   getDashboardStats: () => request('/dashboard/stats'),
@@ -86,6 +88,7 @@ export const api = {
   // Settings
   getSettings: () => request('/settings'),
   updateSettings: (data) => request('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  resetRecords: () => request('/settings/reset-records', { method: 'POST' }),
 
   // Export URLs
   getExcelExportUrl: (password = '') => `${BASE_URL}/export/excel?password=${encodeURIComponent(password)}`,

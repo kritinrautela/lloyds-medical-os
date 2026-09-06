@@ -18,7 +18,8 @@ import {
   UserCheck,
   Sparkles,
   BedDouble,
-  ShieldAlert
+  ShieldAlert,
+  Stethoscope
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, isOnline }) {
@@ -128,8 +129,8 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline }) {
           title="Click to Switch Duty Shift or Staff Member"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-sm font-bold text-red-600 shrink-0">
-              {currentUser?.avatar || '👨‍⚕️'}
+            <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
+              <Stethoscope className="w-4 h-4 text-red-600" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-900 truncate group-hover:text-red-600 transition-colors">

@@ -19,7 +19,18 @@ import {
   Lock,
   Building2,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Trash2,
+  RotateCcw,
+  Power,
+  Database,
+  FileSpreadsheet,
+  HardDrive,
+  ArrowRight,
+  Activity,
+  FileText,
+  Info,
+  Check
 } from 'lucide-react';
 
 export default function StaffManagement({ settings }) {
@@ -72,6 +83,51 @@ export default function StaffManagement({ settings }) {
     return matchesSearch && matchesDept;
   });
 
+  const handleToggleStatus = async (staff) => {
+    if (staff.username === 'admin') {
+      alert('The root administrator account cannot be deactivated.');
+      return;
+    }
+    const willDeactivate = staff.status === 'Active';
+    if (!confirm(`Are you sure you want to ${willDeactivate ? 'DEACTIVATE' : 'ACTIVATE'} staff account @${staff.username} (${staff.full_name})?`)) return;
+    try {
+      await api.toggleStaffStatus(staff.id);
+      refreshStaffList();
+    } catch (err) {
+      alert(err.message || 'Failed to update account status.');
+    }
+  };
+
+  const handleResetPassword = async (staff) => {
+    const newPass = prompt(`Reset PIN for @${staff.username} (${staff.full_name}).\nEnter new password (or keep default 'lloyds2026'):`, 'lloyds2026');
+    if (newPass === null) return;
+    try {
+      const res = await api.resetStaffPassword(staff.id, newPass.trim() || 'lloyds2026');
+      alert(res.message || 'PIN reset successfully.');
+      refreshStaffList();
+    } catch (err) {
+      alert(err.message || 'Failed to reset password.');
+    }
+  };
+
+  const handleDeleteStaff = async (staff) => {
+    if (staff.username === 'admin') {
+      alert('The root administrator account cannot be deleted.');
+      return;
+    }
+    if (currentUser?.id === staff.id) {
+      alert('You cannot delete your own active session account. Please switch to another account first.');
+      return;
+    }
+    if (!confirm(`PERMANENTLY DELETE staff account @${staff.username} (${staff.full_name})?\n\nThis will remove their login credentials from the local SQLite database. Their historical clinical records and audit logs will be preserved for compliance.`)) return;
+    try {
+      await api.deleteStaffUser(staff.id);
+      refreshStaffList();
+    } catch (err) {
+      alert(err.message || 'Failed to delete staff account.');
+    }
+  };
+
   const handleCreateStaff = async (e) => {
     e.preventDefault();
     setFormMsg({ type: '', text: '' });
@@ -95,6 +151,7 @@ export default function StaffManagement({ settings }) {
         setTimeout(() => {
           setIsAddModalOpen(false);
           setFormMsg({ type: '', text: '' });
+          refreshStaffList();
         }, 1500);
       } else {
         setFormMsg({ type: 'error', text: res.message || 'Failed to create account.' });
@@ -137,6 +194,75 @@ export default function StaffManagement({ settings }) {
         </div>
       </div>
 
+      {/* End-to-End Staff Identity & Data Architecture Card */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide">
+                End-to-End Staff Identity & Data Pipeline
+              </h3>
+              <p className="text-xs text-slate-400">
+                Where does user and clinical data go when a staff account is created and used?
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              {staffUsers?.length || 0} Staff Enrolled
+            </span>
+            <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              100% Offline SQLite
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
+            <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
+              <HardDrive className="w-4 h-4" />
+              <span>1. Local SQLite Storage</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Stored locally in <code className="text-rose-300 font-mono text-[10px]">server/data/hospital.db</code> in the <code className="text-rose-300 font-mono text-[10px]">users</code> table. Password is protected with salted SHA-256 cryptographic hashing.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+              <ShieldCheck className="w-4 h-4" />
+              <span>2. Medico-Legal Black Box</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Every staff login, credential reset, and status change is immutably logged to <code className="text-amber-300 font-mono text-[10px]">activity_logs</code> with UTC timestamp and supervisory audit trail.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
+              <Stethoscope className="w-4 h-4" />
+              <span>3. Clinical Attribution</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Every OPD consultation, vital sign check, triage score, and prescription is permanently signed with the active staff member's full name and <code className="text-cyan-300 font-mono text-[10px]">LMEL-MED-XXX</code> ID.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>4. Encrypted Shift Excel</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              During end-of-day reconciliation, duty hours, physical cash drawer counts, and dispensing totals export into the AES-256 encrypted master Excel file for corporate mining auditors.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Roster & Search Filters */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -174,14 +300,17 @@ export default function StaffManagement({ settings }) {
             const isCurrent = currentUser?.id === staff.id || currentUser?.username === staff.username;
             const badgeColor = roleColors[staff.role] || 'bg-slate-100 text-slate-700 border-slate-200';
             const icon = roleIcons[staff.role] || <Users className="w-5 h-5 text-slate-500" />;
+            const isActive = staff.status === 'Active';
 
             return (
               <div
                 key={staff.id || staff.username}
-                className={`p-5 rounded-xl border transition-all flex flex-col justify-between ${
+                className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
                   isCurrent
-                    ? 'border-rose-300 bg-rose-50/50 shadow-sm'
-                    : 'border-slate-200 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? 'border-rose-300 bg-rose-50/40 shadow-sm'
+                    : isActive 
+                    ? 'border-slate-200 bg-slate-50/40 hover:bg-white hover:border-slate-300 hover:shadow-sm'
+                    : 'border-slate-200 bg-slate-100/60 opacity-75'
                 }`}
               >
                 <div className="space-y-3">
@@ -190,19 +319,23 @@ export default function StaffManagement({ settings }) {
                       {icon}
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-xs font-mono font-bold text-slate-500 block">
+                    <div className="text-right flex flex-col items-end">
+                      <span className="text-xs font-mono font-bold text-slate-600 block">
                         {staff.staff_id || 'LMEL-MED'}
                       </span>
-                      {isCurrent ? (
-                        <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-2xs">
-                          Active Duty
-                        </span>
-                      ) : (
-                        <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                          Offline / Standby
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {isCurrent ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-2xs">
+                            Active Duty
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {isActive ? 'Active Staff' : 'Deactivated'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -225,22 +358,81 @@ export default function StaffManagement({ settings }) {
                       </p>
                     )}
                   </div>
+
+                  {/* Real-time Activity Metrics */}
+                  <div className="pt-2 border-t border-slate-200/80 grid grid-cols-3 gap-1.5 text-center">
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 border border-slate-200/60">
+                      <span className="block text-[11px] font-black text-slate-800 font-mono">
+                        {staff.consultations_count || 0}
+                      </span>
+                      <span className="block text-[9px] text-slate-500 font-medium truncate">Visits</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 border border-slate-200/60">
+                      <span className="block text-[11px] font-black text-slate-800 font-mono">
+                        {staff.activity_count || 0}
+                      </span>
+                      <span className="block text-[9px] text-slate-500 font-medium truncate">Actions</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 border border-slate-200/60">
+                      <span className="block text-[11px] font-black text-slate-800 font-mono">
+                        {staff.shifts_reconciled || 0}
+                      </span>
+                      <span className="block text-[9px] text-slate-500 font-medium truncate">Shifts</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 mt-4 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    User: @{staff.username}
-                  </span>
-                  <button
-                    onClick={() => switchAccount(staff)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      isCurrent
-                        ? 'bg-slate-100 text-slate-400 cursor-default border border-slate-200'
-                        : 'bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600'
-                    }`}
-                  >
-                    {isCurrent ? 'Current Shift' : 'Switch to Shift'}
-                  </button>
+                {/* Account Actions Toolbar */}
+                <div className="pt-3 border-t border-slate-200 mt-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                    <span>User: @{staff.username}</span>
+                    <span>{staff.last_login ? 'Logged In' : 'PIN: lloyds2026'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => switchAccount(staff)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isCurrent
+                          ? 'bg-slate-100 text-slate-400 cursor-default border border-slate-200'
+                          : 'bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600'
+                      }`}
+                    >
+                      {isCurrent ? 'Current Shift' : 'Switch Shift'}
+                    </button>
+
+                    <button
+                      onClick={() => handleResetPassword(staff)}
+                      title="Reset Account Password"
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 border border-slate-200 hover:border-amber-300 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+
+                    {staff.username !== 'admin' && (
+                      <>
+                        <button
+                          onClick={() => handleToggleStatus(staff)}
+                          title={isActive ? 'Deactivate Account' : 'Activate Account'}
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                            isActive 
+                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200' 
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                          }`}
+                        >
+                          <Power className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteStaff(staff)}
+                          title="Permanently Delete Staff Member"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-300 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

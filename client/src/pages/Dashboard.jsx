@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import LloydsLogo from '../components/LloydsLogo';
 import ActivityBlackBox from '../components/ActivityBlackBox';
 import { 
-  EmergencyResponseTimer, DailyGoalsTracker, PatientFlowJourney,
+  TraumaMedevacStatusCard, PatientFlowJourney,
   DepartmentPerformance, AlertNotificationCenter, VitalsMonitorGrid,
   WeatherAlertBanner, QuickStatsSummary
 } from '../components/DashboardWidgets';
@@ -211,8 +211,24 @@ function WeatherWidget() {
   );
 }
 
-// System Status Bar
-function SystemStatusBar({ isOnline, autoRefreshEnabled, refreshCountdown, lastRefresh, onToggleRefresh, onRefresh }) {
+// System Status Bar (Self-contained timer prevents full dashboard re-renders)
+function SystemStatusBar({ isOnline, autoRefreshEnabled, lastRefresh, onToggleRefresh, onRefresh }) {
+  const [countdown, setCountdown] = useState(30);
+
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          onRefresh();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [autoRefreshEnabled, onRefresh]);
+
   return (
     <div className="flex items-center gap-4 text-[10px]">
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 shadow-2xs">
@@ -225,26 +241,26 @@ function SystemStatusBar({ isOnline, autoRefreshEnabled, refreshCountdown, lastR
       
       <button
         onClick={onToggleRefresh}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
           autoRefreshEnabled 
             ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
             : 'bg-slate-100 border-slate-300 text-slate-600'
         }`}
       >
         <RefreshCw className={`w-3 h-3 ${autoRefreshEnabled ? 'animate-spin' : ''}`} />
-        <span className="font-semibold">{autoRefreshEnabled ? `${refreshCountdown}s` : 'PAUSED'}</span>
+        <span className="font-semibold">{autoRefreshEnabled ? `${countdown}s` : 'PAUSED'}</span>
       </button>
       
       <button
-        onClick={onRefresh}
-        className="p-1.5 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-2xs"
+        onClick={() => { setCountdown(30); onRefresh(); }}
+        className="p-1.5 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer"
         title="Manual Refresh"
       >
         <RefreshCw className="w-3 h-3" />
       </button>
       
-      <div className="text-slate-500">
-        Updated {lastRefresh.toLocaleTimeString()}
+      <div className="text-slate-500 font-mono text-[10px]">
+        Updated {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
     </div>
   );
@@ -263,7 +279,6 @@ export default function Dashboard({
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
-  const [refreshCountdown, setRefreshCountdown] = useState(30);
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -278,20 +293,8 @@ export default function Dashboard({
     if (refreshStats) {
       refreshStats();
       setLastRefresh(new Date());
-      setRefreshCountdown(30);
     }
   }, [refreshStats]);
-
-  useEffect(() => {
-    if (!autoRefreshEnabled) return;
-    const countdownInterval = setInterval(() => {
-      setRefreshCountdown((prev) => {
-        if (prev <= 1) { handleRefresh(); return 30; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(countdownInterval);
-  }, [autoRefreshEnabled, handleRefresh]);
 
   // Online status
   useEffect(() => {
@@ -490,7 +493,6 @@ export default function Dashboard({
           <SystemStatusBar 
             isOnline={isOnline} 
             autoRefreshEnabled={autoRefreshEnabled}
-            refreshCountdown={refreshCountdown}
             lastRefresh={lastRefresh}
             onToggleRefresh={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
             onRefresh={handleRefresh}
@@ -498,11 +500,13 @@ export default function Dashboard({
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={() => { sounds.playClick(); setIsAuthModalOpen(true); }}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200/70 hover:border-slate-300 transition-all shadow-2xs"
+              className="flex-1 flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200/70 hover:border-slate-300 transition-all shadow-2xs cursor-pointer"
             >
-              <span className="text-sm">{currentUser?.avatar || '👨‍⚕️'}</span>
+              <div className="w-6 h-6 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                <Stethoscope className="w-3.5 h-3.5 text-rose-600" />
+              </div>
               <div className="text-left">
-                <span className="block text-[10px] text-slate-500 uppercase">Shift</span>
+                <span className="block text-[10px] text-slate-500 uppercase font-mono">Duty Shift</span>
                 <span className="block text-[11px] font-bold text-slate-900">{currentUser?.role?.split(' ')[0] || 'Doctor'}</span>
               </div>
             </button>
@@ -581,17 +585,102 @@ export default function Dashboard({
         </div>
       </GlassCard>
 
-      {/* WEATHER ALERT BANNER */}
-      <WeatherAlertBanner />
+      {/* WEATHER ALERT BANNER (CLICKABLE TO OPEN OHS) */}
+      <div onClick={() => setSelectedDashboardTab('ohs')} className="cursor-pointer">
+        <WeatherAlertBanner />
+      </div>
+
+      {/* HOSPITAL OPERATIONS & CLINICAL DATA PIPELINE */}
+      <GlassCard className="p-5 border border-slate-200/90 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Hospital Operating Lifecycle & Data Architecture</h3>
+              <p className="text-[11px] text-slate-500">How clinical telemetry and patient information flow through Lloyds Medical OS</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+            100% Offline SQLite • Encrypted Audit Trail
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-2 text-left">
+          <button 
+            onClick={() => { sounds.playClick(); onOpenCheckIn(); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 hover:border-emerald-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-emerald-600 uppercase block">1. Check-In</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 mt-0.5">Registration</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Saves to patient table & queues in OPD</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); setActiveTab('queue'); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-cyan-50/80 border border-slate-200 hover:border-cyan-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-cyan-600 uppercase block">2. Triage / Doctor</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-cyan-700 mt-0.5">Clinical Consult</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Vitals, diagnosis & doctor orders</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); setActiveTab('dispense'); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-blue-600 uppercase block">3. Pharmacy POS</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700 mt-0.5">Dispensation</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Decrements stock, prints A4 receipt</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); setSelectedDashboardTab('beds'); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50/80 border border-slate-200 hover:border-purple-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-purple-600 uppercase block">4. Inpatient Ward</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-purple-700 mt-0.5">10-Bed Bay</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Admission, telemetry & acuity</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); setSelectedDashboardTab('handover'); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-amber-50/80 border border-slate-200 hover:border-amber-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-amber-600 uppercase block">5. Shift Handover</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-amber-700 mt-0.5">Logbook</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Clinical notes passed across shifts</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); setSelectedDashboardTab('blackbox'); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-rose-50/80 border border-slate-200 hover:border-rose-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-rose-600 uppercase block">6. Black Box</span>
+            <p className="text-xs font-bold text-slate-900 group-hover:text-rose-700 mt-0.5">Audit Recorder</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Sequenced log of all medical events</p>
+          </button>
+
+          <button 
+            onClick={() => { sounds.playClick(); onOpenExport(); }}
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition-all text-left group cursor-pointer"
+          >
+            <span className="text-[9px] font-mono font-bold text-slate-700 uppercase block">7. Audit Export</span>
+            <p className="text-xs font-bold text-slate-900 mt-0.5">Locked Excel</p>
+            <p className="text-[10px] text-slate-500 mt-1 leading-tight">Password-locked workbook audit</p>
+          </button>
+        </div>
+      </GlassCard>
 
       {/* MAIN METRIC CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={Users} label="Today's Census" value={stats?.today_visitors || 0} subtext="Active OPD Flow" color="cyan" trend="up" trendValue="+12%" />
-        <StatCard icon={AlertTriangle} label="High Acuity" value={stats?.urgentVisits?.length || 0} subtext="Emergency & Urgent" color="amber" />
-        <StatCard icon={Stethoscope} label="Consultations" value={stats?.queueMap?.['Completed'] || 0} subtext="Avg: 14 mins" color="emerald" trend="up" trendValue="+8%" />
-        <StatCard icon={DollarSign} label="Total Revenue" value={formatKina(stats?.total_revenue_today || 0)} subtext={`${currencyCode} Combined`} color="green" format />
-        <StatCard icon={BedDouble} label="Beds Occupied" value={`${stats?.occupied_beds || 4}/${stats?.total_beds || 10}`} subtext={`${stats?.total_beds ? Math.round(((stats?.occupied_beds || 0) / stats.total_beds) * 100) : 0}% Load`} color="purple" format />
-        <StatCard icon={HeartPulse} label="Malaria Cases" value={stats?.malaria_cases || 3} subtext="Coartem Protocol" color="rose" />
+        <StatCard icon={Users} label="Today's Census" value={stats?.today_visitors ?? 0} subtext="Active OPD Flow" color="cyan" />
+        <StatCard icon={AlertTriangle} label="High Acuity" value={stats?.urgentVisits?.length ?? 0} subtext="Emergency & Urgent" color="amber" />
+        <StatCard icon={Stethoscope} label="Consultations" value={stats?.queueMap?.['Completed'] ?? 0} subtext="Completed OPD" color="emerald" />
+        <StatCard icon={DollarSign} label="Total Revenue" value={formatKina(stats?.total_revenue_today ?? 0)} subtext={`${currencyCode} Combined`} color="green" format />
+        <StatCard icon={BedDouble} label="Beds Occupied" value={`${stats?.occupied_beds ?? 0}/${stats?.total_beds ?? 10}`} subtext={`${stats?.total_beds ? Math.round(((stats?.occupied_beds || 0) / stats.total_beds) * 100) : 0}% Ward Load`} color="purple" format />
+        <StatCard icon={HeartPulse} label="Malaria Cases" value={stats?.malaria_cases ?? 0} subtext="Confirmed Cases" color="rose" />
       </div>
 
       {/* PATIENT FLOW JOURNEY */}
@@ -600,32 +689,26 @@ export default function Dashboard({
       {/* DEPARTMENT PERFORMANCE */}
       <DepartmentPerformance stats={stats} onNavigate={setActiveTab} onSelectTab={setSelectedDashboardTab} />
 
-      {/* VITALS MONITOR (2 COLS) + EMERGENCY RESPONSE TIMER (1 COL) */}
+      {/* VITALS TELEMETRY (2 COLS) + CONCESSION TRAUMA & MEDEVAC STATUS (1 COL) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <VitalsMonitorGrid stats={stats} onNavigate={setActiveTab} />
         </div>
         <div className="lg:col-span-1">
-          <EmergencyResponseTimer onLogEvent={handleRefresh} />
+          <TraumaMedevacStatusCard stats={stats} onNavigate={setActiveTab} />
         </div>
       </div>
 
-      {/* DAILY CLINICAL GOALS (1 COL) + ALERTS & SUMMARY (2 COLS) */}
+      {/* CLINICAL ALERT CENTER & OPERATIONAL CENSUS (2 COLS + 1 COL) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <DailyGoalsTracker 
-            stats={stats} 
-            onNavigate={setActiveTab} 
-            onOpenCheckIn={onOpenCheckIn} 
-            onSelectTab={setSelectedDashboardTab} 
-          />
-        </div>
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2">
           <AlertNotificationCenter 
             stats={stats} 
             onNavigate={setActiveTab} 
             onSelectTab={setSelectedDashboardTab} 
           />
+        </div>
+        <div className="lg:col-span-1">
           <QuickStatsSummary stats={stats} formatKina={formatKina} />
         </div>
       </div>
@@ -636,12 +719,12 @@ export default function Dashboard({
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-                <BarChart3 className="w-5 h-5 text-cyan-400" />
+              <div className="p-2 rounded-xl bg-cyan-50 border border-cyan-200">
+                <BarChart3 className="w-5 h-5 text-cyan-600" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">7-Day Patient Footfall</h3>
-                <p className="text-[10px] text-slate-400">Weekly trend analysis</p>
+                <h3 className="text-sm font-bold text-slate-900">7-Day Patient Footfall</h3>
+                <p className="text-[10px] text-slate-500">Weekly trend analysis</p>
               </div>
             </div>
           </div>
@@ -652,20 +735,20 @@ export default function Dashboard({
               const isToday = day.visit_date === new Date().toISOString().split('T')[0];
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className={`text-[11px] font-mono font-bold transition-all ${isToday ? 'text-cyan-400 scale-110' : 'text-slate-400 group-hover:text-white'}`}>
+                  <span className={`text-[11px] font-mono font-bold transition-all ${isToday ? 'text-cyan-600 scale-110' : 'text-slate-500 group-hover:text-slate-900'}`}>
                     {day.count}
                   </span>
                   <div className="w-full relative">
                     <div 
                       className={`w-full rounded-xl transition-all duration-700 ease-out ${
                         isToday 
-                          ? 'bg-gradient-to-t from-cyan-600 via-cyan-500 to-cyan-400 shadow-lg shadow-cyan-500/30' 
-                          : 'bg-gradient-to-t from-slate-700 via-slate-600 to-slate-500 group-hover:from-slate-600 group-hover:via-slate-500 group-hover:to-slate-400'
+                          ? 'bg-gradient-to-t from-cyan-600 via-cyan-500 to-cyan-400 shadow-md shadow-cyan-500/20' 
+                          : 'bg-gradient-to-t from-slate-300 via-slate-200 to-slate-200 group-hover:from-cyan-400 group-hover:to-cyan-300'
                       }`}
                       style={{ height: `${Math.max(heightPercent, 12)}%`, minHeight: '8px' }}
                     />
                   </div>
-                  <span className={`text-[10px] font-semibold ${isToday ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}>
+                  <span className={`text-[10px] font-semibold ${isToday ? 'text-cyan-700' : 'text-slate-500 group-hover:text-slate-700'}`}>
                     {new Date(day.visit_date).toLocaleDateString('en', { weekday: 'short' })}
                   </span>
                 </div>
@@ -681,12 +764,12 @@ export default function Dashboard({
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-green-500/10 border border-green-500/20">
-                <PieChart className="w-5 h-5 text-green-400" />
+              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                <PieChart className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Revenue Breakdown</h3>
-                <p className="text-[10px] text-slate-400">Today's financial overview</p>
+                <h3 className="text-sm font-bold text-slate-900">Revenue Breakdown</h3>
+                <p className="text-[10px] text-slate-500">Today's financial overview</p>
               </div>
             </div>
           </div>
@@ -696,15 +779,15 @@ export default function Dashboard({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-400" />
-                  <span className="text-xs text-slate-300 font-semibold">Pharmacy Sales</span>
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                  <span className="text-xs text-slate-700 font-semibold">Pharmacy Sales</span>
                 </div>
-                <span className="text-sm font-mono font-bold text-green-400">{formatKina(stats?.today_pharmacy_revenue || 0)}</span>
+                <span className="text-sm font-mono font-bold text-emerald-700">{formatKina(stats?.today_pharmacy_revenue || 0)}</span>
               </div>
-              <div className="w-full bg-black/30 h-3 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
                 <div 
-                  className="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${stats?.total_revenue_today ? ((stats?.today_pharmacy_revenue || 0) / stats.total_revenue_today) * 100 : 100}%` }}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${stats?.total_revenue_today ? ((stats?.today_pharmacy_revenue || 0) / stats.total_revenue_today) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -713,34 +796,34 @@ export default function Dashboard({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400" />
-                  <span className="text-xs text-slate-300 font-semibold">OPD Consultation Fees</span>
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" />
+                  <span className="text-xs text-slate-700 font-semibold">OPD Consultation Fees</span>
                 </div>
-                <span className="text-sm font-mono font-bold text-cyan-400">{formatKina(stats?.today_opd_fees || 0)}</span>
+                <span className="text-sm font-mono font-bold text-cyan-700">{formatKina(stats?.today_opd_fees || 0)}</span>
               </div>
-              <div className="w-full bg-black/30 h-3 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
                 <div 
-                  className="bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full transition-all duration-1000 ease-out"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${stats?.total_revenue_today ? ((stats?.today_opd_fees || 0) / stats.total_revenue_today) * 100 : 0}%` }}
                 />
               </div>
             </div>
 
             {/* Total */}
-            <div className="pt-4 border-t border-white/5">
+            <div className="pt-4 border-t border-slate-200">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white">Total Today</span>
-                <span className="text-2xl font-black text-white font-mono bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">{formatKina(stats?.total_revenue_today || 0)}</span>
+                <span className="text-sm font-bold text-slate-800">Total Today</span>
+                <span className="text-2xl font-black text-slate-900 font-mono">{formatKina(stats?.total_revenue_today || 0)}</span>
               </div>
             </div>
 
             {/* All-Time */}
-            <div className="p-4 rounded-xl bg-black/20 border border-white/5 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-slate-400">All-Time Pharmacy Revenue</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs text-slate-600">All-Time Pharmacy Revenue</span>
               </div>
-              <span className="text-sm font-mono font-bold text-emerald-400">{formatKina(stats?.total_pharmacy_revenue || 0)}</span>
+              <span className="text-sm font-mono font-bold text-emerald-700">{formatKina(stats?.total_pharmacy_revenue || 0)}</span>
             </div>
           </div>
         </GlassCard>
@@ -752,15 +835,15 @@ export default function Dashboard({
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                <Pill className="w-5 h-5 text-purple-400" />
+              <div className="p-2 rounded-xl bg-purple-50 border border-purple-200">
+                <Pill className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Top Dispensed Medicines</h3>
-                <p className="text-[10px] text-slate-400">Most prescribed formulations</p>
+                <h3 className="text-sm font-bold text-slate-900">Top Dispensed Medicines</h3>
+                <p className="text-[10px] text-slate-500">Most prescribed formulations</p>
               </div>
             </div>
-            <button onClick={() => setActiveTab('pharmacy')} className="text-[10px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors">
+            <button onClick={() => setActiveTab('pharmacy')} className="text-[10px] text-red-600 hover:text-red-700 font-bold flex items-center gap-1 transition-colors">
               View All <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -768,18 +851,18 @@ export default function Dashboard({
             {(stats?.topMedicines || []).map((med, i) => {
               const maxDispensed = Math.max(...(stats?.topMedicines || []).map(m => m.total_dispensed), 1);
               return (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[11px] font-black text-purple-400 group-hover:bg-purple-500/20 transition-all">
+                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center text-[11px] font-black text-purple-700 group-hover:bg-purple-100 transition-all">
                     #{i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-white font-semibold truncate">{med.drug_name}</span>
-                      <span className="text-[11px] font-mono font-bold text-purple-400 ml-2">{med.total_dispensed} units</span>
+                      <span className="text-xs text-slate-800 font-semibold truncate">{med.drug_name}</span>
+                      <span className="text-[11px] font-mono font-bold text-purple-700 ml-2">{med.total_dispensed} units</span>
                     </div>
-                    <div className="w-full bg-black/30 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
                       <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-400 h-full rounded-full transition-all duration-700"
+                        className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-700"
                         style={{ width: `${(med.total_dispensed / maxDispensed) * 100}%` }}
                       />
                     </div>
@@ -788,7 +871,7 @@ export default function Dashboard({
               );
             })}
             {(!stats?.topMedicines || stats.topMedicines.length === 0) && (
-              <p className="text-xs text-slate-500 text-center py-6">No dispensation data yet</p>
+              <p className="text-xs text-slate-500 text-center py-6">No dispensation records yet</p>
             )}
           </div>
         </GlassCard>
@@ -797,16 +880,16 @@ export default function Dashboard({
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <Bell className="w-5 h-5 text-amber-400" />
+              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200">
+                <Bell className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Medication Alerts</h3>
-                <p className="text-[10px] text-slate-400">Inventory health monitoring</p>
+                <h3 className="text-sm font-bold text-slate-900">Medication Alerts</h3>
+                <p className="text-[10px] text-slate-500">Inventory health monitoring</p>
               </div>
             </div>
             {stats?.expiring_soon_count > 0 && (
-              <span className="text-[10px] font-bold text-amber-400 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <span className="text-[10px] font-bold text-amber-700 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
                 {stats.expiring_soon_count} Expiring Soon
               </span>
             )}
@@ -814,34 +897,34 @@ export default function Dashboard({
           
           <div className="space-y-4">
             {/* Low Stock */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-red-600/5 border border-red-500/20 hover:border-red-500/40 transition-all">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-white border border-rose-200 hover:border-rose-300 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-red-500/20">
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <div className="p-2 rounded-lg bg-rose-100 text-rose-600">
+                    <AlertTriangle className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">Low Stock Alert</p>
-                    <p className="text-[10px] text-slate-400">Below minimum stock level</p>
+                    <p className="text-xs font-bold text-slate-900">Low Stock Alert</p>
+                    <p className="text-[10px] text-slate-500">Items below minimum safety buffer</p>
                   </div>
                 </div>
-                <span className="text-2xl font-black text-red-400 font-mono">{stats?.low_stock_count || 0}</span>
+                <span className="text-2xl font-black text-rose-600 font-mono">{stats?.low_stock_count || 0}</span>
               </div>
             </div>
 
             {/* Expiring Soon */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-600/5 border border-amber-500/20 hover:border-amber-500/40 transition-all">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-white border border-amber-200 hover:border-amber-300 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/20">
-                    <Clock className="w-5 h-5 text-amber-400" />
+                  <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                    <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white">Expiring Within 90 Days</p>
-                    <p className="text-[10px] text-slate-400">Requires reorder or redistribution</p>
+                    <p className="text-xs font-bold text-slate-900">Expiring Within 90 Days</p>
+                    <p className="text-[10px] text-slate-500">Formulary shelf-life tracking</p>
                   </div>
                 </div>
-                <span className="text-2xl font-black text-amber-400 font-mono">{stats?.expiring_soon_count || 0}</span>
+                <span className="text-2xl font-black text-amber-600 font-mono">{stats?.expiring_soon_count || 0}</span>
               </div>
             </div>
 
@@ -849,17 +932,17 @@ export default function Dashboard({
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => setActiveTab('pharmacy')}
-                className="py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-xs font-bold text-cyan-400 transition-all flex items-center justify-center gap-2"
+                className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-xs font-bold text-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Pill className="w-4 h-4" />
+                <Pill className="w-4 h-4 text-cyan-600" />
                 Pharmacy Formulary
               </button>
               <button
                 onClick={() => setActiveTab('end-of-day')}
-                className="py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-xs font-bold text-amber-400 transition-all flex items-center justify-center gap-2"
+                className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-xs font-bold text-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <FileCheck className="w-4 h-4" />
-                End-of-Day
+                <FileCheck className="w-4 h-4 text-amber-600" />
+                End-of-Day Shift
               </button>
             </div>
           </div>

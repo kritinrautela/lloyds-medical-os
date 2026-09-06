@@ -120,6 +120,21 @@ router.get('/stats', async (req, res) => {
     // 15. Live Hospital Clinical Activity & Telemetry Recorder
     const activities = await allQuery('SELECT * FROM activity_logs ORDER BY id DESC LIMIT 25') || [];
 
+    // 16. Low stock drugs list
+    const lowStockDrugs = await allQuery(`
+      SELECT name, category, stock_quantity as stock, min_stock_alert as min
+      FROM drugs
+      WHERE stock_quantity <= min_stock_alert
+      ORDER BY stock_quantity ASC
+      LIMIT 5
+    `) || [];
+
+    // 17. Actual Antivenom stock
+    const antivenomRow = await getQuery(`
+      SELECT stock_quantity FROM drugs WHERE code = 'DRG-PNG-014' OR name LIKE '%Antivenom%' LIMIT 1
+    `);
+    const antivenom_vials = antivenomRow ? antivenomRow.stock_quantity : 0;
+
     res.json({
       success: true,
       stats: {
@@ -131,7 +146,9 @@ router.get('/stats', async (req, res) => {
         total_revenue_today: today_pharmacy_revenue + today_opd_fees,
         total_pharmacy_revenue,
         low_stock_count,
+        lowStockDrugs,
         expiring_soon_count,
+        antivenom_vials,
         footfallTrend,
         topDiagnoses,
         topMedicines,

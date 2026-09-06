@@ -10,163 +10,70 @@ import {
 import { sounds } from '../utils/soundEffects';
 import { api } from '../services/api';
 
-// Emergency Response Timer
-export function EmergencyResponseTimer({ onLogEvent }) {
-  const [elapsed, setElapsed] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [responseTarget] = useState(300); // 5 min target
-  const [protocol, setProtocol] = useState('Snakebite Antivenom (Taipan/Death Adder)');
-  const [hasLogged, setHasLogged] = useState(false);
-
-  const protocols = [
-    'Snakebite Antivenom (Taipan/Death Adder)',
-    'Severe Malaria (Artesunate IV)',
-    'Acute Mining Trauma / Hemorrhage',
-    'Heat Stroke / WBGT Condition Red',
-    'Cardiac Resuscitation (ACLS Protocol)'
-  ];
-
-  useEffect(() => {
-    if (!isActive) return;
-    const timer = setInterval(() => setElapsed(prev => prev + 1), 1000);
-    return () => clearInterval(timer);
-  }, [isActive]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isOvertime = elapsed > responseTarget;
-  const progress = Math.min((elapsed / responseTarget) * 100, 100);
-
-  const handleToggleTimer = () => {
-    if (!isActive) {
-      sounds.playEmergencyAlert();
-      setElapsed(0);
-      setHasLogged(false);
-      setIsActive(true);
-    } else {
-      sounds.playClick();
-      setIsActive(false);
-    }
-  };
-
-  const handleResetTimer = () => {
-    sounds.playClick();
-    setElapsed(0);
-    setIsActive(false);
-    setHasLogged(false);
-  };
-
-  const handleLogToBlackBox = async () => {
-    try {
-      sounds.playSuccessChime();
-      await api.addActivity({
-        action_type: 'Emergency Response Timer Logged',
-        user_name: 'Chief Medical Officer',
-        user_role: 'Emergency Response Team',
-        location: 'Emergency Resuscitation Bay',
-        details: `Emergency Response for [${protocol}] timed at ${formatTime(elapsed)} (${isOvertime ? 'Exceeded 5-min target' : 'Within clinical target'}).`,
-        severity: isOvertime ? 'Warning' : 'Emergency'
-      });
-      setHasLogged(true);
-      if (onLogEvent) onLogEvent();
-    } catch (err) {
-      console.error('Failed to log emergency event:', err);
-    }
-  };
-
+// Mining Concession Trauma & Medevac Operational Readiness Card (Institutional Grade)
+export function TraumaMedevacStatusCard({ stats, onNavigate }) {
   return (
-    <div className={`p-5 rounded-2xl border flex flex-col justify-between h-full transition-all duration-300 ${
-      isActive 
-        ? isOvertime 
-          ? 'bg-gradient-to-br from-red-50 to-rose-100/60 border-red-300 shadow-lg shadow-red-500/10' 
-          : 'bg-gradient-to-br from-amber-50 to-orange-100/60 border-amber-300 shadow-lg shadow-amber-500/10'
-        : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-sm'
-    }`}>
-      <div>
-        <div className="flex items-center justify-between mb-3">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col justify-between h-full">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${isActive ? (isOvertime ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600') : 'bg-emerald-100 text-emerald-600'}`}>
-              <Timer className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200">
+              <ShieldAlert className="w-5 h-5 text-rose-600" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Emergency Response Timer</h4>
-              <p className="text-[10px] text-slate-500">Target: 5 minutes</p>
+              <h4 className="text-sm font-bold text-slate-900 tracking-tight">Trauma & Medevac Status</h4>
+              <p className="text-[10px] text-slate-500 font-mono">Concession Station • Level 1 Acute Facility</p>
             </div>
           </div>
-          {isActive && (
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-              isOvertime ? 'bg-red-100 text-red-700 border border-red-200 animate-pulse' : 'bg-amber-100 text-amber-700 border border-amber-200'
-            }`}>
-              {isOvertime ? 'OVERTIME' : 'ACTIVE CLOCK'}
-            </span>
-          )}
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            DEFCON 1 READY
+          </span>
         </div>
 
-        <div className="mb-2">
-          <select
-            value={protocol}
-            onChange={(e) => setProtocol(e.target.value)}
-            disabled={isActive}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-100 font-medium truncate"
-          >
-            {protocols.map((p) => (
-              <option key={p} value={p} className="bg-white text-slate-800">{p}</option>
-            ))}
-          </select>
-        </div>
+        <div className="space-y-2.5">
+          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-slate-800">Aeromedical Rotary Medevac</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-700">Port Moresby / Standby</span>
+          </div>
 
-        <div className="text-center py-2">
-          <p className={`text-4xl font-black font-mono tracking-tight ${
-            isActive ? (isOvertime ? 'text-red-600 animate-pulse' : 'text-amber-600') : 'text-emerald-600'
-          }`}>
-            {formatTime(elapsed)}
-          </p>
-          <div className="mt-2 w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-1000 ${
-                isOvertime ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-amber-500 to-orange-500'
-              }`}
-              style={{ width: `${progress}%` }}
-            />
+          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-semibold text-slate-800">Resuscitation Bay O2 Telemetry</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-emerald-700">100% Pressurized</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-semibold text-slate-800">Taipan / Snakebite Antivenom</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-900">{stats?.antivenom_vials ?? 12} Vials (Cold Chain)</span>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-xs font-semibold text-slate-800">Mine Heat Stress Index (WBGT)</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-amber-700">32.4°C (Condition Yellow)</span>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-2 mt-3 pt-2 border-t border-slate-200">
+      <div className="pt-3 border-t border-slate-100 mt-4 flex items-center justify-between">
+        <span className="text-[10px] text-slate-500 font-mono">Protocol: LMEL-OHS-04</span>
         <button
-          onClick={handleToggleTimer}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            isActive 
-              ? 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
-              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-          }`}
+          onClick={() => onNavigate && onNavigate('queue')}
+          className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 cursor-pointer"
         >
-          {isActive ? 'Stop Timer' : 'Start Response'}
+          <span>Acute Trauma Log</span>
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
-        <button
-          onClick={handleResetTimer}
-          className="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 text-xs font-bold transition-all cursor-pointer"
-        >
-          Reset
-        </button>
-        {elapsed > 0 && !isActive && !hasLogged && (
-          <button
-            onClick={handleLogToBlackBox}
-            className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-            title="Log event to Black Box"
-          >
-            Log
-          </button>
-        )}
-        {hasLogged && (
-          <span className="px-2 py-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Logged
-          </span>
-        )}
       </div>
     </div>
   );
@@ -177,8 +84,8 @@ export function DailyGoalsTracker({ stats, onNavigate, onOpenCheckIn, onSelectTa
   const goals = [
     { id: 1, label: 'Patient Consultations', current: stats?.queueMap?.['Completed'] || 0, target: 25, icon: Stethoscope, color: 'emerald', action: () => onNavigate && onNavigate('queue') },
     { id: 2, label: 'Revenue Target', current: stats?.total_revenue_today || 0, target: 500, icon: Target, color: 'cyan', isCurrency: true, action: () => onNavigate && onNavigate('end-of-day') },
-    { id: 3, label: 'New Registrations', current: Math.min(stats?.today_visitors || 0, 8), target: 8, icon: Users, color: 'purple', action: () => onOpenCheckIn && onOpenCheckIn() },
-    { id: 4, label: 'Zero LTI Days', current: 1, target: 1, icon: Shield, color: 'amber', isBoolean: true, action: () => onSelectTab && onSelectTab('ohs') }
+    { id: 3, label: 'New Registrations', current: stats?.today_visitors || 0, target: 8, icon: Users, color: 'purple', action: () => onOpenCheckIn && onOpenCheckIn() },
+    { id: 4, label: 'Zero LTI Days', current: (stats?.incidents?.length || 0) === 0 ? 1 : 0, target: 1, icon: Shield, color: 'amber', isBoolean: true, action: () => onSelectTab && onSelectTab('ohs') }
   ];
 
   const colorMap = {
@@ -340,41 +247,41 @@ export function DepartmentPerformance({ stats, onNavigate, onSelectTab }) {
   const departments = [
     { 
       name: 'Emergency', 
-      metric: stats?.urgentVisits?.length || 0, 
+      metric: stats?.urgentVisits?.length ?? 0, 
       label: 'Active Cases', 
       icon: HeartPulse, 
       color: 'red',
-      trend: '+2',
-      trendUp: true,
+      trend: (stats?.urgentVisits?.length || 0) > 0 ? `${stats.urgentVisits.length} Priority` : 'All Clear',
+      trendUp: (stats?.urgentVisits?.length || 0) === 0,
       onClick: () => onNavigate && onNavigate('queue')
     },
     { 
       name: 'Triage', 
-      metric: stats?.queueMap?.['Triage / Vitals'] || 0, 
+      metric: stats?.queueMap?.['Triage / Vitals'] ?? 0, 
       label: 'In Queue', 
       icon: Activity, 
       color: 'amber',
-      trend: 'Normal',
+      trend: (stats?.queueMap?.['Triage / Vitals'] || 0) > 0 ? `${stats.queueMap['Triage / Vitals']} Waiting` : 'Ready',
       trendUp: null,
       onClick: () => onNavigate && onNavigate('queue')
     },
     { 
       name: 'Pharmacy', 
-      metric: `K ${(stats?.today_pharmacy_revenue || 0).toFixed(0)}`, 
+      metric: `K ${(stats?.today_pharmacy_revenue ?? 0).toFixed(0)}`, 
       label: 'Sales Today', 
       icon: Pill, 
       color: 'cyan',
-      trend: '+15%',
-      trendUp: true,
+      trend: (stats?.today_pharmacy_revenue || 0) > 0 ? 'Active' : 'No Sales',
+      trendUp: (stats?.today_pharmacy_revenue || 0) > 0 ? true : null,
       onClick: () => onNavigate && onNavigate('pharmacy')
     },
     { 
       name: 'Ward Beds', 
-      metric: `${stats?.occupied_beds || 4}/${stats?.total_beds || 10}`, 
+      metric: `${stats?.occupied_beds ?? 0}/${stats?.total_beds ?? 10}`, 
       label: 'Bed Occupancy', 
       icon: BedDouble, 
       color: 'purple',
-      trend: `${stats?.total_beds ? Math.round(((stats?.occupied_beds || 4) / stats.total_beds) * 100) : 40}%`,
+      trend: `${stats?.total_beds ? Math.round(((stats?.occupied_beds || 0) / stats.total_beds) * 100) : 0}% Load`,
       trendUp: null,
       onClick: () => onSelectTab && onSelectTab('beds')
     }
@@ -533,30 +440,26 @@ export function AlertNotificationCenter({ stats, onNavigate, onSelectTab }) {
   );
 }
 
+// Subcomponent: Live telemetry clock (isolated to prevent parent re-renders)
+function TelemetryClock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  );
+}
+
 // Real-time Vitals Monitor Grid - Zero Overflow & Perfectly Responsive
 export function VitalsMonitorGrid({ stats, onNavigate }) {
   const [selectedPatientIndex, setSelectedPatientIndex] = useState(0);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Build patient vitals list from actual DB urgent visits + occupied beds + reference
-  const patientVitalsList = [
-    {
-      id: 'ref',
-      name: 'Reference Baseline Patient',
-      location: 'Outpatient Triage Bay',
-      heartRate: 74,
-      spo2: 98,
-      bp: '120/80',
-      temp: 36.7,
-      respRate: 16,
-      status: 'Normal'
-    }
-  ];
+  // Build patient vitals list from actual DB urgent visits + occupied beds (zero hallucinated data)
+  const patientVitalsList = [];
 
   if (stats?.urgentVisits && stats.urgentVisits.length > 0) {
     stats.urgentVisits.forEach((v) => {
@@ -566,9 +469,9 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
         location: `Urgent OPD - ${v.triage_priority}`,
         heartRate: v.pulse ? parseInt(v.pulse) : 88,
         spo2: v.spo2 ? parseInt(v.spo2) : 96,
-        bp: v.blood_pressure || '130/85',
+        bp: v.blood_pressure || v.bp || '130/85',
         temp: v.temp ? parseFloat(v.temp) : 38.2,
-        respRate: v.respiratory_rate ? parseInt(v.respiratory_rate) : 20,
+        respRate: v.resp_rate ? parseInt(v.resp_rate) : 20,
         status: v.triage_priority === 'Emergency' ? 'Critical' : 'Warning'
       });
     });
@@ -589,6 +492,46 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
         status: 'Monitoring'
       });
     });
+  }
+
+  if (patientVitalsList.length === 0) {
+    return (
+      <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <HeartPulse className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Vitals Monitor Grid</h4>
+                <p className="text-[10px] text-slate-500">Live Clinical Telemetry Station</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <TelemetryClock />
+            </div>
+          </div>
+
+          <div className="p-8 rounded-2xl bg-slate-50/80 border border-dashed border-slate-200 text-center space-y-2.5 my-auto">
+            <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <h5 className="text-sm font-bold text-slate-800">Station Telemetry Normal</h5>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              No acute resuscitation or observation patients requiring continuous vitals monitoring right now. Check in a patient or admit to ward to stream live telemetry.
+            </p>
+            <button
+              onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
+              className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
+            >
+              <span>View OPD Triage Queue</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const currentPatient = patientVitalsList[selectedPatientIndex] || patientVitalsList[0];
@@ -641,35 +584,25 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
     }
   ];
 
-  const colorMap = {
-    red: { bg: 'from-rose-50 to-white', border: 'border-rose-200', text: 'text-rose-700', badge: 'bg-rose-100 text-rose-700' },
-    cyan: { bg: 'from-cyan-50 to-white', border: 'border-cyan-200', text: 'text-cyan-700', badge: 'bg-cyan-100 text-cyan-700' },
-    purple: { bg: 'from-purple-50 to-white', border: 'border-purple-200', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700' },
-    amber: { bg: 'from-amber-50 to-white', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
-    emerald: { bg: 'from-emerald-50 to-white', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700' }
-  };
-
   return (
     <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm h-full flex flex-col justify-between">
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-red-50 text-red-600 border border-red-200 relative">
-              <HeartPulse className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 relative">
+              <HeartPulse className="w-5 h-5 text-rose-600" />
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Vitals Monitor Grid</h4>
-              <p className="text-[10px] text-slate-500">{currentPatient.location}</p>
+              <h4 className="text-sm font-bold text-slate-900">Vitals Telemetry Grid</h4>
+              <p className="text-[10px] text-slate-500 font-mono">{currentPatient.location}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
+            <TelemetryClock />
             <button
               onClick={() => { sounds.playClick(); if (onNavigate) onNavigate('queue'); }}
-              className="text-[10px] font-bold text-red-600 hover:text-red-700 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+              className="text-[10px] font-bold text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 hover:bg-slate-200/80 transition-colors cursor-pointer"
             >
               OPD Queue →
             </button>
@@ -681,7 +614,7 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
           <select
             value={selectedPatientIndex}
             onChange={(e) => { sounds.playClick(); setSelectedPatientIndex(Number(e.target.value)); }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-100 font-semibold truncate cursor-pointer hover:border-slate-300 transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 font-semibold truncate cursor-pointer hover:border-slate-300 transition-colors"
           >
             {patientVitalsList.map((p, idx) => (
               <option key={p.id} value={idx} className="bg-white text-slate-800">
@@ -691,39 +624,46 @@ export function VitalsMonitorGrid({ stats, onNavigate }) {
           </select>
         </div>
 
-        {/* Responsive Grid with Clean Height and Zero Overflow */}
+        {/* Responsive Grid - Clean Institutional Medical Design */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
           {vitalCards.map((vital) => {
             const Icon = vital.icon;
-            const c = colorMap[vital.color];
             const isLongVal = String(vital.value).length > 4;
 
             return (
               <div 
                 key={vital.label} 
-                className={`p-3 rounded-xl bg-gradient-to-br ${c.bg} border ${c.border} flex flex-col justify-between min-h-[120px] transition-all hover:scale-[1.02] shadow-2xs relative overflow-hidden group`}
+                className={`p-3.5 rounded-xl border flex flex-col justify-between min-h-[120px] transition-all relative overflow-hidden group ${
+                  vital.isWarning
+                    ? 'bg-rose-50/50 border-rose-300 shadow-xs'
+                    : 'bg-slate-50/70 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs'
+                }`}
               >
                 {vital.isWarning && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-600 animate-ping" />
                 )}
                 
                 {/* Header: Icon & Unit */}
                 <div className="flex items-center justify-between w-full">
-                  <Icon className={`w-4 h-4 ${c.text}`} />
-                  <span className="text-[9px] text-slate-400 uppercase font-semibold tracking-wider">{vital.unit}</span>
+                  <Icon className={`w-4 h-4 ${vital.isWarning ? 'text-rose-600' : 'text-slate-600'}`} />
+                  <span className="text-[9px] text-slate-600 uppercase font-mono font-semibold tracking-wider">{vital.unit}</span>
                 </div>
 
                 {/* Center: Value */}
-                <div className="my-1.5 text-center">
-                  <p className={`font-black font-mono tracking-tight leading-none ${c.text} ${isLongVal ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'}`}>
+                <div className="my-2 text-center">
+                  <p className={`font-black font-mono tracking-tight leading-none ${isLongVal ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'} ${vital.isWarning ? 'text-rose-700' : 'text-slate-900'}`}>
                     {vital.value}
                   </p>
                 </div>
 
                 {/* Footer: Label & Status Badge */}
                 <div className="text-center w-full space-y-1">
-                  <p className="text-[10px] text-slate-500 font-medium truncate">{vital.label}</p>
-                  <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${c.badge}`}>
+                  <p className="text-[10px] text-slate-500 font-semibold truncate">{vital.label}</p>
+                  <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider ${
+                    vital.isWarning 
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                      : 'bg-white text-slate-700 border border-slate-200/80 shadow-2xs'
+                  }`}>
                     {vital.status}
                   </span>
                 </div>

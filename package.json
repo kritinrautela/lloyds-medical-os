@@ -4,10 +4,11 @@
   "description": "Offline-First Clinic & Pharmacy Management System with AES-Protected Excel Export (PNG Edition)",
   "main": "server/server.js",
   "scripts": {
+    "setup": "npm --prefix server install && npm --prefix client install",
     "start": "node server/server.js",
-    "build": "cd client && npm run build",
+    "build": "npm --prefix client run build",
     "dev:server": "node server/server.js",
-    "dev:client": "cd client && npm run dev"
+    "dev:client": "npm --prefix client run dev"
   },
   "author": "Soleil Mining Group / Lloyds Healthcare",
   "license": "ISC"
