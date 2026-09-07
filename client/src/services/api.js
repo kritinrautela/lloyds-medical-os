@@ -172,6 +172,7 @@ export const api = {
 
   // Settings
   getSettings: () => request('/settings'),
+  getSystemInfo: () => request('/settings/system'),
   updateSettings: (data) => request('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   resetRecords: (password, performed_by) =>
     request('/settings/reset-records', {

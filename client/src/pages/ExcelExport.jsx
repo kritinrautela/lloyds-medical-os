@@ -246,7 +246,7 @@ export default function ExcelExport({ settings }) {
             <div className="space-y-3 px-4 py-3">
               <p className="text-xs leading-relaxed text-ink-2">
                 A copy of the whole clinic database, for keeping on a USB drive. It is
-                <span className="font-semibold text-ink"> encrypted with the export password</span>
+                <span className="font-semibold text-ink"> encrypted with the export password</span>{' '}
                 typed above, so a lost drive gives away nothing. Restoring replaces everything
                 currently on this machine and needs the same password.
               </p>

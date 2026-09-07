@@ -153,8 +153,7 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
                 <tr>
                   <th>Patient</th>
                   <th>Hospital number</th>
-                  <th className="num">Age</th>
-                  <th>Sex</th>
+                  <th>Age · Sex</th>
                   <th>Village or address</th>
                   <th>Allergies</th>
                   <th>Registered</th>
@@ -166,7 +165,7 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
                   const allergic = hasAllergy(p.allergies);
                   return (
                     <tr key={p.id}>
-                      <td>
+                      <td className="max-w-[15rem]">
                         <span className="flex items-center gap-2.5">
                           <PatientAvatar patient={p} size={34} />
                           <span className="min-w-0">
@@ -180,9 +179,12 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
                       <td className="whitespace-nowrap font-mono text-xs font-semibold text-ink">
                         <Value>{p.hospital_number}</Value>
                       </td>
-                      <td className="num"><Value>{p.age}</Value></td>
-                      <td>{p.gender}</td>
-                      <td className="max-w-[14rem] truncate">
+                      <td className="whitespace-nowrap">
+                        <span className="num"><Value>{p.age}</Value></span>
+                        <span className="text-ink-3"> · </span>
+                        <Value>{p.gender}</Value>
+                      </td>
+                      <td className="max-w-[10rem] truncate">
                         <Value>{p.address_or_village}</Value>
                         <span className="block text-2xs text-ink-3">
                           <Value>{p.province}</Value>
@@ -190,7 +192,9 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
                       </td>
                       <td>
                         {allergic ? (
-                          <Pill tone="critical" title={p.allergies}>{p.allergies}</Pill>
+                          <Pill tone="critical" title={p.allergies}>
+                            {p.allergies.length > 16 ? `${p.allergies.slice(0, 15).trim()}…` : p.allergies}
+                          </Pill>
                         ) : (
                           <span className="text-2xs text-ink-3">None recorded</span>
                         )}

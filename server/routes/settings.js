@@ -2,8 +2,14 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
-const { requirePermission } = require('../middleware/auth');
+const os = require('os');
+const QRCode = require('qrcode');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery } = require('../db');
+const { readCertificate } = require('../lib/tls');
+
+const APP_VERSION = require('../../package.json').version;
+const DB_PATH = path.join(__dirname, '..', 'data', 'hospital.db');
 
 // GET /api/settings
 router.get('/', async (req, res) => {
@@ -21,6 +27,93 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Fetch settings error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/settings/system
+// What this installation is and how another device on the clinic network
+// reaches it. The settings page shows the address and a QR code carrying it,
+// so a phone can be pointed at the server without anyone reading an IP
+// address off a terminal. Any signed-in member of staff may read it: the
+// address is already visible to every device on the same Wi-Fi.
+router.get('/system', requireAuth, async (req, res) => {
+  try {
+    const httpPort = Number(process.env.PORT || 4000);
+    const httpsPort = Number(process.env.HTTPS_PORT || 4443);
+
+    let httpsEnabled = false;
+    try { httpsEnabled = !!readCertificate(); } catch (err) { httpsEnabled = false; }
+
+    const addresses = [];
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family !== 'IPv4' || iface.internal) continue;
+        addresses.push({
+          interface: name,
+          ip: iface.address,
+          http: `http://${iface.address}:${httpPort}`,
+          https: httpsEnabled ? `https://${iface.address}:${httpsPort}` : null
+        });
+      }
+    }
+
+    const primary = addresses[0] || null;
+    const installUrl = primary ? (primary.https || primary.http) : null;
+    let qr = null;
+    if (installUrl) {
+      qr = await QRCode.toDataURL(installUrl, {
+        margin: 1,
+        width: 296,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#111827', light: '#ffffff' }
+      });
+    }
+
+    let database = null;
+    try {
+      const st = fs.statSync(DB_PATH);
+      database = { path: DB_PATH, size_bytes: st.size, modified_at: st.mtime.toISOString() };
+    } catch (err) {
+      database = null;
+    }
+
+    const count = async (sql) => {
+      try {
+        const row = await getQuery(sql);
+        return row ? Number(row.n) : null;
+      } catch (err) {
+        return null;
+      }
+    };
+    const counts = {
+      patients: await count('SELECT COUNT(*) AS n FROM patients'),
+      visits: await count('SELECT COUNT(*) AS n FROM visits'),
+      dispensations: await count('SELECT COUNT(*) AS n FROM dispensations'),
+      staff: await count("SELECT COUNT(*) AS n FROM users WHERE status = 'Active'")
+    };
+
+    res.json({
+      success: true,
+      system: {
+        version: APP_VERSION,
+        hostname: os.hostname(),
+        platform: `${os.type()} ${os.release()}`,
+        node: process.version,
+        uptime_seconds: Math.round(process.uptime()),
+        http_port: httpPort,
+        https_port: httpsPort,
+        https_enabled: httpsEnabled,
+        addresses,
+        install_url: installUrl,
+        qr,
+        database,
+        counts
+      }
+    });
+  } catch (err) {
+    console.error('System info error:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

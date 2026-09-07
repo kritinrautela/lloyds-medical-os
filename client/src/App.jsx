@@ -163,8 +163,8 @@ function HospitalAppContent() {
    */
   if (!currentUser) {
     return (
-      <div className="light-theme flex min-h-screen items-center justify-center bg-canvas text-ink">
-        <AuthModal facilityName={settings?.name} />
+      <div className="light-theme min-h-screen bg-canvas text-ink">
+        <AuthModal facilityName={settings?.name} facility={settings} />
       </div>
     );
   }

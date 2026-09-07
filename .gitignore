@@ -38,3 +38,6 @@ demo-videos/*.aiff
 
 # Patient photographs are clinical records, never source. They stay on the clinic machine.
 server/data/patient_photos/
+
+# Screenshots taken at the repository root during testing
+/*.png

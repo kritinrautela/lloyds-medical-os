@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Lock, Smartphone } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Panel, PanelHead, Pill, SectionTitle } from '../components/ui';
@@ -37,6 +37,16 @@ export default function Settings({ settings, refreshStats }) {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [system, setSystem] = useState(null);
+  const [systemError, setSystemError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getSystemInfo()
+      .then((res) => { if (!cancelled) setSystem(res.system || null); })
+      .catch((err) => { if (!cancelled) setSystemError(err.message || 'The server did not answer.'); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!settings) return;
@@ -171,7 +181,162 @@ export default function Settings({ settings, refreshStats }) {
           <GoLivePanel settings={settings} isAdmin={isAdmin} currentUser={currentUser} onDone={refreshStats} />
         </div>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ConnectDevicesPanel system={system} error={systemError} />
+        </div>
+        <AboutPanel system={system} error={systemError} />
+      </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function formatBytes(n) {
+  if (typeof n !== 'number' || Number.isNaN(n)) return null;
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function formatUptime(seconds) {
+  if (typeof seconds !== 'number') return null;
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} ${hours} h`;
+  if (hours > 0) return `${hours} h ${minutes} min`;
+  return `${Math.max(1, minutes)} min`;
+}
+
+/*
+ * How a phone or tablet reaches this server. The address is read off the
+ * machine's own network interfaces, so nobody has to find it in a terminal,
+ * and the QR code carries the same address for a camera to read.
+ */
+function ConnectDevicesPanel({ system, error }) {
+  const addresses = system?.addresses || [];
+  const primary = addresses[0] || null;
+  const installUrl = primary ? (primary.https || primary.http) : null;
+  const installable = !!system?.https_enabled;
+
+  return (
+    <Panel>
+      <PanelHead title="Open on a phone or tablet" note="Any device on the clinic Wi-Fi can use this system">
+        {system ? (
+          <Pill tone={installable ? 'ok' : 'neutral'}>{installable ? 'Installable on Android' : 'Opens in the browser'}</Pill>
+        ) : null}
+      </PanelHead>
+      <div className="px-4 py-4">
+        {error ? (
+          <p className="text-xs leading-relaxed text-ink-2">
+            The server address could not be read: {error}
+          </p>
+        ) : !system ? (
+          <p className="text-xs text-ink-3">Reading the server address.</p>
+        ) : addresses.length === 0 ? (
+          <p className="text-xs leading-relaxed text-ink-2">
+            This computer is not on any network right now. Connect it to the clinic Wi-Fi or router
+            and the address for other devices will appear here.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            {system.qr ? (
+              <img
+                src={system.qr}
+                alt={`QR code that opens ${installUrl}`}
+                width={148}
+                height={148}
+                className="h-[148px] w-[148px] shrink-0 rounded-md border border-line bg-white p-1.5"
+              />
+            ) : (
+              <span className="inline-flex h-[148px] w-[148px] shrink-0 items-center justify-center rounded-md border border-line bg-subtle text-ink-3">
+                <Smartphone className="h-6 w-6" aria-hidden="true" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1 space-y-4">
+              <div>
+                <p className="label">Scan the code, or type this address</p>
+                <p className="break-all font-mono text-sm font-semibold text-ink">{installUrl}</p>
+                {primary.https && primary.http ? (
+                  <p className="mt-1 text-2xs text-ink-3">
+                    Plain address without the certificate: <span className="font-mono">{primary.http}</span>
+                  </p>
+                ) : null}
+              </div>
+              <ol className="list-decimal space-y-1.5 pl-4 text-xs leading-relaxed text-ink-2">
+                <li>Join the phone to the same Wi-Fi as this computer.</li>
+                <li>Open Chrome, go to the address above and sign in with your own account.</li>
+                <li>
+                  {installable
+                    ? 'Choose "Install app" from the Chrome menu. It then opens from the home screen like any other app, and still opens when the Wi-Fi is down.'
+                    : 'To put it on the home screen as an app, an administrator runs the certificate script on the server once. Until then it works in the browser.'}
+                </li>
+              </ol>
+              {addresses.length > 1 ? (
+                <details className="text-2xs text-ink-3">
+                  <summary className="cursor-pointer select-none">
+                    This computer has {addresses.length} network addresses
+                  </summary>
+                  <ul className="mt-1.5 space-y-1">
+                    {addresses.map((a) => (
+                      <li key={a.ip} className="font-mono">
+                        {a.https || a.http}
+                        <span className="ml-2 font-sans text-ink-3">{a.interface}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </div>
+    </Panel>
+  );
+}
+
+function AboutPanel({ system, error }) {
+  const rows = system ? [
+    ['Version', system.version ? `Lloyds Medical OS ${system.version}` : null],
+    ['Server computer', system.hostname],
+    ['Running since', system.uptime_seconds != null ? `${formatUptime(system.uptime_seconds)} ago` : null],
+    ['Database', system.database ? formatBytes(system.database.size_bytes) : null],
+    ['Patients on file', system.counts ? system.counts.patients : null],
+    ['Visits on file', system.counts ? system.counts.visits : null],
+    ['Medicines handed over', system.counts ? system.counts.dispensations : null],
+    ['Active staff accounts', system.counts ? system.counts.staff : null]
+  ] : [];
+
+  return (
+    <Panel>
+      <PanelHead title="About this installation" note="Read from the server as it is right now" />
+      <div className="px-4 py-3">
+        {error ? (
+          <p className="text-xs text-ink-2">Not available: {error}</p>
+        ) : !system ? (
+          <p className="text-xs text-ink-3">Reading.</p>
+        ) : (
+          <dl className="divide-y divide-line-soft text-xs">
+            {rows.map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-3 py-1.5">
+                <dt className="text-ink-3">{label}</dt>
+                <dd className="text-right font-semibold text-ink">
+                  {value === null || value === undefined ? <span className="unrecorded">—</span> : value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {system?.database?.path ? (
+          <p className="mt-3 break-all text-2xs leading-relaxed text-ink-3">
+            Database file: <span className="font-mono">{system.database.path}</span>
+          </p>
+        ) : null}
+      </div>
+    </Panel>
   );
 }
 

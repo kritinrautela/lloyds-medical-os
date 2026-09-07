@@ -503,7 +503,7 @@ export function WardBoard({ stats, onAdmit, onDischarge }) {
                     </dl>
                   ) : (
                     <p className="text-xs leading-relaxed text-ink-3">
-                      <Value>{bed.notes}</Value>
+                      {bed.notes ? bed.notes : <span className="unrecorded">No note recorded for this bed.</span>}
                     </p>
                   )}
                 </div>
@@ -998,9 +998,32 @@ function ControlRow({ icon: Icon, label, status, detail, tone, action }) {
 // Trends and surveillance
 // ---------------------------------------------------------------------------
 
+function localDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function TrendsBoard({ stats, money }) {
-  const trend = stats?.footfallTrend || [];
+  // The server returns only the days that had a visit. A day with nobody is
+  // still a day, so the seven are filled in here and a quiet day shows as a
+  // flat bar rather than vanishing from the week.
+  const recorded = stats?.footfallTrend || [];
+  const trend = useMemo(() => {
+    const byDate = new Map(recorded.map((d) => [d.visit_date, Number(d.count) || 0]));
+    const days = [];
+    for (let back = 6; back >= 0; back -= 1) {
+      const date = new Date();
+      date.setDate(date.getDate() - back);
+      const key = localDateKey(date);
+      days.push({ visit_date: key, count: byDate.get(key) || 0 });
+    }
+    return days;
+  }, [recorded]);
+  const weekTotal = trend.reduce((sum, d) => sum + d.count, 0);
   const maxTrend = Math.max(...trend.map((d) => d.count), 1);
+  const todayKey = localDateKey(new Date());
   const diagnoses = stats?.topDiagnoses || [];
   const maxDiag = Math.max(...diagnoses.map((d) => d.count), 1);
 
@@ -1013,27 +1036,36 @@ export function TrendsBoard({ stats, money }) {
   return (
     <div className="space-y-4">
       <Panel>
-        <PanelHead title="Attendance over the last seven days" note="Recorded visits per day" />
-        {trend.length === 0 ? (
+        <PanelHead
+          title="Attendance over the last seven days"
+          note={weekTotal === 0 ? 'Recorded visits per day' : `${weekTotal} ${weekTotal === 1 ? 'visit' : 'visits'} recorded this week`}
+        />
+        {weekTotal === 0 ? (
           <EmptyState title="No visits recorded in the last seven days" />
         ) : (
           <div className="px-4 py-4">
-            <div className="flex h-40 items-end gap-2">
+            <div className="flex items-end gap-2 sm:gap-3">
               {trend.map((day) => {
-                const isToday = day.visit_date === new Date().toISOString().split('T')[0];
-                const height = Math.max(4, (day.count / maxTrend) * 100);
+                const isToday = day.visit_date === todayKey;
+                const pct = day.count === 0 ? 0 : Math.max(6, (day.count / maxTrend) * 100);
+                const date = new Date(`${day.visit_date}T00:00:00`);
                 return (
-                  <div key={day.visit_date} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span className="text-xs font-semibold text-ink">{day.count}</span>
-                    <div className="flex w-full flex-1 items-end">
+                  <div key={day.visit_date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span className={`text-xs font-semibold ${day.count === 0 ? 'text-ink-3' : 'text-ink'}`}>
+                      {day.count}
+                    </span>
+                    <div className="flex h-28 w-full items-end rounded-sm bg-subtle/60">
                       <div
-                        className={`w-full rounded-t ${isToday ? 'bg-info' : 'bg-line-strong'}`}
-                        style={{ height: `${height}%` }}
-                        title={`${day.visit_date}: ${day.count} visits`}
+                        className={`w-full rounded-t ${isToday ? 'bg-brand' : 'bg-line-strong'}`}
+                        style={{ height: `${pct}%` }}
+                        title={`${day.visit_date}: ${day.count} ${day.count === 1 ? 'visit' : 'visits'}`}
                       />
                     </div>
-                    <span className={`text-2xs ${isToday ? 'font-semibold text-info' : 'text-ink-3'}`}>
-                      {new Date(`${day.visit_date}T00:00:00`).toLocaleDateString([], { weekday: 'short' })}
+                    <span className={`text-2xs ${isToday ? 'font-semibold text-brand' : 'text-ink-3'}`}>
+                      {isToday ? 'Today' : date.toLocaleDateString([], { weekday: 'short' })}
+                    </span>
+                    <span className="hidden text-2xs text-ink-3 sm:block">
+                      {date.toLocaleDateString([], { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 );
@@ -1357,9 +1389,9 @@ export function AuditBoard({ stats }) {
                     <Pill tone={SEVERITY_TONE[a.severity] || 'neutral'}>{a.action_type}</Pill>
                   </td>
                   <td className="whitespace-nowrap text-ink">{a.user_name}</td>
-                  <td className="whitespace-nowrap"><Value>{a.patient_name}</Value></td>
+                  <td className="max-w-[12rem] truncate"><Value>{a.patient_name}</Value></td>
                   <td className="whitespace-nowrap">{a.location}</td>
-                  <td className="min-w-[22rem] text-xs">{a.details}</td>
+                  <td className="min-w-[16rem] max-w-[32rem] text-xs leading-relaxed">{a.details}</td>
                 </tr>
               ))}
             </tbody>

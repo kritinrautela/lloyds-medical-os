@@ -208,14 +208,14 @@ export default function Pharmacy({ settings, refreshStats }) {
                           {d.category ? ` · ${d.category}` : ''}
                         </span>
                       </td>
-                      <td className="font-mono text-2xs"><Value>{d.batch_number}</Value></td>
-                      <td>
+                      <td className="whitespace-nowrap font-mono text-2xs"><Value>{d.batch_number}</Value></td>
+                      <td className="whitespace-nowrap">
                         <span className={days !== null && days < 0 ? 'text-critical' : days !== null && days <= EXPIRY_WARN_DAYS ? 'text-warn' : ''}>
                           <Value>{d.expiry_date}</Value>
                         </span>
                       </td>
                       <td className="num font-semibold">{d.stock_quantity}</td>
-                      <td className="num">{currency} {(d.unit_price ?? 0).toFixed(2)}</td>
+                      <td className="num whitespace-nowrap">{currency} {(d.unit_price ?? 0).toFixed(2)}</td>
                       <td><Pill tone={s.tone}>{s.label}</Pill></td>
                       <td className="num">
                         <div className="flex justify-end gap-1.5">
