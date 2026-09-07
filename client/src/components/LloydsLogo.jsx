@@ -26,7 +26,7 @@ export default function LloydsLogo({
 
   return (
     <div className={`inline-flex flex-col items-start ${className}`}>
-      <div className={`flex items-stretch rounded-sm overflow-hidden shadow-sm border border-slate-900/60 ${hClass}`}>
+      <div className={`flex items-stretch rounded-sm overflow-hidden shadow-sm border border-line-strong ${hClass}`}>
         {/* Real PNG Asset from official upload */}
         <img 
           src="/lloyds_metals_logo.png" 
@@ -70,9 +70,9 @@ export default function LloydsLogo({
       </div>
 
       {showSubtitle && (
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 font-mono">
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" aria-hidden="true"></span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-2">
             {subtitle}
           </span>
         </div>
