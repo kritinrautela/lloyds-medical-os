@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this file to install.json on the clinic server and fill in what applies. Staff never see or type these. install.json is not committed.",
+  "clinic_id": "lae-clinic",
+  "google_client_id": "1234567890-abc.apps.googleusercontent.com",
+  "google_client_secret": "GOCSPX-...",
+  "offsite_url": "https://lloyds-backup-receiver.example.workers.dev",
+  "offsite_key": "long-random-key-for-this-clinic"
+}

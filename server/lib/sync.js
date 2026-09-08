@@ -261,7 +261,7 @@ async function runSync({ manual = false } = {}) {
     }
 
     if (!endpoint || !endpoint.startsWith('http')) {
-      const message = 'No Google web app address is saved, so nothing was sent. An administrator adds it under Google Sheets backup.';
+      const message = 'No Google web app address is saved, so nothing was sent. A Lloyds technician adds it under Off-site copies.';
       await record(syncType, 0, 'Not Configured', message);
       await runQuery(
         "UPDATE cloud_sync_config SET last_sync_status = 'Not Configured', last_sync_message = ? WHERE id = 1",
@@ -271,7 +271,7 @@ async function runSync({ manual = false } = {}) {
     }
 
     if (!config.sync_key) {
-      const message = 'No sync key has been made yet, so the send was not attempted. Make one under Google Sheets backup and add it to the script.';
+      const message = 'No sync key has been made yet, so the send was not attempted. Make one under Off-site copies and add it to the script.';
       await record(syncType, 0, 'Not Configured', message);
       await runQuery(
         "UPDATE cloud_sync_config SET last_sync_status = 'Not Configured', last_sync_message = ? WHERE id = 1",
@@ -383,18 +383,6 @@ async function runGoogleSync(config, settings, syncType) {
       await runQuery("UPDATE end_of_day_reports SET cloud_sync_status = 'Synced' WHERE report_date = ?", [eodToday.report_date]);
     }
 
-    // The administrator's daily summary, once a day, from the connected account.
-    const adminEmail = settings && settings.admin_email;
-    if (adminEmail && config.last_summary_email_date !== payload.sync_date) {
-      try {
-        const fresh = await getQuery('SELECT * FROM cloud_sync_config LIMIT 1');
-        await google.sendSummaryEmail(fresh, payload, adminEmail);
-        await runQuery('UPDATE cloud_sync_config SET last_summary_email_date = ? WHERE id = 1', [payload.sync_date]);
-        await record('Daily summary email', 0, 'Success', `Daily summary for ${payload.sync_date} emailed to ${adminEmail}.`);
-      } catch (err) {
-        await record('Daily summary email', 0, 'Failed', `The summary email to ${adminEmail} was not sent: ${err.message}`);
-      }
-    }
   } else {
     await runQuery('UPDATE cloud_sync_config SET last_sync_status = ?, last_sync_message = ? WHERE id = 1', [status, message]);
   }

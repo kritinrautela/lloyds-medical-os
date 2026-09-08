@@ -44,3 +44,9 @@ server/data/patient_photos/
 
 # Vite build manifest, regenerated on every build
 client/dist/.vite/
+
+# Set at installation, never committed: the company Google client and head office key
+server/config/install.json
+
+# Where the last USB and head office copies went
+server/data/offsite-state.json

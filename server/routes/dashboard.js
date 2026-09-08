@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { runQuery, getQuery, allQuery } = require('../db');
 const { requirePermission, requireAuth } = require('../middleware/auth');
+const offsite = require('../lib/offsite');
 
 /*
  * Dashboard data layer.
@@ -482,6 +483,7 @@ router.get('/stats', async (req, res) => {
               last_successful_sync_at: lastSuccessfulSync ? lastSuccessfulSync.synced_at : null
             }
           : null,
+        offsite: offsite.summary(),
         activities,
         audit_events_today,
 

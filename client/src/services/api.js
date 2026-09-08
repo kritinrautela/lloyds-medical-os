@@ -194,6 +194,8 @@ export const api = {
   saveGoogleCredentials: (client_id, client_secret) =>
     request('/google/credentials', { method: 'PUT', body: JSON.stringify({ client_id, client_secret }) }),
   startGoogleConnect: () => request('/google/start'),
+  usbCopy: (volume) => request('/cloud-sync/usb-copy', { method: 'POST', body: JSON.stringify({ volume: volume || null }) }),
+  sendHeadOffice: () => request('/cloud-sync/head-office-send', { method: 'POST' }),
   disconnectGoogle: () => request('/google/disconnect', { method: 'POST' }),
   triggerCloudSync: (isManual = true) => request('/cloud-sync/sync-now', { method: 'POST', body: JSON.stringify({ is_manual: isManual }) }),
   testCloudSync: (webhook_url) => request('/cloud-sync/test', { method: 'POST', body: JSON.stringify({ webhook_url }) }),

@@ -139,15 +139,15 @@ async function describeState() {
       'SELECT sync_enabled, webhook_url, last_sync_status, last_synced_at FROM cloud_sync_config LIMIT 1'
     );
     if (!sync || !sync.webhook_url) {
-      lines.push('Google Sheets sync     : not connected — no Apps Script address saved');
+      lines.push('Google copy            : not connected');
     } else if (!sync.sync_enabled) {
-      lines.push('Google Sheets sync     : connected but switched off');
+      lines.push('Google copy            : connected but switched off');
     } else {
       const when = sync.last_synced_at ? String(sync.last_synced_at).slice(0, 16) : 'never run';
-      lines.push(`Google Sheets sync     : on — last run ${when} (${sync.last_sync_status || 'no status'})`);
+      lines.push(`Google copy            : on — last run ${when} (${sync.last_sync_status || 'no status'})`);
     }
   } catch (err) {
-    lines.push(`Google Sheets sync     : could not be read (${err.message})`);
+    lines.push(`Google copy            : could not be read (${err.message})`);
   }
 
   try {
@@ -189,6 +189,8 @@ app.listen(PORT, '0.0.0.0', async () => {
   require('./lib/sync').startAutoSync();
   // An encrypted copy of the database every evening, kept on this computer.
   require('./lib/backup').startBackupSchedule();
+  // Copies onto any USB stick that is plugged in, and to head office where set up.
+  require('./lib/offsite').startOffsiteWatch();
   console.log(`
   ==============================================================
    LLOYDS COMMUNITY CLINIC & PHARMACY SYSTEM (PNG EDITION)

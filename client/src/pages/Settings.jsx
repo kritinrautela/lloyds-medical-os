@@ -157,8 +157,8 @@ export default function Settings({ settings, refreshStats }) {
                 placeholder="admin@example.com"
               />
               <p className="mt-1 text-2xs leading-relaxed text-ink-3">
-                Used by the Google Sheets backup to email the day's summary when a connection is
-                available. Left empty, no email is sent.
+                Who to contact about this installation. Where a Lloyds technician has set up the
+                Google script, the day's summary is emailed here as well.
               </p>
             </div>
           </div>

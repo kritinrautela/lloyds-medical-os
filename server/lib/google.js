@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { runQuery, getQuery } = require('../db');
+const { installConfig } = require('./installConfig');
 
 /*
  * The company's Google account, connected directly.
@@ -24,7 +25,6 @@ const { runQuery, getQuery } = require('../db');
 const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
   'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/userinfo.email'
 ].join(' ');
 
@@ -61,7 +61,29 @@ function consumeState(state) {
   return !!expiry && expiry >= Date.now();
 }
 
-function authUrl(config, port) {
+/*
+ * The company's OAuth client, set once at installation, wins over anything
+ * saved on the page. That is what lets the clinic's page be a single button.
+ */
+function withClient(config) {
+  const install = installConfig();
+  const saved = config || {};
+  if (install.google_client_id && install.google_client_secret) {
+    return {
+      ...saved,
+      google_client_id: install.google_client_id,
+      google_client_secret: install.google_client_secret,
+      google_client_source: 'install'
+    };
+  }
+  return {
+    ...saved,
+    google_client_source: saved.google_client_id && saved.google_client_secret ? 'saved' : null
+  };
+}
+
+function authUrl(rawConfig, port) {
+  const config = withClient(rawConfig);
   const params = new URLSearchParams({
     client_id: config.google_client_id,
     redirect_uri: redirectUri(port),
@@ -97,7 +119,8 @@ async function googleFetch(url, options = {}, timeoutMs = 60000) {
   }
 }
 
-async function exchangeCode(config, code, port) {
+async function exchangeCode(rawConfig, code, port) {
+  const config = withClient(rawConfig);
   const body = new URLSearchParams({
     code,
     client_id: config.google_client_id,
@@ -112,7 +135,8 @@ async function exchangeCode(config, code, port) {
   });
 }
 
-async function accessToken(config) {
+async function accessToken(rawConfig) {
+  const config = withClient(rawConfig);
   const key = `${config.google_client_id}:${config.google_refresh_token}`;
   if (cachedAccess.token && cachedAccess.forKey === key && cachedAccess.expiresAt > Date.now() + 60000) {
     return cachedAccess.token;
@@ -332,52 +356,12 @@ async function push(config, payload, photoFiles) {
   return { sheetUrl: ws.sheetUrl, folderUrl: ws.folderUrl, photoLinks };
 }
 
-/*
- * The daily summary, sent from the connected account to the administrator.
- * Once per calendar day, on the first successful send of that day.
- */
-async function sendSummaryEmail(config, payload, toAddress) {
-  if (!toAddress) return false;
-  const facility = payload.facility ? payload.facility.name : 'Clinic';
-  const c = payload.counts || {};
-  const eod = (payload.tables.end_of_day || []).find((r) => r.report_date === payload.sync_date);
-  const lines = [
-    `${facility} — daily summary for ${payload.sync_date}`,
-    '',
-    `Patients on the register: ${c.patients}`,
-    `Visits today: ${c.visits_today}`,
-    `Medicines handed over today: ${c.dispensations_today}`,
-    `Incidents today: ${c.incidents_today}`,
-    `Shift close filed: ${c.end_of_day_filed ? 'yes' : 'not yet'}`
-  ];
-  if (eod) {
-    for (const [k, v] of Object.entries(eod)) {
-      if (['id', 'created_at', 'cloud_sync_status'].includes(k)) continue;
-      lines.push(`${k.replace(/_/g, ' ')}: ${cell(v)}`);
-    }
-  }
-  lines.push('', `Records: ${config.google_sheet_url || ''}`, `Photographs: ${config.drive_folder_url || ''}`,
-    '', 'Sent automatically by the clinic server. Every figure is read from the clinic database; nothing is estimated.');
-  const raw = [
-    `To: ${toAddress}`,
-    `Subject: ${facility} — ${payload.sync_date} summary`,
-    'Content-Type: text/plain; charset="UTF-8"',
-    '',
-    lines.join('\n')
-  ].join('\r\n');
-  await api(config, 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ raw: Buffer.from(raw).toString('base64url') })
-  });
-  return true;
-}
-
-function isConnected(config) {
-  return !!(config && config.google_client_id && config.google_client_secret && config.google_refresh_token);
+function isConnected(rawConfig) {
+  const config = withClient(rawConfig);
+  return !!(config.google_client_id && config.google_client_secret && config.google_refresh_token);
 }
 
 module.exports = {
   SCOPES, authUrl, consumeState, exchangeCode, whoAmI, revoke, ensureWorkspace, push,
-  sendSummaryEmail, isConnected, redirectUri
+  isConnected, redirectUri, withClient
 };

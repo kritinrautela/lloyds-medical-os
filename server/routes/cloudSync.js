@@ -5,6 +5,8 @@ const router = express.Router();
 const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
 const { runSync, postJson, newSyncKey, countPendingPhotos } = require('../lib/sync');
+const google = require('../lib/google');
+const offsite = require('../lib/offsite');
 
 /*
  * The off-site copy — the routes. The work itself lives in lib/sync.js so the
@@ -26,18 +28,22 @@ router.get('/status', async (req, res) => {
     // The key itself is never sent back to a browser after it is made: a page
     // that shows it forever is a page anyone walking past can photograph.
     const { sync_key, google_client_secret, google_refresh_token, ...safeConfig } = config;
+    const client = google.withClient(config);
+    const offsiteStatus = await offsite.status();
 
     res.json({
       success: true,
       config: { ...safeConfig, sync_key_set: !!sync_key },
       google: {
-        credentials_set: !!(config.google_client_id && google_client_secret),
-        connected: !!(config.google_client_id && google_client_secret && google_refresh_token),
+        credentials_set: !!(client.google_client_id && client.google_client_secret),
+        client_source: client.google_client_source,
+        connected: google.isConnected(config),
         email: config.google_account_email || '',
         connected_at: config.google_connected_at || null,
         sheet_url: config.google_sheet_url || '',
         folder_url: config.drive_folder_url || ''
       },
+      offsite: offsiteStatus,
       recent_logs: logs,
       pending_sync_count: pendingClose ? pendingClose.count : 0,
       photos: { waiting: photosWaiting, total: photosTotal ? photosTotal.n : 0 },
@@ -49,6 +55,31 @@ router.get('/status', async (req, res) => {
   } catch (err) {
     console.error('Fetch cloud sync status error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/*
+ * POST /api/cloud-sync/usb-copy — write the latest backup onto a stick now.
+ * The watcher does this by itself when a stick is plugged in; the button is
+ * for the person standing at the server who wants to see it happen.
+ */
+router.post('/usb-copy', requirePermission('cloudSync.configure'), async (req, res) => {
+  try {
+    const volume = req.body && req.body.volume ? String(req.body.volume) : null;
+    const copy = await offsite.copyToUsb(volume, req.user);
+    res.json({ success: true, message: `Copied ${copy.file} onto the stick "${copy.label}".`, copy });
+  } catch (err) {
+    res.status(409).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/cloud-sync/head-office-send — send the latest backup to head office now.
+router.post('/head-office-send', requirePermission('cloudSync.configure'), async (req, res) => {
+  try {
+    const result = await offsite.sendToHeadOffice({ force: true, actor: req.user });
+    res.status(result.success ? 200 : 409).json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

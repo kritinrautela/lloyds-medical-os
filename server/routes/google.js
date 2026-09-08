@@ -47,9 +47,9 @@ router.put('/credentials', requirePermission('cloudSync.configure'), async (req,
 // GET /api/google/start — where the browser should go to sign in
 router.get('/start', requirePermission('cloudSync.configure'), async (req, res) => {
   try {
-    const config = await getQuery('SELECT * FROM cloud_sync_config LIMIT 1');
-    if (!config || !config.google_client_id || !config.google_client_secret) {
-      return res.status(409).json({ success: false, message: 'Save the client ID and secret first.' });
+    const config = google.withClient(await getQuery('SELECT * FROM cloud_sync_config LIMIT 1'));
+    if (!config.google_client_id || !config.google_client_secret) {
+      return res.status(409).json({ success: false, message: 'The company Google connection has not been installed on this server yet. Lloyds adds it at installation; nothing is needed from the clinic.' });
     }
     const host = String(req.get('host') || '');
     if (!/^localhost(:\d+)?$/.test(host) && !/^127\.0\.0\.1(:\d+)?$/.test(host)) {
@@ -74,7 +74,7 @@ router.get('/callback', async (req, res) => {
     if (!code || !state || !google.consumeState(String(state))) {
       return res.status(400).send(page('That link has expired', '<p>Start the connection again from the clinic system. Each sign-in link is valid for ten minutes.</p>', false));
     }
-    const config = await getQuery('SELECT * FROM cloud_sync_config LIMIT 1');
+    const config = google.withClient(await getQuery('SELECT * FROM cloud_sync_config LIMIT 1'));
     const tokens = await google.exchangeCode(config, String(code), PORT);
     if (!tokens.refresh_token) {
       return res.status(400).send(page('Google did not hand back a lasting permission', '<p>This usually means the account was connected before and Google skipped the consent step. Remove the clinic from the account\'s connected apps at <code>myaccount.google.com/permissions</code>, then connect again.</p>', false));

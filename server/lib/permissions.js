@@ -39,7 +39,7 @@ const SECTIONS = [
   { id: 'staff', capability: 'view.staff', label: 'Staff and access' },
   { id: 'end-of-day', capability: 'view.endOfDay', label: 'Shift close' },
   { id: 'export', capability: 'view.export', label: 'Protected export' },
-  { id: 'cloud-sync', capability: 'view.cloudSync', label: 'Google Sheets backup' },
+  { id: 'cloud-sync', capability: 'view.cloudSync', label: 'Off-site copies' },
   { id: 'settings', capability: 'view.settings', label: 'Facility settings' }
 ];
 
@@ -55,7 +55,7 @@ const CAPABILITIES = {
   'view.staff': 'Open staff and access',
   'view.endOfDay': 'Open the shift close',
   'view.export': 'Open the protected export',
-  'view.cloudSync': 'Open the Google Sheets backup',
+  'view.cloudSync': 'Open the off-site copies page',
   'view.settings': 'Open the facility settings',
 
   'patients.register': 'Register a new patient',
@@ -85,7 +85,7 @@ const CAPABILITIES = {
   'settings.clearRecords': 'Clear the records and go live',
 
   'staff.manage': 'Create, disable and reset staff accounts',
-  'cloudSync.configure': 'Set up the Google Sheets backup'
+  'cloudSync.configure': 'Set up off-site copies'
 };
 
 const ALL_CAPABILITIES = Object.keys(CAPABILITIES);

@@ -863,7 +863,7 @@ export function ControlsBoard({ stats, money, onNavigate }) {
             />
             <ControlRow
               icon={sync?.configured ? Cloud : CloudOff}
-              label="Google Sheets replication"
+              label="Google copy"
               tone={
                 !sync
                   ? 'neutral'

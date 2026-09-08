@@ -307,7 +307,7 @@ export default function ExcelExport({ settings }) {
           {[
             [Database, 'On this machine', 'The clinic database sits on this computer. It works with no internet at all.'],
             [FileSpreadsheet, 'In the workbook', 'An encrypted point-in-time copy, for sharing with head office or an auditor.'],
-            [Upload, 'Off-site', 'Google Sheets backup keeps a copy off this machine when a connection is available.']
+            [Upload, 'Off-site', 'A USB stick, head office or the company Google account keeps a copy away from this machine. See Off-site copies.']
           ].map(([Icon, title, detail]) => (
             <div key={title} className="rounded-md border border-line bg-subtle px-3 py-2.5">
               <p className="flex items-center gap-1.5 text-xs font-semibold text-ink">

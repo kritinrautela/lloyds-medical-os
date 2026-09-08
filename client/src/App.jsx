@@ -358,8 +358,7 @@ function HospitalAppContent() {
 
           {activeTab === 'cloud-sync' && (
             <CloudSync
-              settings={settings}
-              isOnline={isOnline}
+              refreshStats={refreshAppData}
             />
           )}
 

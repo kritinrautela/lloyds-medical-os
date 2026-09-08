@@ -1,25 +1,32 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Camera, Check, Cloud, CloudOff, Copy, ExternalLink, KeyRound, Link2, Loader2, RefreshCw, Unlink } from 'lucide-react';
+import {
+  Building2, Camera, Check, Cloud, CloudOff, Copy, ExternalLink, KeyRound, Link2, Loader2, RefreshCw, Unlink, Usb
+} from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   ConfirmDialog, EmptyState, Metric, MetricStrip, PageSkeleton, Panel, PanelHead, Pill, SectionTitle,
-  Value, formatDateTime
+  Value, ageLabel, formatDateTime
 } from '../components/ui';
 
 /*
- * The off-site copy.
+ * Off-site copies.
  *
- * The clinic runs entirely without internet. This page is about the optional
- * second copy: whenever a connection is available, every record and every
- * patient photograph is pushed into a Google Sheet and a Drive folder the
- * company already owns, and a summary is emailed to the administrator.
+ * The clinic runs entirely without internet, and the records live on the
+ * clinic server. This page is about the second copy that leaves the building,
+ * in the order a village clinic can actually manage:
  *
- * Two honesty rules govern it. Nothing here ever claims a sync happened that
- * did not: a push that cannot reach Google is recorded as queued, not sent,
- * and the local database remains the record of truth either way. And the sync
- * key, which is what stops a stranger writing into the company's sheet, is
- * shown once when it is made and never again.
+ *   1. A USB stick. Plug one in; the server writes the copy on its own.
+ *   2. Head office. Set up by Lloyds at installation; sends itself.
+ *   3. The company Google account. One button, pressed once.
+ *
+ * None of the three needs a Google Cloud project, a script, or a key from
+ * the person standing at the desk. The manual script method still exists for
+ * Lloyds technicians and is folded away at the bottom.
+ *
+ * Nothing here ever claims a copy happened that did not: a send that cannot
+ * reach its destination is recorded as not sent, and the local database
+ * remains the record of truth either way.
  */
 
 const STEPS = [
@@ -31,13 +38,6 @@ const STEPS = [
   ['Paste the address back', 'Copy the web app address Google gives you into the box on this page and test it.']
 ];
 
-const GOOGLE_STEPS = [
-  ['Make an OAuth client', 'At console.cloud.google.com make a project, enable the Google Sheets API, Google Drive API and Gmail API, then under Credentials create an OAuth client of type Web application.'],
-  ['Give it this address', 'Add http://localhost:4000/api/google/callback as an authorised redirect URI, then copy the client ID and client secret into the boxes on this page.'],
-  ['Set it live', 'Under OAuth consent screen choose Internal if the company uses Google Workspace, otherwise External and press Publish. An app left in Testing loses its permission after seven days.'],
-  ['Connect on the server', 'On the clinic server itself, open http://localhost:4000, come back to this page and press Connect. Sign in as the company account and allow the three permissions.']
-];
-
 const INTERVALS = [
   [5, 'Every 5 minutes'],
   [15, 'Every 15 minutes'],
@@ -47,7 +47,19 @@ const INTERVALS = [
   [1440, 'Once a day']
 ];
 
-export default function CloudSync({ settings, refreshStats }) {
+const USB_STEPS = [
+  ['Plug a stick into the clinic server', 'Any USB stick. The one in the drawer is fine.'],
+  ['Wait for the green tick', 'Within a minute the copy is written. Do not pull the stick out before the tick shows.'],
+  ['Take the stick to town', 'Give it to Lloyds or keep it somewhere safe away from the clinic.']
+];
+
+function sizeLabel(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function CloudSync({ refreshStats }) {
   const { currentUser } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +75,6 @@ export default function CloudSync({ settings, refreshStats }) {
   const [freshKey, setFreshKey] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [showScript, setShowScript] = useState(false);
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
 
   const load = useCallback(async () => {
@@ -74,9 +85,9 @@ export default function CloudSync({ settings, refreshStats }) {
       setAccount(res.config?.google_account_email || '');
       setAuto(!!(res.config?.sync_enabled && res.config?.auto_sync_on_wifi));
       setInterval_(res.config?.sync_interval_minutes || 15);
-      setClientId(res.config?.google_client_id || '');
+      setClientId(res.google?.client_source === 'saved' ? (res.config?.google_client_id || '') : '');
     } catch (err) {
-      setMessage({ tone: 'critical', text: err.message || 'The backup settings could not be read.' });
+      setMessage({ tone: 'critical', text: err.message || 'The off-site settings could not be read.' });
     } finally {
       setLoading(false);
     }
@@ -84,10 +95,10 @@ export default function CloudSync({ settings, refreshStats }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // The status refreshes itself while the page is open, so an automatic send
-  // that happens in the background shows up without a reload.
+  // The page refreshes itself while it is open, so a stick plugged in at the
+  // server, or a send that happens in the background, shows up on its own.
   useEffect(() => {
-    const t = window.setInterval(load, 30000);
+    const t = window.setInterval(load, 15000);
     return () => window.clearInterval(t);
   }, [load]);
 
@@ -101,6 +112,9 @@ export default function CloudSync({ settings, refreshStats }) {
 
   const config = status?.config || {};
   const g = status?.google || {};
+  const off = status?.offsite || {};
+  const usb = off.usb || { sticks: [], last: null };
+  const office = off.head_office || { configured: false, last: null };
   const hasUrl = !!(config.webhook_url && String(config.webhook_url).startsWith('http'));
   const hasKey = !!config.sync_key_set;
   const scriptReady = hasUrl && hasKey;
@@ -109,6 +123,31 @@ export default function CloudSync({ settings, refreshStats }) {
   const onServer = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
 
   const say = (tone, text) => setMessage({ tone, text });
+
+  const usbCopy = async (volume) => {
+    setBusy('usb'); setMessage(null);
+    try {
+      const res = await api.usbCopy(volume);
+      say('ok', res.message || 'The copy is on the stick.');
+      await load();
+      refreshStats?.();
+    } catch (err) {
+      say('critical', err.message || 'The copy could not be written onto the stick.');
+    } finally { setBusy(''); }
+  };
+
+  const sendHeadOffice = async () => {
+    setBusy('office'); setMessage(null);
+    try {
+      const res = await api.sendHeadOffice();
+      say(res.success ? 'ok' : 'warn', res.message || 'Sent.');
+      await load();
+      refreshStats?.();
+    } catch (err) {
+      say('warn', err.message || 'Head office could not be reached.');
+      await load();
+    } finally { setBusy(''); }
+  };
 
   const save = async () => {
     setBusy('save'); setMessage(null);
@@ -123,7 +162,7 @@ export default function CloudSync({ settings, refreshStats }) {
         await api.googleAuthSignIn({ email: account.trim(), signed_in_by: currentUser?.full_name || '' });
       }
       await load();
-      say('ok', 'Saved. Test the connection before relying on it.');
+      say('ok', 'Saved.');
     } catch (err) {
       say('critical', err.message || 'That could not be saved.');
     } finally { setBusy(''); }
@@ -163,10 +202,10 @@ export default function CloudSync({ settings, refreshStats }) {
     setBusy('connect'); setMessage(null);
     try {
       const res = await api.startGoogleConnect();
-      // Google's sign-in happens in its own tab; this page refreshes itself
-      // every half minute, so the connection shows up when it is done.
+      // Google's sign-in happens in its own tab; this page refreshes itself,
+      // so the connection shows up here when it is done.
       window.open(res.url, '_blank', 'noopener');
-      say('ok', 'Google has opened in a new tab. Sign in as the company account and allow the permissions; this page updates itself when that is done.');
+      say('ok', 'Google has opened in a new tab. Sign in as the company account and press Allow. This page updates itself when that is done.');
     } catch (err) {
       say('critical', err.message || 'The sign-in could not be started.');
     } finally { setBusy(''); }
@@ -205,7 +244,7 @@ export default function CloudSync({ settings, refreshStats }) {
       await load();
       refreshStats?.();
     } catch (err) {
-      say('critical', err.message || 'The backup could not be sent.');
+      say('critical', err.message || 'The copy could not be sent.');
     } finally { setBusy(''); }
   };
 
@@ -230,15 +269,21 @@ export default function CloudSync({ settings, refreshStats }) {
     }
   };
 
-  if (loading) return <PageSkeleton label="Reading the backup settings" />;
+  if (loading) return <PageSkeleton label="Reading the off-site settings" />;
 
   const lastStatus = config.last_sync_status;
-  const statusTone = !configured ? 'neutral'
+  const googleTone = !configured ? 'neutral'
     : lastStatus === 'Success' ? 'ok'
     : lastStatus === 'Queued Offline' ? 'warn'
     : lastStatus ? 'critical' : 'neutral';
   const photos = status?.photos || { waiting: 0, total: 0 };
   const intervalLabel = (INTERVALS.find(([m]) => m === (config.sync_interval_minutes || 15)) || [0, `Every ${config.sync_interval_minutes} minutes`])[1];
+
+  const usbLast = usb.last;
+  const officeLast = office.last;
+  const officeSent = !!(officeLast && officeLast.status === 'Sent');
+  const sticks = usb.sticks || [];
+  const allSticksDone = sticks.length > 0 && sticks.every((s) => s.has_latest);
 
   return (
     <div className="space-y-4">
@@ -264,35 +309,29 @@ export default function CloudSync({ settings, refreshStats }) {
           <p>The spreadsheet and folder stay in that account, but the clinic stops writing to them.</p>
         </ConfirmDialog>
       ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionTitle note="An optional second copy of the records and photographs, kept in the company's Google account">
-          Off-site copy
+        <SectionTitle note="Three ways a copy of the records leaves the building. None of them is needed for the clinic to run.">
+          Off-site copies
         </SectionTitle>
         <div className="flex items-center gap-2">
           <Pill tone={online ? 'ok' : 'neutral'}>
-            {online ? 'This computer has a connection' : 'No connection'}
+            {online ? 'This computer has internet' : 'No internet'}
           </Pill>
           {configured ? (
             <button type="button" className="btn btn-sm btn-primary" onClick={syncNow} disabled={busy === 'sync'}>
               {busy === 'sync' ? (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Sending</>
               ) : (
-                <><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Send a copy now</>
+                <><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Send to Google now</>
               )}
             </button>
           ) : null}
         </div>
       </div>
 
-      <p className="rounded-md border border-line bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-2">
-        The clinic works with no internet at all. Nothing on this page is needed for patients to be
-        seen, medicine to be dispensed, or records to be kept. When a connection is available the
-        server sends a copy of everything, including patient photographs, to the company's Google
-        Sheet and Drive folder on its own.
-      </p>
-
       {message ? (
-        <p className={`rounded-md border px-3 py-2 text-xs ${
+        <p role="status" className={`rounded-md border px-3 py-2 text-xs ${
           message.tone === 'ok' ? 'border-ok-line bg-ok-wash text-ok'
           : message.tone === 'warn' ? 'border-warn-line bg-warn-wash text-warn'
           : 'border-critical-line bg-critical-wash text-critical'
@@ -303,45 +342,120 @@ export default function CloudSync({ settings, refreshStats }) {
 
       <MetricStrip columns={4}>
         <Metric
-          label="Last copy"
-          value={configured ? (lastStatus || 'Never sent') : 'Not set up'}
-          context={config.last_synced_at ? `Sent ${formatDateTime(config.last_synced_at)}${g.connected ? ' to the Google account' : ''}` : 'No copy has been sent yet'}
-          tone={statusTone}
+          label="USB stick"
+          value={usbLast ? ageLabel(usbLast.at) : sticks.length ? 'Copying' : 'No copy yet'}
+          context={usbLast
+            ? `${usbLast.label}, ${formatDateTime(usbLast.at)}`
+            : sticks.length ? 'A stick is plugged in; the copy is on its way' : 'Plug a stick into the clinic server'}
+          tone={usbLast ? 'ok' : 'neutral'}
           tint="1"
-          icon={configured ? Cloud : CloudOff}
+          icon={Usb}
         />
         <Metric
-          label="Automatic sending"
-          value={autoRunning ? 'On' : 'Off'}
-          context={autoRunning
-            ? `${intervalLabel}, only when something has changed`
-            : configured ? 'Copies go only when someone presses Send' : 'Finish setting up first'}
-          tone={autoRunning ? 'ok' : 'neutral'}
+          label="Head office"
+          value={!office.configured ? 'Not set up' : officeSent ? ageLabel(officeLast.at) : officeLast ? 'Not sent' : 'Waiting'}
+          context={!office.configured
+            ? 'Lloyds switches this on at installation'
+            : officeSent ? `Accepted by ${office.host}, ${formatDateTime(officeLast.at)}`
+            : officeLast ? officeLast.message : 'Sends itself when there is internet'}
+          tone={!office.configured ? 'neutral' : officeSent ? 'ok' : officeLast ? 'warn' : 'neutral'}
           tint="2"
+          icon={Building2}
+        />
+        <Metric
+          label="Google account"
+          value={g.connected ? (lastStatus === 'Success' ? 'Up to date' : lastStatus || 'Connected') : g.client_source ? 'Ready' : 'Not set up'}
+          context={g.connected
+            ? config.last_synced_at ? `Sent ${formatDateTime(config.last_synced_at)}` : 'No copy sent yet'
+            : g.client_source ? 'Press the button below once' : 'Lloyds adds this at installation'}
+          tone={g.connected ? googleTone : 'neutral'}
+          tint="3"
+          icon={g.connected ? Cloud : CloudOff}
         />
         <Metric
           label="Photographs waiting"
           value={photos.waiting}
-          context={photos.total ? `${photos.total - photos.waiting} of ${photos.total} already in Drive` : 'No patient has a photograph yet'}
-          tone={photos.waiting > 0 ? 'warn' : 'neutral'}
-          tint="3"
-          icon={Camera}
-        />
-        <Metric
-          label="Shift reports waiting"
-          value={status?.pending_sync_count || 0}
-          context="Closed days not yet copied off"
-          tone={(status?.pending_sync_count || 0) > 2 ? 'warn' : 'neutral'}
+          context={photos.total ? `${photos.total - photos.waiting} of ${photos.total} already in Google Drive` : 'No patient has a photograph yet'}
+          tone={photos.waiting > 0 && g.connected ? 'warn' : 'neutral'}
           tint="4"
+          icon={Camera}
         />
       </MetricStrip>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="min-w-0 space-y-4 lg:col-span-2">
           <Panel>
-            <PanelHead title="Company Google account" note="The simple way: sign in once, everything else is automatic">
-              <Pill tone={g.connected ? 'ok' : g.credentials_set ? 'warn' : 'neutral'}>
-                {g.connected ? 'Connected' : g.credentials_set ? 'Ready to connect' : 'Not connected'}
+            <PanelHead title="USB stick" note="The simplest copy. No internet needed.">
+              <Pill tone={sticks.length === 0 ? 'neutral' : allSticksDone ? 'ok' : 'info'}>
+                {sticks.length === 0 ? 'No stick plugged in' : allSticksDone ? 'Copy is on the stick' : 'Copying'}
+              </Pill>
+            </PanelHead>
+
+            <ol className="grid divide-y divide-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {USB_STEPS.map(([title, detail], i) => (
+                <li key={title} className="flex gap-3 px-4 py-3">
+                  <span className="chip chip-brand h-6 w-6 shrink-0 justify-center text-xs font-semibold">{i + 1}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink">{title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div className="space-y-3 border-t border-line-soft px-4 py-3">
+              {sticks.length === 0 ? (
+                <p className="text-xs leading-relaxed text-ink-2">
+                  No stick is plugged into the clinic server right now. As soon as one is, the copy is
+                  written on its own and a green tick shows here.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {sticks.map((s) => (
+                    <li key={s.path} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line p-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${s.has_latest ? 'bg-ok-wash text-ok' : 'bg-info-wash text-info'}`}>
+                          {s.has_latest ? <Check className="h-4 w-4" aria-hidden="true" /> : <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-ink">{s.label}</p>
+                          <p className="text-2xs text-ink-3">
+                            {s.has_latest ? 'The latest copy is on this stick. It can be taken out.' : 'Copying now. Leave it in for a minute.'}
+                          </p>
+                        </div>
+                      </div>
+                      <button type="button" className="btn btn-sm" onClick={() => usbCopy(s.path)} disabled={busy === 'usb'}>
+                        {busy === 'usb' ? (
+                          <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Copying</>
+                        ) : (
+                          <><Usb className="h-3.5 w-3.5" aria-hidden="true" /> {s.has_latest ? 'Copy again' : 'Copy now'}</>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {usbLast ? (
+                <p className="text-xs leading-relaxed text-ink-2">
+                  Last copy: <span className="font-semibold text-ink">{formatDateTime(usbLast.at)}</span> onto
+                  the stick <span className="font-semibold text-ink">{usbLast.label}</span>
+                  {usbLast.size ? <span className="text-ink-3"> ({sizeLabel(usbLast.size)})</span> : null}.
+                </p>
+              ) : null}
+
+              <p className="text-2xs leading-relaxed text-ink-3">
+                Only the locked copy goes onto the stick, in a folder called "Lloyds Medical OS backups".
+                Nothing else on the stick is touched. Nobody can open the copy without the backup
+                passphrase set under Facility settings, so a lost stick gives nothing away.
+              </p>
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHead title="Company Google account" note="Press once. After that it looks after itself.">
+              <Pill tone={g.connected ? 'ok' : g.client_source ? 'info' : 'neutral'}>
+                {g.connected ? 'Connected' : g.client_source ? 'Ready to connect' : 'Not set up'}
               </Pill>
             </PanelHead>
 
@@ -351,8 +465,7 @@ export default function CloudSync({ settings, refreshStats }) {
                   Connected as <span className="font-semibold text-ink">{g.email}</span>
                   {g.connected_at ? <span className="text-ink-3"> since {formatDateTime(g.connected_at)}</span> : null}.
                   The server made a spreadsheet and a photograph folder in that account and writes
-                  every record and photograph into them whenever it has a connection. The daily
-                  summary is emailed from the same account.
+                  every record and photograph into them whenever it has internet.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {g.sheet_url ? (
@@ -374,108 +487,121 @@ export default function CloudSync({ settings, refreshStats }) {
                   company's Drive. It can be withdrawn here, or at myaccount.google.com/permissions.
                 </p>
               </div>
+            ) : g.client_source ? (
+              <div className="space-y-3 px-4 py-3">
+                <p className="text-xs leading-relaxed text-ink-2">
+                  Sign in once as the company Google account and press Allow. The server then makes a
+                  spreadsheet and a photograph folder in that account and keeps them up to date on its
+                  own whenever there is internet.
+                </p>
+                <button type="button" className="btn btn-primary" onClick={connectGoogle}
+                  disabled={busy === 'connect' || !onServer}
+                  title={!onServer ? 'Do this on the clinic server itself' : undefined}>
+                  <Link2 className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'connect' ? 'Opening Google' : 'Connect the company Google account'}
+                </button>
+                {!onServer ? (
+                  <p className="text-2xs leading-relaxed text-warn">
+                    Google only answers the clinic server itself. Sit at that computer, open
+                    http://localhost:4000, come to this page and press the button there. Every other
+                    computer and tablet benefits once it is done.
+                  </p>
+                ) : null}
+              </div>
             ) : (
-              <>
-                <ol className="divide-y divide-line-soft">
-                  {GOOGLE_STEPS.map(([title, detail], i) => (
-                    <li key={title} className="flex gap-3 px-4 py-2.5">
-                      <span className="chip chip-brand h-5 w-5 shrink-0 justify-center text-2xs font-semibold">{i + 1}</span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-ink">{title}</p>
-                        <p className="mt-0.5 break-words text-2xs leading-relaxed text-ink-3">{detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <div className="grid gap-3 border-t border-line-soft px-4 py-3 sm:grid-cols-2">
-                  <div className="min-w-0">
-                    <label className="label" htmlFor="gcid">Client ID</label>
-                    <input id="gcid" className="field font-mono text-2xs" value={clientId}
-                      onChange={(e) => setClientId(e.target.value)} placeholder="….apps.googleusercontent.com" autoComplete="off" />
-                  </div>
-                  <div className="min-w-0">
-                    <label className="label" htmlFor="gsec">Client secret</label>
-                    <input id="gsec" className="field font-mono text-2xs" type="password" value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                      placeholder={g.credentials_set ? 'Saved. Type again only to replace it.' : 'GOCSPX-…'} autoComplete="off" />
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:col-span-2">
-                    <button type="button" className="btn" onClick={saveCredentials}
-                      disabled={busy === 'creds' || !clientId.trim() || (!clientSecret.trim() && !g.credentials_set)}>
-                      {busy === 'creds' ? 'Saving' : 'Save the client details'}
-                    </button>
-                    <button type="button" className="btn btn-primary" onClick={connectGoogle}
-                      disabled={busy === 'connect' || !g.credentials_set || !onServer}
-                      title={!onServer ? 'Open http://localhost:4000 on the clinic server to do this step' : undefined}>
-                      <Link2 className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'connect' ? 'Opening Google' : 'Connect the Google account'}
-                    </button>
-                  </div>
-                  {!onServer ? (
-                    <p className="text-2xs leading-relaxed text-warn sm:col-span-2">
-                      Google only sends the sign-in answer back to the clinic server itself. Do this
-                      step on that computer, at http://localhost:4000. Every other computer and tablet
-                      benefits once it is done.
+              <div className="space-y-3 px-4 py-3">
+                <p className="text-xs leading-relaxed text-ink-2">
+                  Not set up on this server. Lloyds adds the company Google connection at
+                  installation; nothing is needed from the clinic. The USB stick works without it.
+                </p>
+                <details className="group rounded-md border border-line">
+                  <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-ink-2">
+                    For Lloyds technicians: use your own Google client
+                  </summary>
+                  <div className="grid gap-3 border-t border-line-soft px-3 py-3 sm:grid-cols-2">
+                    <p className="text-2xs leading-relaxed text-ink-3 sm:col-span-2">
+                      The better place for the client is server/config/install.json, which needs no
+                      typing here. Saving one on this page works too: an OAuth client of type Web
+                      application with http://localhost:4000/api/google/callback as its redirect URI,
+                      from a project with the Sheets and Drive APIs enabled and its consent screen
+                      published.
                     </p>
-                  ) : null}
-                </div>
-              </>
-            )}
-          </Panel>
-
-          <Panel>
-            <PanelHead title="Or paste a script into a sheet" note="The manual method. Works without a Google Cloud project.">
-              <button type="button" className="btn btn-sm" onClick={() => setShowScript((v) => !v)}>
-                {showScript ? 'Hide' : 'Show the steps'}
-              </button>
-            </PanelHead>
-            {showScript ? (
-              <>
-                <ol className="divide-y divide-line-soft">
-                  {STEPS.map(([title, detail], i) => (
-                    <li key={title} className="flex gap-3 px-4 py-2.5">
-                      <span className="chip chip-brand h-5 w-5 shrink-0 justify-center text-2xs font-semibold">{i + 1}</span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-ink">{title}</p>
-                        <p className="mt-0.5 text-2xs leading-relaxed text-ink-3">{detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <div className="border-t border-line-soft px-4 py-3">
-                  {!script ? (
-                    <button type="button" className="btn btn-sm" onClick={loadScript} disabled={busy === 'script'}>
-                      {busy === 'script' ? 'Loading' : 'Show the script to paste'}
-                    </button>
-                  ) : (
-                    <div>
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <p className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Paste this into Code.gs</p>
-                        <button type="button" className="btn btn-sm" onClick={() => copy('script', script)}>
-                          {copied === 'script' ? (<><Check className="h-3 w-3" aria-hidden="true" /> Copied</>) : (<><Copy className="h-3 w-3" aria-hidden="true" /> Copy it</>)}
-                        </button>
-                      </div>
-                      <pre className="max-h-72 overflow-auto rounded-md border border-line bg-subtle p-3 text-2xs leading-relaxed text-ink-2"><code>{script}</code></pre>
+                    <div className="min-w-0">
+                      <label className="label" htmlFor="gcid">Client ID</label>
+                      <input id="gcid" className="field font-mono text-2xs" value={clientId}
+                        onChange={(e) => setClientId(e.target.value)} placeholder="….apps.googleusercontent.com" autoComplete="off" />
                     </div>
-                  )}
-                </div>
-              </>
-            ) : null}
+                    <div className="min-w-0">
+                      <label className="label" htmlFor="gsec">Client secret</label>
+                      <input id="gsec" className="field font-mono text-2xs" type="password" value={clientSecret}
+                        onChange={(e) => setClientSecret(e.target.value)} placeholder="GOCSPX-…" autoComplete="off" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <button type="button" className="btn" onClick={saveCredentials}
+                        disabled={busy === 'creds' || !clientId.trim() || !clientSecret.trim()}>
+                        {busy === 'creds' ? 'Saving' : 'Save the client details'}
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
           </Panel>
         </div>
 
         <div className="space-y-4">
+          <Panel>
+            <PanelHead title="Head office" note="Sends itself when there is internet">
+              <Pill tone={!office.configured ? 'neutral' : officeSent ? 'ok' : officeLast ? 'warn' : 'info'}>
+                {!office.configured ? 'Not set up' : officeSent ? 'Sent' : officeLast ? 'Not sent' : 'Waiting'}
+              </Pill>
+            </PanelHead>
+            <div className="space-y-3 px-4 py-3">
+              {office.configured ? (
+                <>
+                  <p className="text-xs leading-relaxed text-ink-2">
+                    Copies go to <span className="font-semibold text-ink">{office.host}</span> for
+                    clinic <span className="font-semibold text-ink">{office.clinic_id}</span>. Every
+                    night's copy is sent as soon as the server has internet, and tried again every
+                    half hour until it gets through.
+                  </p>
+                  {officeLast ? (
+                    <p className="text-2xs leading-relaxed text-ink-3">
+                      {officeLast.status} {formatDateTime(officeLast.at)}. {officeLast.message}
+                    </p>
+                  ) : (
+                    <p className="text-2xs leading-relaxed text-ink-3">
+                      Nothing sent yet. The first attempt is a few minutes after the server starts.
+                    </p>
+                  )}
+                  <button type="button" className="btn w-full justify-center" onClick={sendHeadOffice} disabled={busy === 'office'}>
+                    {busy === 'office' ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Sending</>
+                    ) : (
+                      <><Building2 className="h-3.5 w-3.5" aria-hidden="true" /> Send to head office now</>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs leading-relaxed text-ink-2">
+                  Not set up on this server. Lloyds switches this on at installation, after which
+                  the copy goes to head office by itself. The clinic does not need to do anything.
+                </p>
+              )}
+            </div>
+          </Panel>
+
           {g.connected ? (
             <Panel>
-              <PanelHead title="Sending">
-                <Pill tone="ok">Google account</Pill>
+              <PanelHead title="Sending to Google">
+                <Pill tone={autoRunning ? 'ok' : 'neutral'}>{autoRunning ? 'Automatic' : 'By hand only'}</Pill>
               </PanelHead>
               <div className="space-y-3 px-4 py-3">
                 <div className="rounded-md border border-line p-3">
                   <label className="flex cursor-pointer items-start gap-2.5">
                     <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 accent-brand" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
                     <span>
-                      <span className="block text-xs font-semibold text-ink">Send automatically when connected</span>
-                      <span className="block text-2xs leading-relaxed text-ink-3">Checks for a connection once a minute; sends only when something changed.</span>
+                      <span className="block text-xs font-semibold text-ink">Send automatically when there is internet</span>
+                      <span className="block text-2xs leading-relaxed text-ink-3">Checks once a minute; sends only when something changed. {autoRunning ? intervalLabel : ''}</span>
                     </span>
                   </label>
                   <div className={`mt-2.5 ${auto ? '' : 'opacity-50'}`}>
@@ -492,40 +618,74 @@ export default function CloudSync({ settings, refreshStats }) {
             </Panel>
           ) : null}
 
-          <Panel className={g.connected ? 'opacity-60' : ''}>
-            <PanelHead title="Sync key" note={g.connected ? 'Only for the paste-a-script method' : undefined}>
-              <Pill tone={hasKey ? 'ok' : 'warn'}>{hasKey ? 'Made' : 'Not made'}</Pill>
-            </PanelHead>
-            <div className="space-y-3 px-4 py-3">
+          <Panel>
+            <PanelHead title="What is in a copy" />
+            <div className="px-4 py-3">
               <p className="text-xs leading-relaxed text-ink-2">
-                The key is what proves to Google that a copy came from this clinic and not from a
-                stranger who found the address. The same key goes into the script as a property.
+                The USB and head office copies are the whole database: every patient, visit,
+                dispensation, register entry and setting, as one locked file. The Google copy is the
+                same records laid out in a spreadsheet, with photographs in a folder beside it.
               </p>
+            </div>
+          </Panel>
+        </div>
+      </div>
 
+      <details className="panel group">
+        <summary className="cursor-pointer select-none px-4 py-3 text-xs font-semibold text-ink-2">
+          For Lloyds technicians: paste a script into a Google Sheet instead
+          <span className="ml-2 font-normal text-ink-3">{scriptReady ? 'In use' : 'Not in use'}</span>
+        </summary>
+        <div className="grid gap-4 border-t border-line-soft p-4 lg:grid-cols-3">
+          <div className="min-w-0 space-y-3 lg:col-span-2">
+            <ol className="divide-y divide-line-soft rounded-md border border-line">
+              {STEPS.map(([title, detail], i) => (
+                <li key={title} className="flex gap-3 px-3 py-2.5">
+                  <span className="chip chip-brand h-5 w-5 shrink-0 justify-center text-2xs font-semibold">{i + 1}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-ink">{title}</p>
+                    <p className="mt-0.5 text-2xs leading-relaxed text-ink-3">{detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {!script ? (
+              <button type="button" className="btn btn-sm" onClick={loadScript} disabled={busy === 'script'}>
+                {busy === 'script' ? 'Loading' : 'Show the script to paste'}
+              </button>
+            ) : (
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Paste this into Code.gs</p>
+                  <button type="button" className="btn btn-sm" onClick={() => copy('script', script)}>
+                    {copied === 'script' ? (<><Check className="h-3 w-3" aria-hidden="true" /> Copied</>) : (<><Copy className="h-3 w-3" aria-hidden="true" /> Copy it</>)}
+                  </button>
+                </div>
+                <pre className="max-h-72 overflow-auto rounded-md border border-line bg-subtle p-3 text-2xs leading-relaxed text-ink-2"><code>{script}</code></pre>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-md border border-line p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-ink">Sync key</p>
+                <Pill tone={hasKey ? 'ok' : 'neutral'}>{hasKey ? 'Made' : 'Not made'}</Pill>
+              </div>
               {freshKey ? (
-                <div className="rounded-md border border-warn-line bg-warn-wash p-3">
-                  <p className="text-2xs font-semibold uppercase tracking-wide text-warn">
-                    Shown once. Copy it now.
-                  </p>
-                  <code className="mt-1.5 block break-all font-mono text-2xs leading-relaxed text-ink">
-                    {freshKey}
-                  </code>
+                <div className="mb-2 rounded-md border border-warn-line bg-warn-wash p-2.5">
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-warn">Shown once. Copy it now.</p>
+                  <code className="mt-1 block break-all font-mono text-2xs leading-relaxed text-ink">{freshKey}</code>
                   <button type="button" className="btn btn-sm mt-2" onClick={() => copy('key', freshKey)}>
-                    {copied === 'key' ? (
-                      <><Check className="h-3 w-3" aria-hidden="true" /> Copied</>
-                    ) : (
-                      <><Copy className="h-3 w-3" aria-hidden="true" /> Copy the key</>
-                    )}
+                    {copied === 'key' ? (<><Check className="h-3 w-3" aria-hidden="true" /> Copied</>) : (<><Copy className="h-3 w-3" aria-hidden="true" /> Copy the key</>)}
                   </button>
                 </div>
               ) : hasKey ? (
-                <p className="text-2xs leading-relaxed text-ink-3">
-                  A key is in place. It cannot be shown again; if it has been lost, make a new one
-                  and give it to the script.
-                </p>
-              ) : null}
-
-              <button type="button" className="btn w-full justify-center" onClick={makeKey} disabled={busy === 'key'}>
+                <p className="mb-2 text-2xs leading-relaxed text-ink-3">A key is in place. It cannot be shown again; if it is lost, make a new one and give it to the script.</p>
+              ) : (
+                <p className="mb-2 text-2xs leading-relaxed text-ink-3">The key proves a copy came from this clinic. The same key goes into the script as a property.</p>
+              )}
+              <button type="button" className="btn btn-sm w-full justify-center" onClick={makeKey} disabled={busy === 'key'}>
                 {busy === 'key' ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Making</>
                 ) : (
@@ -533,124 +693,45 @@ export default function CloudSync({ settings, refreshStats }) {
                 )}
               </button>
             </div>
-          </Panel>
 
-          <Panel className={g.connected ? 'opacity-60' : ''}>
-            <PanelHead title={g.connected ? 'Script address (not in use)' : 'Where copies are sent'}>
-              <Pill tone={scriptReady ? 'ok' : 'warn'}>{scriptReady ? 'Set up' : hasUrl ? 'Key missing' : 'Not set up'}</Pill>
-            </PanelHead>
-            <div className="space-y-3 px-4 py-3">
+            <div className="space-y-2.5 rounded-md border border-line p-3">
               <div>
                 <label className="label" htmlFor="hook">Web app address from Google</label>
-                <input
-                  id="hook"
-                  className="field font-mono text-2xs"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  autoComplete="off"
-                />
+                <input id="hook" className="field font-mono text-2xs" value={url} onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://script.google.com/macros/s/.../exec" autoComplete="off" />
               </div>
               <div>
                 <label className="label" htmlFor="acct">Google account holding the sheet</label>
-                <input
-                  id="acct"
-                  className="field"
-                  type="email"
-                  value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  placeholder="name@example.com"
-                />
-                <p className="mt-1 text-2xs leading-relaxed text-ink-3">
-                  Recorded so it is clear whose account holds the records. This system never holds a
-                  Google password and has no access to that account.
-                </p>
+                <input id="acct" className="field" type="email" value={account} onChange={(e) => setAccount(e.target.value)} placeholder="name@example.com" />
               </div>
-
-              <div className="rounded-md border border-line p-3">
+              {!g.connected ? (
                 <label className="flex cursor-pointer items-start gap-2.5">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-3.5 w-3.5 accent-brand"
-                    checked={auto}
-                    onChange={(e) => setAuto(e.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-xs font-semibold text-ink">Send automatically when connected</span>
-                    <span className="block text-2xs leading-relaxed text-ink-3">
-                      The server checks for a connection once a minute and sends only when a record
-                      or photograph has changed since the last copy.
-                    </span>
-                  </span>
+                  <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 accent-brand" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+                  <span className="text-xs text-ink">Send automatically when there is internet</span>
                 </label>
-                <div className={`mt-2.5 ${auto ? '' : 'opacity-50'}`}>
-                  <label className="label" htmlFor="interval">No more often than</label>
-                  <select
-                    id="interval"
-                    className="field"
-                    value={interval}
-                    onChange={(e) => setInterval_(parseInt(e.target.value, 10))}
-                    disabled={!auto}
-                  >
-                    {INTERVALS.map(([m, label]) => <option key={m} value={m}>{label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {config.drive_folder_url ? (
-                <a
-                  href={config.drive_folder_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  Open the photograph folder in Drive
-                </a>
               ) : null}
-
               <div className="flex gap-2">
-                <button type="button" className="btn flex-1 justify-center" onClick={save} disabled={busy === 'save'}>
+                <button type="button" className="btn btn-sm flex-1 justify-center" onClick={save} disabled={busy === 'save'}>
                   {busy === 'save' ? 'Saving' : 'Save'}
                 </button>
-                <button type="button" className="btn flex-1 justify-center" onClick={test}
-                  disabled={busy === 'test' || !url.trim() || !hasKey}>
-                  {busy === 'test' ? 'Testing' : 'Test the connection'}
+                <button type="button" className="btn btn-sm flex-1 justify-center" onClick={test} disabled={busy === 'test' || !url.trim() || !hasKey}>
+                  {busy === 'test' ? 'Testing' : 'Test'}
                 </button>
               </div>
               {!hasKey && url.trim() ? (
                 <p className="text-2xs text-ink-3">Make the sync key before testing; the script refuses a copy without it.</p>
               ) : null}
             </div>
-          </Panel>
-
-          <Panel>
-            <PanelHead title="Daily email" />
-            <div className="px-4 py-3">
-              {settings?.admin_email ? (
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Once a day, when a copy is sent successfully, a summary of the day's figures is
-                  emailed to <span className="font-medium text-ink">{settings.admin_email}</span> by
-                  the Google script. It reports only what was actually recorded, including a drawer
-                  that did not balance.
-                </p>
-              ) : (
-                <p className="text-xs leading-relaxed text-ink-2">
-                  No address has been set, so no email is sent. Add one under Facility settings and
-                  the daily summary will go out with the next successful copy.
-                </p>
-              )}
-            </div>
-          </Panel>
+          </div>
         </div>
-      </div>
+      </details>
 
       <Panel>
         <PanelHead title="What happened" note="Most recent first" />
         {(status?.recent_logs || []).length === 0 ? (
           <EmptyState
-            title="No copy has been attempted yet"
-            detail="Once a Google account is connected, or a script address saved and tested, every attempt is listed here, whether it succeeded or not."
+            title="No copy has been made yet"
+            detail="Every copy onto a stick, to head office or to Google is listed here, whether it worked or not."
           />
         ) : (
           <div className="overflow-x-auto">

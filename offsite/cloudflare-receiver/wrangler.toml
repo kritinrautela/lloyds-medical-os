@@ -1,0 +1,14 @@
+name = "lloyds-backup-receiver"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# The bucket that holds every clinic's encrypted backups. Make it once with:
+#   npx wrangler r2 bucket create lloyds-clinic-backups
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "lloyds-clinic-backups"
+
+# Keys are secrets, never in this file:
+#   npx wrangler secret put RECEIVER_KEYS     (a JSON object: {"lae-clinic": "<long random key>"})
+# or, for one shared key:
+#   npx wrangler secret put RECEIVER_KEY

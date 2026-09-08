@@ -3,6 +3,7 @@ import {
   Activity, ClipboardList, Cloud, CloudOff, FileCheck, FileSpreadsheet, HardDrive,
   LayoutDashboard, Pill, Settings, ShieldCheck, ShoppingCart, Users
 } from 'lucide-react';
+import { ageLabel } from './ui';
 import LloydsLogo from './LloydsLogo';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,7 +27,7 @@ const NAV_ITEMS = [
   { id: 'staff', label: 'Staff and access', icon: ShieldCheck, tint: '5' },
   { id: 'end-of-day', label: 'Shift close', icon: FileCheck, tint: '5' },
   { id: 'export', label: 'Protected export', icon: FileSpreadsheet, tint: '6' },
-  { id: 'cloud-sync', label: 'Google Sheets backup', icon: Cloud, tint: '6' },
+  { id: 'cloud-sync', label: 'Off-site copies', icon: Cloud, tint: '6' },
   { id: 'settings', label: 'Facility settings', icon: Settings, tint: '4' }
 ];
 
@@ -39,12 +40,24 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOp
   const allowed = new Set((sections || []).map((section) => section.id));
   const visibleItems = NAV_ITEMS.filter((item) => allowed.has(item.id));
   const sync = stats?.cloudSync;
+  const offsite = stats?.offsite;
 
-  const backupState = !sync || !sync.configured
-    ? { tone: 'text-ink-3', label: 'Backup not configured', icon: CloudOff }
-    : sync.last_sync_status === 'Success'
-    ? { tone: 'text-ok', label: 'Backup up to date', icon: Cloud }
-    : { tone: 'text-warn', label: `Backup ${sync.last_sync_status.toLowerCase()}`, icon: CloudOff };
+  // The most recent copy that actually left the building, whichever way it
+  // went: a USB stick, head office, or the Google account. A copy older than
+  // two days is shown in amber, because that is when someone should act.
+  const copies = [
+    offsite?.usb_last_at ? { at: offsite.usb_last_at, label: 'USB stick' } : null,
+    offsite?.head_office_last_at ? { at: offsite.head_office_last_at, label: 'Head office' } : null,
+    sync?.configured && sync.last_successful_sync_at ? { at: sync.last_successful_sync_at, label: 'Google' } : null
+  ].filter(Boolean).sort((a, b) => new Date(b.at) - new Date(a.at));
+  const latestCopy = copies[0];
+  const copyHours = latestCopy ? (Date.now() - new Date(latestCopy.at).getTime()) / 36e5 : null;
+
+  const backupState = !latestCopy
+    ? { tone: 'text-ink-3', label: 'No copy yet', icon: CloudOff }
+    : copyHours < 48
+    ? { tone: 'text-ok', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: Cloud }
+    : { tone: 'text-warn', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: CloudOff };
 
   const BackupIcon = backupState.icon;
 

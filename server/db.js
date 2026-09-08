@@ -602,7 +602,7 @@ async function seedInitialData() {
       NULL,
       NULL,
       'Not Configured',
-      'No off-site copy has been set up. Nothing leaves this machine until a Google Sheets endpoint is entered under Google Sheets backup.'
+      'No Google copy has been set up. Plug in a USB stick, or connect the company Google account under Off-site copies.'
     )
   `);
 
