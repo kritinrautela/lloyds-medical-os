@@ -194,6 +194,22 @@ export const api = {
   saveGoogleCredentials: (client_id, client_secret) =>
     request('/google/credentials', { method: 'PUT', body: JSON.stringify({ client_id, client_secret }) }),
   startGoogleConnect: () => request('/google/start'),
+  // The encrypted copy a phone carries out of the clinic. Returned as bytes,
+  // not JSON, so it can go straight to the share sheet or a download.
+  fetchLatestBackup: async () => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/cloud-sync/latest-backup`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      let message = 'The copy could not be fetched.';
+      try { message = (await res.json()).message || message; } catch (err) { /* keep the plain message */ }
+      throw new Error(message);
+    }
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    return { blob: await res.blob(), name: match ? decodeURIComponent(match[1]) : 'clinic-records.db.enc' };
+  },
   usbCopy: (volume) => request('/cloud-sync/usb-copy', { method: 'POST', body: JSON.stringify({ volume: volume || null }) }),
   sendHeadOffice: () => request('/cloud-sync/head-office-send', { method: 'POST' }),
   disconnectGoogle: () => request('/google/disconnect', { method: 'POST' }),

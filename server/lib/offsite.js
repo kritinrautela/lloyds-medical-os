@@ -289,11 +289,28 @@ async function sendToHeadOffice({ force = false, actor = null } = {}) {
   return sending;
 }
 
+/*
+ * The copy a phone carries. A backup older than ten minutes is taken again
+ * first, the same as for a stick, and the hand-over is recorded: the file is
+ * encrypted, but the audit trail still says who took a copy out and when.
+ */
+async function handoff(actor) {
+  let latest = backup.listBackups()[0];
+  if (!latest || Date.now() - new Date(latest.at).getTime() > FRESH_MS) {
+    await backup.writeBackup(actor || null);
+    latest = backup.listBackups()[0];
+  }
+  if (!latest) throw new Error('There is no backup to hand over yet.');
+  log('Copy handed to a phone', actor, `${latest.name} (${latest.size} bytes) was fetched by ${actor ? actor.full_name : 'a device'} to carry out of the clinic.`, 'Success');
+  return { name: latest.name, size: latest.size, path: path.join(backup.BACKUP_DIR, latest.name) };
+}
+
 async function status() {
   const cfg = headOfficeConfig();
   const sticks = await removableVolumes().catch(() => []);
   const latest = backup.listBackups()[0];
   return {
+    phone: { to: cfg.support_whatsapp || '' },
     usb: {
       sticks: sticks.map((s) => {
         const onStick = state.usb_volumes[s.path];
@@ -361,4 +378,4 @@ function startOffsiteWatch() {
   first.unref();
 }
 
-module.exports = { removableVolumes, copyToUsb, sendToHeadOffice, status, summary, startOffsiteWatch, STICK_FOLDER };
+module.exports = { removableVolumes, copyToUsb, sendToHeadOffice, handoff, status, summary, startOffsiteWatch, STICK_FOLDER };

@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Building2, Camera, Check, Cloud, CloudOff, Copy, ExternalLink, KeyRound, Link2, Loader2, RefreshCw, Unlink, Usb
+  Building2, Camera, Check, Cloud, CloudOff, Copy, ExternalLink, KeyRound, Link2, Loader2, RefreshCw,
+  ShieldCheck, Smartphone, Unlink, Usb
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  ConfirmDialog, EmptyState, Metric, MetricStrip, PageSkeleton, Panel, PanelHead, Pill, SectionTitle,
-  Value, ageLabel, formatDateTime
+  ConfirmDialog, EmptyState, PageSkeleton, Panel, PanelHead, Pill, SectionTitle, Value, ageLabel, formatDateTime
 } from '../components/ui';
 
 /*
@@ -16,12 +16,13 @@ import {
  * clinic server. This page is about the second copy that leaves the building,
  * in the order a village clinic can actually manage:
  *
- *   1. A USB stick. Plug one in; the server writes the copy on its own.
- *   2. Head office. Set up by Lloyds at installation; sends itself.
- *   3. The company Google account. One button, pressed once.
+ *   A USB stick.      Plug one in; the server writes the copy on its own.
+ *   A phone.          Press one button; WhatsApp carries it to town.
+ *   Head office.      Set up by Lloyds at installation; sends itself.
+ *   The company Google account.  One button, pressed once.
  *
- * None of the three needs a Google Cloud project, a script, or a key from
- * the person standing at the desk. The manual script method still exists for
+ * None of the four needs a Google Cloud project, a script, or a key from the
+ * person standing at the desk. The manual script method still exists for
  * Lloyds technicians and is folded away at the bottom.
  *
  * Nothing here ever claims a copy happened that did not: a send that cannot
@@ -53,10 +54,75 @@ const USB_STEPS = [
   ['Take the stick to town', 'Give it to Lloyds or keep it somewhere safe away from the clinic.']
 ];
 
+const PHONE_STEPS = [
+  ['Open this page on your phone', 'On the clinic Wi-Fi, the same way you open the system every day.'],
+  ['Press Send the copy', 'Choose WhatsApp and send it to Lloyds.'],
+  ['Carry on with your day', 'WhatsApp waits for signal and sends it when you reach town.']
+];
+
+const LOG_ROWS = 8;
+
 function sizeLabel(bytes) {
   if (!bytes && bytes !== 0) return '';
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Whether this device can hand a file to another app. True on a phone or
+// tablet; false on the clinic desktop, where the button saves the file instead.
+function canShareFiles() {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') return false;
+  try {
+    return navigator.canShare({ files: [new File(['x'], 'x.txt', { type: 'text/plain' })] });
+  } catch (err) {
+    return false;
+  }
+}
+
+function Steps({ steps, size = 'md' }) {
+  const big = size === 'lg';
+  return (
+    <ol className="grid divide-y divide-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      {steps.map(([title, detail], i) => (
+        <li key={title} className="flex gap-3 px-4 py-3">
+          <span className={`chip chip-brand shrink-0 justify-center font-semibold ${big ? 'h-7 w-7 text-sm' : 'h-6 w-6 text-xs'}`}>{i + 1}</span>
+          <div className="min-w-0">
+            <p className={`font-semibold text-ink ${big ? 'text-sm' : 'text-xs'}`}>{title}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{detail}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function RouteHead({ icon: Icon, tint, title, note, children }) {
+  return (
+    <header className="flex flex-wrap items-start gap-3 border-b border-line-soft px-4 py-3">
+      <span className={`chip chip-${tint} h-9 w-9`} aria-hidden="true">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1 basis-40">
+        <h2 className="panel-title">{title}</h2>
+        <p className="panel-note mt-0.5">{note}</p>
+      </div>
+      {children ? <div className="flex items-center gap-2">{children}</div> : null}
+    </header>
+  );
+}
+
+function Tick({ done, replayKey }) {
+  return (
+    <span
+      key={replayKey}
+      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+        done ? 'tick-in bg-ok-wash text-ok ring-1 ring-ok-line' : 'bg-info-wash text-info'
+      }`}
+      aria-hidden="true"
+    >
+      {done ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Loader2 className="h-5 w-5 animate-spin" />}
+    </span>
+  );
 }
 
 export default function CloudSync({ refreshStats }) {
@@ -75,7 +141,11 @@ export default function CloudSync({ refreshStats }) {
   const [freshKey, setFreshKey] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [allLogs, setAllLogs] = useState(false);
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const phoneShare = useMemo(canShareFiles, []);
+  // A touch screen is a phone or tablet in this clinic; the desk computer is not.
+  const handheld = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches, []);
 
   const load = useCallback(async () => {
     try {
@@ -115,6 +185,7 @@ export default function CloudSync({ refreshStats }) {
   const off = status?.offsite || {};
   const usb = off.usb || { sticks: [], last: null };
   const office = off.head_office || { configured: false, last: null };
+  const phoneTo = off.phone?.to || '';
   const hasUrl = !!(config.webhook_url && String(config.webhook_url).startsWith('http'));
   const hasKey = !!config.sync_key_set;
   const scriptReady = hasUrl && hasKey;
@@ -123,6 +194,55 @@ export default function CloudSync({ refreshStats }) {
   const onServer = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
 
   const say = (tone, text) => setMessage({ tone, text });
+
+  const saveBlob = (blob, name) => {
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 10000);
+  };
+
+  const sendFromPhone = async () => {
+    setBusy('phone'); setMessage(null);
+    try {
+      const { blob, name } = await api.fetchLatestBackup();
+      if (phoneShare) {
+        let file = new File([blob], name, { type: 'application/octet-stream' });
+        // Android only hands over files of a few familiar kinds, so the same
+        // bytes go out under a .txt name there. The restore reads them as they are.
+        if (!navigator.canShare({ files: [file] })) {
+          file = new File([blob], `${name}.txt`, { type: 'text/plain' });
+        }
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Clinic records copy',
+              text: `Locked copy of the clinic records, ${name}. Please keep it safe.`
+            });
+            say('ok', 'Handed to the app you chose. If WhatsApp shows a clock next to it, it will send as soon as there is signal.');
+            await load();
+            return;
+          } catch (err) {
+            if (err && err.name === 'AbortError') {
+              say('warn', 'Nothing was sent. Press the button again and choose WhatsApp.');
+              return;
+            }
+            // Any other refusal falls through to a plain save.
+          }
+        }
+      }
+      saveBlob(blob, name);
+      say('ok', `Saved ${name} to this device. Attach it to a WhatsApp or email message to Lloyds${phoneTo ? ` on ${phoneTo}` : ''}.`);
+      await load();
+    } catch (err) {
+      say('critical', err.message || 'The copy could not be fetched.');
+    } finally { setBusy(''); }
+  };
 
   const usbCopy = async (volume) => {
     setBusy('usb'); setMessage(null);
@@ -272,18 +392,290 @@ export default function CloudSync({ refreshStats }) {
   if (loading) return <PageSkeleton label="Reading the off-site settings" />;
 
   const lastStatus = config.last_sync_status;
-  const googleTone = !configured ? 'neutral'
-    : lastStatus === 'Success' ? 'ok'
-    : lastStatus === 'Queued Offline' ? 'warn'
-    : lastStatus ? 'critical' : 'neutral';
-  const photos = status?.photos || { waiting: 0, total: 0 };
-  const intervalLabel = (INTERVALS.find(([m]) => m === (config.sync_interval_minutes || 15)) || [0, `Every ${config.sync_interval_minutes} minutes`])[1];
-
   const usbLast = usb.last;
   const officeLast = office.last;
   const officeSent = !!(officeLast && officeLast.status === 'Sent');
   const sticks = usb.sticks || [];
   const allSticksDone = sticks.length > 0 && sticks.every((s) => s.has_latest);
+  const intervalLabel = (INTERVALS.find(([m]) => m === (config.sync_interval_minutes || 15)) || [0, `Every ${config.sync_interval_minutes} minutes`])[1];
+
+  // The most recent copy that actually left the building, whichever way it went.
+  const copies = [
+    usbLast ? { at: usbLast.at, how: `on the stick ${usbLast.label}` } : null,
+    officeSent ? { at: officeLast.at, how: `to head office at ${office.host}` } : null,
+    g.connected && lastStatus === 'Success' && config.last_synced_at ? { at: config.last_synced_at, how: `to the Google account ${g.email}` } : null
+  ].filter(Boolean).sort((a, b) => new Date(b.at) - new Date(a.at));
+  const latest = copies[0];
+  const latestHours = latest ? (Date.now() - new Date(latest.at).getTime()) / 36e5 : null;
+  const bandTone = !latest ? 'neutral' : latestHours < 48 ? 'ok' : 'warn';
+
+  const logs = status?.recent_logs || [];
+  const shownLogs = allLogs ? logs : logs.slice(0, LOG_ROWS);
+
+  const usbCard = (
+    <Panel key="usb">
+      <RouteHead icon={Usb} tint="1" title="USB stick" note="The simplest copy. No internet needed.">
+        <Pill tone={sticks.length === 0 ? 'neutral' : allSticksDone ? 'ok' : 'info'}>
+          {sticks.length === 0 ? 'No stick plugged in' : allSticksDone ? 'Copy is on the stick' : 'Copying'}
+        </Pill>
+      </RouteHead>
+      <Steps steps={USB_STEPS} />
+      <div className="space-y-3 border-t border-line-soft px-4 py-3">
+        {sticks.length === 0 ? (
+          <div className="flex items-center gap-3 rounded-md border border-dashed border-line-strong px-3 py-3">
+            <span className="chip chip-1 h-9 w-9" aria-hidden="true"><Usb className="h-4 w-4" /></span>
+            <p className="text-xs leading-relaxed text-ink-2">
+              No stick is plugged into the clinic server right now. As soon as one is, the copy is
+              written on its own and a green tick shows here.
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {sticks.map((s) => (
+              <li key={s.path} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-subtle px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Tick done={s.has_latest} replayKey={usbLast ? usbLast.file : 'none'} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{s.label}</p>
+                    <p className="text-xs text-ink-3">
+                      {s.has_latest ? 'The latest copy is on this stick. It can be taken out.' : 'Copying now. Leave it in for a minute.'}
+                    </p>
+                  </div>
+                </div>
+                <button type="button" className="btn btn-sm" onClick={() => usbCopy(s.path)} disabled={busy === 'usb'}>
+                  {busy === 'usb' ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Copying</>
+                  ) : (
+                    <><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> {s.has_latest ? 'Copy again' : 'Copy now'}</>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs leading-relaxed text-ink-3">
+          {usbLast ? (
+            <>Last copy <span className="font-medium text-ink-2">{formatDateTime(usbLast.at)}</span> onto <span className="font-medium text-ink-2">{usbLast.label}</span>{usbLast.size ? ` (${sizeLabel(usbLast.size)})` : ''}. </>
+          ) : null}
+          Only the locked copy goes onto the stick, in its own folder. Nothing else on the stick is touched, and a lost stick gives nothing away.
+        </p>
+      </div>
+    </Panel>
+  );
+
+  const phoneCard = (
+    <Panel key="phone">
+      <RouteHead icon={Smartphone} tint="2" title="Your phone" note="WhatsApp carries it to town for you.">
+        <Pill tone={phoneShare ? 'info' : 'neutral'}>{handheld && phoneShare ? 'Ready on this phone' : phoneShare ? 'Works from here too' : 'Use a phone'}</Pill>
+      </RouteHead>
+      <Steps steps={PHONE_STEPS} />
+      <div className="space-y-3 border-t border-line-soft px-4 py-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            className="btn btn-primary h-11 w-full justify-center px-5 text-sm sm:w-auto sm:flex-none"
+            onClick={sendFromPhone}
+            disabled={busy === 'phone'}
+          >
+            {busy === 'phone' ? (
+              <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Getting the copy</>
+            ) : (
+              <><Smartphone className="h-4 w-4" aria-hidden="true" /> {phoneShare ? 'Send the copy' : 'Save the copy'}</>
+            )}
+          </button>
+          <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink-2">
+            {phoneTo ? (
+              <>Send it to Lloyds on WhatsApp: <span className="whitespace-nowrap font-semibold text-ink">{phoneTo}</span>.</>
+            ) : (
+              <>Send it to the Lloyds WhatsApp number.</>
+            )}
+            {' '}The file is locked; it gives nothing away on the way.
+          </p>
+        </div>
+        {!phoneShare ? (
+          <p className="text-xs leading-relaxed text-ink-3">
+            This computer has no share sheet, so the button saves the file instead. Attach it to an
+            email or a WhatsApp Web message to Lloyds, or open this page on a phone for the one-press version.
+          </p>
+        ) : null}
+      </div>
+    </Panel>
+  );
+
+  const officeCard = (
+    <Panel key="office">
+      <RouteHead icon={Building2} tint="3" title="Head office" note="Sends itself whenever there is internet.">
+        <Pill tone={!office.configured ? 'neutral' : officeSent ? 'ok' : officeLast ? 'warn' : 'info'}>
+          {!office.configured ? 'Not set up' : officeSent ? 'Sent' : officeLast ? 'Not sent' : 'Waiting'}
+        </Pill>
+      </RouteHead>
+      <div className="space-y-3 px-4 py-3">
+        {office.configured ? (
+          <>
+            <div className="flex items-center gap-3">
+              <Tick done={officeSent} replayKey={officeLast ? officeLast.at : 'none'} />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink">
+                  {officeSent ? `Accepted ${ageLabel(officeLast.at)}` : officeLast ? 'The last send did not get through' : 'Waiting for the first send'}
+                </p>
+                <p className="text-xs text-ink-3">
+                  {officeLast ? `${formatDateTime(officeLast.at)}. ${officeLast.message}` : 'The first attempt is a few minutes after the server starts.'}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs leading-relaxed text-ink-3">
+              Copies go to <span className="font-medium text-ink-2">{office.host}</span> for clinic{' '}
+              <span className="font-medium text-ink-2">{office.clinic_id}</span>. Every night's copy is sent as soon as the
+              server has internet, and tried again every half hour until it gets through.
+            </p>
+            <button type="button" className="btn" onClick={sendHeadOffice} disabled={busy === 'office'}>
+              {busy === 'office' ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Sending</>
+              ) : (
+                <><Building2 className="h-3.5 w-3.5" aria-hidden="true" /> Send to head office now</>
+              )}
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center gap-3 rounded-md border border-dashed border-line-strong px-3 py-3">
+            <span className="chip chip-3 h-9 w-9" aria-hidden="true"><Building2 className="h-4 w-4" /></span>
+            <p className="text-xs leading-relaxed text-ink-2">
+              Not set up on this server. Lloyds switches this on at installation, after which the copy
+              goes to head office by itself. The clinic does not need to do anything.
+            </p>
+          </div>
+        )}
+      </div>
+    </Panel>
+  );
+
+  const googleCard = (
+    <Panel key="google">
+      <RouteHead icon={g.connected ? Cloud : CloudOff} tint="4" title="Company Google account" note="Press once. After that it looks after itself.">
+        <Pill tone={g.connected ? 'ok' : g.client_source ? 'info' : 'neutral'}>
+          {g.connected ? 'Connected' : g.client_source ? 'Ready to connect' : 'Not set up'}
+        </Pill>
+      </RouteHead>
+
+      {g.connected ? (
+        <div className="space-y-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Tick done={lastStatus === 'Success'} replayKey={config.last_synced_at || 'none'} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">
+                {lastStatus === 'Success' && config.last_synced_at ? `Up to date, sent ${ageLabel(config.last_synced_at)}` : lastStatus || 'Connected'}
+              </p>
+              <p className="truncate text-xs text-ink-3">
+                {g.email}{g.connected_at ? `, connected ${formatDateTime(g.connected_at)}` : ''}
+              </p>
+            </div>
+          </div>
+          <p className="text-xs leading-relaxed text-ink-3">
+            The server made a spreadsheet and a photograph folder in that account and writes every
+            record and photograph into them whenever it has internet.
+            {status?.photos?.waiting ? ` ${status.photos.waiting} photograph${status.photos.waiting === 1 ? '' : 's'} waiting to go.` : ''}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {g.sheet_url ? (
+              <a href={g.sheet_url} target="_blank" rel="noreferrer" className="btn btn-sm">
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open the spreadsheet
+              </a>
+            ) : null}
+            {g.folder_url ? (
+              <a href={g.folder_url} target="_blank" rel="noreferrer" className="btn btn-sm">
+                <Camera className="h-3.5 w-3.5" aria-hidden="true" /> Open the photograph folder
+              </a>
+            ) : null}
+            <button type="button" className="btn btn-sm text-critical" onClick={disconnectGoogle} disabled={busy === 'disconnect'}>
+              <Unlink className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'disconnect' ? 'Disconnecting' : 'Disconnect'}
+            </button>
+          </div>
+          <div className="rounded-md border border-line p-3">
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 accent-brand" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+              <span>
+                <span className="block text-xs font-semibold text-ink">Send automatically when there is internet</span>
+                <span className="block text-2xs leading-relaxed text-ink-3">Checks once a minute; sends only when something changed.{autoRunning ? ` ${intervalLabel}.` : ''}</span>
+              </span>
+            </label>
+            <div className={`mt-2.5 flex flex-wrap items-end gap-2 ${auto ? '' : 'opacity-50'}`}>
+              <div className="min-w-0 flex-1">
+                <label className="label" htmlFor="interval-g">No more often than</label>
+                <select id="interval-g" className="field" value={interval} onChange={(e) => setInterval_(parseInt(e.target.value, 10))} disabled={!auto}>
+                  {INTERVALS.map(([m, label]) => <option key={m} value={m}>{label}</option>)}
+                </select>
+              </div>
+              <button type="button" className="btn" onClick={save} disabled={busy === 'save'}>
+                {busy === 'save' ? 'Saving' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : g.client_source ? (
+        <div className="space-y-3 px-4 py-3">
+          <p className="text-xs leading-relaxed text-ink-2">
+            Sign in once as the company Google account and press Allow. The server then makes a
+            spreadsheet and a photograph folder in that account and keeps them up to date on its own
+            whenever there is internet.
+          </p>
+          <button type="button" className="btn btn-primary" onClick={connectGoogle}
+            disabled={busy === 'connect' || !onServer}
+            title={!onServer ? 'Do this on the clinic server itself' : undefined}>
+            <Link2 className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'connect' ? 'Opening Google' : 'Connect the company Google account'}
+          </button>
+          {!onServer ? (
+            <p className="text-xs leading-relaxed text-warn">
+              Google only answers the clinic server itself. Sit at that computer, open
+              http://localhost:4000, come to this page and press the button there. Every other
+              computer and tablet benefits once it is done.
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="space-y-3 px-4 py-3">
+          <div className="flex items-center gap-3 rounded-md border border-dashed border-line-strong px-3 py-3">
+            <span className="chip chip-4 h-9 w-9" aria-hidden="true"><CloudOff className="h-4 w-4" /></span>
+            <p className="text-xs leading-relaxed text-ink-2">
+              Not set up on this server. Lloyds adds the company Google connection at installation;
+              nothing is needed from the clinic. The stick and the phone work without it.
+            </p>
+          </div>
+          <details className="group rounded-md border border-line">
+            <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-ink-2">
+              For Lloyds technicians: use your own Google client
+            </summary>
+            <div className="grid gap-3 border-t border-line-soft px-3 py-3 sm:grid-cols-2">
+              <p className="text-2xs leading-relaxed text-ink-3 sm:col-span-2">
+                The better place for the client is server/config/install.json, which needs no typing
+                here. Saving one on this page works too: an OAuth client of type Web application with
+                http://localhost:4000/api/google/callback as its redirect URI, from a project with the
+                Sheets and Drive APIs enabled and its consent screen published.
+              </p>
+              <div className="min-w-0">
+                <label className="label" htmlFor="gcid">Client ID</label>
+                <input id="gcid" className="field font-mono text-2xs" value={clientId}
+                  onChange={(e) => setClientId(e.target.value)} placeholder="….apps.googleusercontent.com" autoComplete="off" />
+              </div>
+              <div className="min-w-0">
+                <label className="label" htmlFor="gsec">Client secret</label>
+                <input id="gsec" className="field font-mono text-2xs" type="password" value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)} placeholder="GOCSPX-…" autoComplete="off" />
+              </div>
+              <div className="sm:col-span-2">
+                <button type="button" className="btn" onClick={saveCredentials}
+                  disabled={busy === 'creds' || !clientId.trim() || !clientSecret.trim()}>
+                  {busy === 'creds' ? 'Saving' : 'Save the client details'}
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
+      )}
+    </Panel>
+  );
+
+  // On a phone the phone route comes first; at the desk the stick does.
+  const cards = handheld ? [phoneCard, usbCard, officeCard, googleCard] : [usbCard, phoneCard, officeCard, googleCard];
 
   return (
     <div className="space-y-4">
@@ -311,7 +703,7 @@ export default function CloudSync({ refreshStats }) {
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionTitle note="Three ways a copy of the records leaves the building. None of them is needed for the clinic to run.">
+        <SectionTitle note="Four ways a copy of the records leaves the building. None of them is needed for the clinic to run.">
           Off-site copies
         </SectionTitle>
         <div className="flex items-center gap-2">
@@ -319,7 +711,7 @@ export default function CloudSync({ refreshStats }) {
             {online ? 'This computer has internet' : 'No internet'}
           </Pill>
           {configured ? (
-            <button type="button" className="btn btn-sm btn-primary" onClick={syncNow} disabled={busy === 'sync'}>
+            <button type="button" className="btn btn-sm" onClick={syncNow} disabled={busy === 'sync'}>
               {busy === 'sync' ? (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Sending</>
               ) : (
@@ -340,296 +732,50 @@ export default function CloudSync({ refreshStats }) {
         </p>
       ) : null}
 
-      <MetricStrip columns={4}>
-        <Metric
-          label="USB stick"
-          value={usbLast ? ageLabel(usbLast.at) : sticks.length ? 'Copying' : 'No copy yet'}
-          context={usbLast
-            ? `${usbLast.label}, ${formatDateTime(usbLast.at)}`
-            : sticks.length ? 'A stick is plugged in; the copy is on its way' : 'Plug a stick into the clinic server'}
-          tone={usbLast ? 'ok' : 'neutral'}
-          tint="1"
-          icon={Usb}
-        />
-        <Metric
-          label="Head office"
-          value={!office.configured ? 'Not set up' : officeSent ? ageLabel(officeLast.at) : officeLast ? 'Not sent' : 'Waiting'}
-          context={!office.configured
-            ? 'Lloyds switches this on at installation'
-            : officeSent ? `Accepted by ${office.host}, ${formatDateTime(officeLast.at)}`
-            : officeLast ? officeLast.message : 'Sends itself when there is internet'}
-          tone={!office.configured ? 'neutral' : officeSent ? 'ok' : officeLast ? 'warn' : 'neutral'}
-          tint="2"
-          icon={Building2}
-        />
-        <Metric
-          label="Google account"
-          value={g.connected ? (lastStatus === 'Success' ? 'Up to date' : lastStatus || 'Connected') : g.client_source ? 'Ready' : 'Not set up'}
-          context={g.connected
-            ? config.last_synced_at ? `Sent ${formatDateTime(config.last_synced_at)}` : 'No copy sent yet'
-            : g.client_source ? 'Press the button below once' : 'Lloyds adds this at installation'}
-          tone={g.connected ? googleTone : 'neutral'}
-          tint="3"
-          icon={g.connected ? Cloud : CloudOff}
-        />
-        <Metric
-          label="Photographs waiting"
-          value={photos.waiting}
-          context={photos.total ? `${photos.total - photos.waiting} of ${photos.total} already in Google Drive` : 'No patient has a photograph yet'}
-          tone={photos.waiting > 0 && g.connected ? 'warn' : 'neutral'}
-          tint="4"
-          icon={Camera}
-        />
-      </MetricStrip>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="min-w-0 space-y-4 lg:col-span-2">
-          <Panel>
-            <PanelHead title="USB stick" note="The simplest copy. No internet needed.">
-              <Pill tone={sticks.length === 0 ? 'neutral' : allSticksDone ? 'ok' : 'info'}>
-                {sticks.length === 0 ? 'No stick plugged in' : allSticksDone ? 'Copy is on the stick' : 'Copying'}
-              </Pill>
-            </PanelHead>
-
-            <ol className="grid divide-y divide-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {USB_STEPS.map(([title, detail], i) => (
-                <li key={title} className="flex gap-3 px-4 py-3">
-                  <span className="chip chip-brand h-6 w-6 shrink-0 justify-center text-xs font-semibold">{i + 1}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink">{title}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-
-            <div className="space-y-3 border-t border-line-soft px-4 py-3">
-              {sticks.length === 0 ? (
-                <p className="text-xs leading-relaxed text-ink-2">
-                  No stick is plugged into the clinic server right now. As soon as one is, the copy is
-                  written on its own and a green tick shows here.
-                </p>
+      <Panel>
+        <div className="flex flex-wrap items-center gap-4 px-4 py-4">
+          <span className={`chip chip-${bandTone === 'neutral' ? 'brand' : bandTone} h-12 w-12 rounded-xl`} aria-hidden="true">
+            <ShieldCheck className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1 basis-64">
+            <p className="text-balance text-lg font-semibold leading-tight text-ink">
+              {latest ? (
+                <>A copy left the building <span className={bandTone === 'ok' ? 'text-ok' : 'text-warn'}>{ageLabel(latest.at)}</span></>
               ) : (
-                <ul className="space-y-2">
-                  {sticks.map((s) => (
-                    <li key={s.path} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line p-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${s.has_latest ? 'bg-ok-wash text-ok' : 'bg-info-wash text-info'}`}>
-                          {s.has_latest ? <Check className="h-4 w-4" aria-hidden="true" /> : <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-ink">{s.label}</p>
-                          <p className="text-2xs text-ink-3">
-                            {s.has_latest ? 'The latest copy is on this stick. It can be taken out.' : 'Copying now. Leave it in for a minute.'}
-                          </p>
-                        </div>
-                      </div>
-                      <button type="button" className="btn btn-sm" onClick={() => usbCopy(s.path)} disabled={busy === 'usb'}>
-                        {busy === 'usb' ? (
-                          <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Copying</>
-                        ) : (
-                          <><Usb className="h-3.5 w-3.5" aria-hidden="true" /> {s.has_latest ? 'Copy again' : 'Copy now'}</>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>No copy has left the building yet</>
               )}
-
-              {usbLast ? (
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Last copy: <span className="font-semibold text-ink">{formatDateTime(usbLast.at)}</span> onto
-                  the stick <span className="font-semibold text-ink">{usbLast.label}</span>
-                  {usbLast.size ? <span className="text-ink-3"> ({sizeLabel(usbLast.size)})</span> : null}.
-                </p>
-              ) : null}
-
-              <p className="text-2xs leading-relaxed text-ink-3">
-                Only the locked copy goes onto the stick, in a folder called "Lloyds Medical OS backups".
-                Nothing else on the stick is touched. Nobody can open the copy without the backup
-                passphrase set under Facility settings, so a lost stick gives nothing away.
-              </p>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHead title="Company Google account" note="Press once. After that it looks after itself.">
-              <Pill tone={g.connected ? 'ok' : g.client_source ? 'info' : 'neutral'}>
-                {g.connected ? 'Connected' : g.client_source ? 'Ready to connect' : 'Not set up'}
-              </Pill>
-            </PanelHead>
-
-            {g.connected ? (
-              <div className="space-y-3 px-4 py-3">
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Connected as <span className="font-semibold text-ink">{g.email}</span>
-                  {g.connected_at ? <span className="text-ink-3"> since {formatDateTime(g.connected_at)}</span> : null}.
-                  The server made a spreadsheet and a photograph folder in that account and writes
-                  every record and photograph into them whenever it has internet.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {g.sheet_url ? (
-                    <a href={g.sheet_url} target="_blank" rel="noreferrer" className="btn btn-sm">
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open the spreadsheet
-                    </a>
-                  ) : null}
-                  {g.folder_url ? (
-                    <a href={g.folder_url} target="_blank" rel="noreferrer" className="btn btn-sm">
-                      <Camera className="h-3.5 w-3.5" aria-hidden="true" /> Open the photograph folder
-                    </a>
-                  ) : null}
-                  <button type="button" className="btn btn-sm text-critical" onClick={disconnectGoogle} disabled={busy === 'disconnect'}>
-                    <Unlink className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'disconnect' ? 'Disconnecting' : 'Disconnect'}
-                  </button>
-                </div>
-                <p className="text-2xs leading-relaxed text-ink-3">
-                  The permission reaches only the files this system created, never the rest of the
-                  company's Drive. It can be withdrawn here, or at myaccount.google.com/permissions.
-                </p>
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-3">
+              {latest
+                ? `${formatDateTime(latest.at)}, ${latest.how}. ${latestHours >= 48 ? 'That is more than two days ago; plug in a stick or send it from a phone today.' : 'The records on this computer are safe if anything happens to it.'}`
+                : 'Plug a stick into the clinic server, or press Send the copy on a phone. Either takes a minute.'}
+            </p>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:flex sm:flex-wrap sm:gap-x-5">
+            {[
+              ['Stick', usbLast ? ageLabel(usbLast.at) : 'never', !!usbLast],
+              ['Head office', !office.configured ? 'not set up' : officeSent ? ageLabel(officeLast.at) : 'not yet', officeSent],
+              ['Google', !g.connected ? 'not set up' : lastStatus === 'Success' && config.last_synced_at ? ageLabel(config.last_synced_at) : 'not yet', g.connected && lastStatus === 'Success']
+            ].map(([label, value, good]) => (
+              <div key={label} className="flex items-baseline gap-1.5">
+                <dt className="text-ink-3">{label}</dt>
+                <dd className={`font-semibold ${good ? 'text-ok' : 'text-ink-2'}`}>{value}</dd>
               </div>
-            ) : g.client_source ? (
-              <div className="space-y-3 px-4 py-3">
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Sign in once as the company Google account and press Allow. The server then makes a
-                  spreadsheet and a photograph folder in that account and keeps them up to date on its
-                  own whenever there is internet.
-                </p>
-                <button type="button" className="btn btn-primary" onClick={connectGoogle}
-                  disabled={busy === 'connect' || !onServer}
-                  title={!onServer ? 'Do this on the clinic server itself' : undefined}>
-                  <Link2 className="h-3.5 w-3.5" aria-hidden="true" /> {busy === 'connect' ? 'Opening Google' : 'Connect the company Google account'}
-                </button>
-                {!onServer ? (
-                  <p className="text-2xs leading-relaxed text-warn">
-                    Google only answers the clinic server itself. Sit at that computer, open
-                    http://localhost:4000, come to this page and press the button there. Every other
-                    computer and tablet benefits once it is done.
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <div className="space-y-3 px-4 py-3">
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Not set up on this server. Lloyds adds the company Google connection at
-                  installation; nothing is needed from the clinic. The USB stick works without it.
-                </p>
-                <details className="group rounded-md border border-line">
-                  <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-ink-2">
-                    For Lloyds technicians: use your own Google client
-                  </summary>
-                  <div className="grid gap-3 border-t border-line-soft px-3 py-3 sm:grid-cols-2">
-                    <p className="text-2xs leading-relaxed text-ink-3 sm:col-span-2">
-                      The better place for the client is server/config/install.json, which needs no
-                      typing here. Saving one on this page works too: an OAuth client of type Web
-                      application with http://localhost:4000/api/google/callback as its redirect URI,
-                      from a project with the Sheets and Drive APIs enabled and its consent screen
-                      published.
-                    </p>
-                    <div className="min-w-0">
-                      <label className="label" htmlFor="gcid">Client ID</label>
-                      <input id="gcid" className="field font-mono text-2xs" value={clientId}
-                        onChange={(e) => setClientId(e.target.value)} placeholder="….apps.googleusercontent.com" autoComplete="off" />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="label" htmlFor="gsec">Client secret</label>
-                      <input id="gsec" className="field font-mono text-2xs" type="password" value={clientSecret}
-                        onChange={(e) => setClientSecret(e.target.value)} placeholder="GOCSPX-…" autoComplete="off" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <button type="button" className="btn" onClick={saveCredentials}
-                        disabled={busy === 'creds' || !clientId.trim() || !clientSecret.trim()}>
-                        {busy === 'creds' ? 'Saving' : 'Save the client details'}
-                      </button>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            )}
-          </Panel>
+            ))}
+          </dl>
         </div>
+      </Panel>
 
-        <div className="space-y-4">
-          <Panel>
-            <PanelHead title="Head office" note="Sends itself when there is internet">
-              <Pill tone={!office.configured ? 'neutral' : officeSent ? 'ok' : officeLast ? 'warn' : 'info'}>
-                {!office.configured ? 'Not set up' : officeSent ? 'Sent' : officeLast ? 'Not sent' : 'Waiting'}
-              </Pill>
-            </PanelHead>
-            <div className="space-y-3 px-4 py-3">
-              {office.configured ? (
-                <>
-                  <p className="text-xs leading-relaxed text-ink-2">
-                    Copies go to <span className="font-semibold text-ink">{office.host}</span> for
-                    clinic <span className="font-semibold text-ink">{office.clinic_id}</span>. Every
-                    night's copy is sent as soon as the server has internet, and tried again every
-                    half hour until it gets through.
-                  </p>
-                  {officeLast ? (
-                    <p className="text-2xs leading-relaxed text-ink-3">
-                      {officeLast.status} {formatDateTime(officeLast.at)}. {officeLast.message}
-                    </p>
-                  ) : (
-                    <p className="text-2xs leading-relaxed text-ink-3">
-                      Nothing sent yet. The first attempt is a few minutes after the server starts.
-                    </p>
-                  )}
-                  <button type="button" className="btn w-full justify-center" onClick={sendHeadOffice} disabled={busy === 'office'}>
-                    {busy === 'office' ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Sending</>
-                    ) : (
-                      <><Building2 className="h-3.5 w-3.5" aria-hidden="true" /> Send to head office now</>
-                    )}
-                  </button>
-                </>
-              ) : (
-                <p className="text-xs leading-relaxed text-ink-2">
-                  Not set up on this server. Lloyds switches this on at installation, after which
-                  the copy goes to head office by itself. The clinic does not need to do anything.
-                </p>
-              )}
-            </div>
-          </Panel>
-
-          {g.connected ? (
-            <Panel>
-              <PanelHead title="Sending to Google">
-                <Pill tone={autoRunning ? 'ok' : 'neutral'}>{autoRunning ? 'Automatic' : 'By hand only'}</Pill>
-              </PanelHead>
-              <div className="space-y-3 px-4 py-3">
-                <div className="rounded-md border border-line p-3">
-                  <label className="flex cursor-pointer items-start gap-2.5">
-                    <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 accent-brand" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-                    <span>
-                      <span className="block text-xs font-semibold text-ink">Send automatically when there is internet</span>
-                      <span className="block text-2xs leading-relaxed text-ink-3">Checks once a minute; sends only when something changed. {autoRunning ? intervalLabel : ''}</span>
-                    </span>
-                  </label>
-                  <div className={`mt-2.5 ${auto ? '' : 'opacity-50'}`}>
-                    <label className="label" htmlFor="interval-g">No more often than</label>
-                    <select id="interval-g" className="field" value={interval} onChange={(e) => setInterval_(parseInt(e.target.value, 10))} disabled={!auto}>
-                      {INTERVALS.map(([m, label]) => <option key={m} value={m}>{label}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <button type="button" className="btn w-full justify-center" onClick={save} disabled={busy === 'save'}>
-                  {busy === 'save' ? 'Saving' : 'Save'}
-                </button>
-              </div>
-            </Panel>
-          ) : null}
-
-          <Panel>
-            <PanelHead title="What is in a copy" />
-            <div className="px-4 py-3">
-              <p className="text-xs leading-relaxed text-ink-2">
-                The USB and head office copies are the whole database: every patient, visit,
-                dispensation, register entry and setting, as one locked file. The Google copy is the
-                same records laid out in a spreadsheet, with photographs in a folder beside it.
-              </p>
-            </div>
-          </Panel>
-        </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {cards}
       </div>
+
+      <p className="px-1 text-xs leading-relaxed text-ink-3">
+        Every copy is the whole database as one locked file: every patient, visit, dispensation,
+        register entry and setting. Nobody can open it without the backup passphrase set under
+        Facility settings. The Google copy is the same records laid out in a spreadsheet, with
+        photographs in a folder beside it.
+      </p>
 
       <details className="panel group">
         <summary className="cursor-pointer select-none px-4 py-3 text-xs font-semibold text-ink-2">
@@ -727,23 +873,29 @@ export default function CloudSync({ refreshStats }) {
       </details>
 
       <Panel>
-        <PanelHead title="What happened" note="Most recent first" />
-        {(status?.recent_logs || []).length === 0 ? (
+        <PanelHead title="What happened" note="Most recent first">
+          {logs.length > LOG_ROWS ? (
+            <button type="button" className="btn btn-sm" onClick={() => setAllLogs((v) => !v)}>
+              {allLogs ? `Show the last ${LOG_ROWS}` : `Show all ${logs.length}`}
+            </button>
+          ) : null}
+        </PanelHead>
+        {logs.length === 0 ? (
           <EmptyState
             title="No copy has been made yet"
-            detail="Every copy onto a stick, to head office or to Google is listed here, whether it worked or not."
+            detail="Every copy onto a stick, to a phone, to head office or to Google is listed here, whether it worked or not."
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table md:min-w-[760px]">
               <thead>
-                <tr><th>When</th><th>Kind</th><th>Result</th><th className="num">Records</th><th>Detail</th></tr>
+                <tr><th>When</th><th>Kind</th><th>Result</th><th className="num hidden md:table-cell">Records</th><th className="hidden md:table-cell">Detail</th></tr>
               </thead>
               <tbody>
-                {status.recent_logs.map((log) => (
+                {shownLogs.map((log) => (
                   <tr key={log.id}>
                     <td className="whitespace-nowrap">{formatDateTime(log.synced_at || log.created_at)}</td>
-                    <td>{log.sync_type}</td>
+                    <td className="whitespace-nowrap">{log.sync_type}</td>
                     <td>
                       <Pill tone={
                         log.status === 'Success' ? 'ok'
@@ -753,8 +905,8 @@ export default function CloudSync({ refreshStats }) {
                         {log.status}
                       </Pill>
                     </td>
-                    <td className="num">{log.records_count}</td>
-                    <td className="text-2xs leading-relaxed text-ink-3"><Value>{log.message}</Value></td>
+                    <td className="num hidden md:table-cell">{log.records_count}</td>
+                    <td className="hidden text-2xs leading-relaxed text-ink-3 md:table-cell"><Value>{log.message}</Value></td>
                   </tr>
                 ))}
               </tbody>

@@ -4,5 +4,6 @@
   "google_client_id": "1234567890-abc.apps.googleusercontent.com",
   "google_client_secret": "GOCSPX-...",
   "offsite_url": "https://lloyds-backup-receiver.example.workers.dev",
-  "offsite_key": "long-random-key-for-this-clinic"
+  "offsite_key": "long-random-key-for-this-clinic",
+  "support_whatsapp": "+675 7000 0000"
 }

@@ -73,6 +73,21 @@ router.post('/usb-copy', requirePermission('cloudSync.configure'), async (req, r
   }
 });
 
+/*
+ * GET /api/cloud-sync/latest-backup — the encrypted copy for a phone to carry.
+ * Anyone who can open the page can take it: the file is unreadable without
+ * the backup passphrase, and the hand-over is written to the audit trail.
+ */
+router.get('/latest-backup', requirePermission('view.cloudSync'), async (req, res) => {
+  try {
+    const file = await offsite.handoff(req.user);
+    res.setHeader('Cache-Control', 'no-store');
+    res.download(file.path, file.name);
+  } catch (err) {
+    res.status(409).json({ success: false, message: err.message });
+  }
+});
+
 // POST /api/cloud-sync/head-office-send — send the latest backup to head office now.
 router.post('/head-office-send', requirePermission('cloudSync.configure'), async (req, res) => {
   try {

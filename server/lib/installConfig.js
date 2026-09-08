@@ -45,7 +45,8 @@ function installConfig() {
     google_client_id: text(env.GOOGLE_CLIENT_ID || file.google_client_id),
     google_client_secret: text(env.GOOGLE_CLIENT_SECRET || file.google_client_secret),
     offsite_url: text(env.LLOYDS_OFFSITE_URL || file.offsite_url),
-    offsite_key: text(env.LLOYDS_OFFSITE_KEY || file.offsite_key)
+    offsite_key: text(env.LLOYDS_OFFSITE_KEY || file.offsite_key),
+    support_whatsapp: text(env.LLOYDS_SUPPORT_WHATSAPP || file.support_whatsapp)
   };
 }
 
