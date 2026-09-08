@@ -36,6 +36,10 @@ app.use('/api/auth/login', security.loginThrottle);
 // the request body. It refuses nothing on its own.
 app.use(require('./middleware/auth').attachUser);
 
+// Then nothing under /api answers without a session, bar the sign-in routes,
+// the waiting room board, the health check and the Google redirect.
+app.use('/api', require('./middleware/auth').requireSignIn);
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/dashboard', require('./routes/dashboard'));

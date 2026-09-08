@@ -344,6 +344,25 @@ router.get('/stats', async (req, res) => {
       'SELECT * FROM activity_logs ORDER BY id DESC LIMIT 40'
     )) || [];
 
+    // ---------------------------------------------------- getting started
+    // Each step is a fact read from the records, never a box somebody
+    // ticked. The list disappears from the board on its own once every step
+    // is true.
+    const { staff_accounts } = (await getQuery(
+      `SELECT COUNT(*) AS staff_accounts FROM users WHERE status = 'Active'`
+    )) || { staff_accounts: 0 };
+    const offsiteSummary = offsite.summary();
+    const setup = {
+      staff_accounts: staff_accounts > 1,
+      export_password: !!(settings && settings.export_password && settings.export_password.length > 0),
+      backup_passphrase: !!(settings && settings.backup_passphrase_set_at),
+      offsite_copy: !!(offsiteSummary.usb_last_at || offsiteSummary.head_office_last_at
+        || (syncConfig && syncConfig.google_account_email) || lastSuccessfulSync),
+      phone_connected: !!(settings && settings.phone_last_seen_at),
+      board_seen: !!(settings && settings.board_last_seen_at),
+      live: !!(settings && settings.live_since)
+    };
+
     const { audit_events_today } = (await getQuery(
       `SELECT COUNT(*) as audit_events_today FROM activity_logs WHERE date(created_at) = ?`,
       [todayStr]
@@ -483,7 +502,8 @@ router.get('/stats', async (req, res) => {
               last_successful_sync_at: lastSuccessfulSync ? lastSuccessfulSync.synced_at : null
             }
           : null,
-        offsite: offsite.summary(),
+        offsite: offsiteSummary,
+        setup,
         activities,
         audit_events_today,
 
@@ -526,6 +546,11 @@ router.post('/heartbeat', requireAuth, async (req, res) => {
     // old version let anybody mark any member of staff as present, which made
     // "staff on the system" evidence of nothing.
     await runQuery('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?', [req.user.id]);
+    // The first time a phone or tablet reports in, the getting-started list
+    // can tick that step off. Written once; a phone is a phone forever.
+    if (/Android|iPhone|iPad|Mobile/i.test(req.get('user-agent') || '')) {
+      runQuery('UPDATE hospital_settings SET phone_last_seen_at = CURRENT_TIMESTAMP WHERE phone_last_seen_at IS NULL').catch(() => {});
+    }
     res.json({ success: true, at: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

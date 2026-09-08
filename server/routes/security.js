@@ -7,6 +7,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
 const router = express.Router();
 const { requireAuth, SESSION_HOURS, destroySession } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
@@ -136,6 +137,32 @@ router.post('/backup-passphrase', requireAuth, requireAdministrator, async (req,
     if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error('Backup passphrase error:', err);
     res.status(500).json({ success: false, message: `The passphrase could not be set: ${err.message}` });
+  }
+});
+
+/*
+ * GET /api/security/backup-key
+ *
+ * The wrapped key file. It is the data key locked under the backup
+ * passphrase, so on its own it opens nothing; with the passphrase it lets a
+ * copy made here be brought back on a different computer. Sticks carry it
+ * beside every copy; this is for a copy that travelled another way.
+ */
+router.get('/backup-key', requireAuth, requireAdministrator, async (req, res) => {
+  try {
+    if (!fs.existsSync(backup.WRAPPED_KEY_FILE)) {
+      return res.status(409).json({ success: false, message: 'Set the backup passphrase first. The key file is made when the passphrase is set.' });
+    }
+    await runQuery(
+      `INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
+       VALUES ('Backup key file downloaded', ?, ?, 'Security', 'The wrapped backup key was downloaded. It opens nothing without the passphrase.', 'Info')`,
+      [req.user.full_name, req.user.role]
+    ).catch(() => {});
+    res.setHeader('Cache-Control', 'no-store');
+    res.download(backup.WRAPPED_KEY_FILE, 'backup.key.wrapped');
+  } catch (err) {
+    console.error('Backup key download error:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

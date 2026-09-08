@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
-  AttentionBoard, AuditBoard, ControlsBoard, HandoverBoard, PatientFlow,
+  AttentionBoard, AuditBoard, ControlsBoard, GettingStarted, HandoverBoard, PatientFlow,
   PharmacyBoard, PriorityPatients, SafetyBoard, TrendsBoard, WardBoard
 } from '../components/DashboardWidgets';
 import { EmptyState, formatDuration, Metric, MetricStrip, Panel, SectionTitle, useFocusTrap, Value } from '../components/ui';
@@ -143,6 +143,7 @@ export default function Dashboard({
           money={money}
           onNavigate={setActiveTab}
           onSelectSection={setSection}
+          isAdmin={currentUser?.role === 'Administrator'}
         />
       ) : null}
 
@@ -374,11 +375,12 @@ function SectionNav({ section, setSection, stats }) {
 
 // ---------------------------------------------------------------------------
 
-function Overview({ stats, money, onNavigate, onSelectSection }) {
+function Overview({ stats, money, onNavigate, onSelectSection, isAdmin }) {
   const bedTotal = stats?.total_beds ?? (stats?.beds || []).length;
 
   return (
     <div className="space-y-4">
+      <GettingStarted setup={stats?.setup} onNavigate={onNavigate} isAdmin={isAdmin} />
       <AttentionBoard stats={stats} onNavigate={onNavigate} onSelectSection={onSelectSection} />
 
       <section className="enter enter-1 space-y-2">

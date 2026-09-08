@@ -103,6 +103,35 @@ async function attachUser(req, res, next) {
   return next();
 }
 
+/*
+ * Every route under /api needs a signed-in session, apart from the handful
+ * that exist to get someone signed in, the waiting room board (numbers only),
+ * the health check, and the Google redirect, which arrives from Google's own
+ * site and cannot carry a token. Until this guard, reads such as the patient
+ * list answered anyone on the clinic Wi-Fi; only writes asked who was calling.
+ */
+const OPEN_ROUTES = new Set([
+  'GET /health',
+  'GET /auth/bootstrap-status',
+  'GET /auth/session',
+  'POST /auth/login',
+  'POST /auth/register',
+  'GET /visits/board',
+  'GET /google/callback'
+]);
+
+function requireSignIn(req, res, next) {
+  if (req.user || req.method === 'OPTIONS') return next();
+  const route = `${req.method} ${req.path.replace(/\/+$/, '') || '/'}`;
+  if (OPEN_ROUTES.has(route)) return next();
+  const presented = !!tokenFrom(req);
+  return res.status(401).json({
+    success: false,
+    code: 'SIGN_IN_REQUIRED',
+    message: presented ? 'Your session has ended. Sign in again to carry on.' : 'Sign in to open the system.'
+  });
+}
+
 function requireAuth(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
@@ -167,6 +196,7 @@ module.exports = {
   destroySession,
   destroyAllSessionsFor,
   attachUser,
+  requireSignIn,
   requireAuth,
   requirePermission
 };

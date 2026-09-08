@@ -5,7 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { generateProtectedExcel } = require('../exportExcel');
-const { runQuery, getQuery } = require('../db');
+const { runQuery, getQuery, reopenDatabase, DB_PATH } = require('../db');
+const sqlite3 = require('sqlite3');
+const backup = require('../lib/backup');
 
 const upload = multer({ dest: path.join(__dirname, '../data/uploads') });
 const crypto = require('crypto');
@@ -184,59 +186,147 @@ router.get('/backup-db', requirePermission('export.download'), async (req, res) 
   }
 });
 
-// POST /api/export/restore-db — replace the live database from a backup file
-router.post('/restore-db', upload.single('db_file'), requirePermission('settings.clearRecords'), async (req, res) => {
-  const uploaded = req.file ? req.file.path : null;
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
+/*
+ * POST /api/export/restore-db
+ *
+ * Brings the records back from a copy, on this computer or a replacement.
+ * Three kinds of file are accepted: the nightly and off-site copies
+ * (hospital-*.db.enc, locked with the backup key), the older download from
+ * this page (.lloydsbackup, locked with the export password), and a plain
+ * database file. The copy is decrypted to a scratch file, opened on its own
+ * and checked before anything is touched, the current database is put aside
+ * under a dated name, and the server switches to the restored records
+ * without a restart. Nothing is ever deleted here.
+ */
+const LMEDB = Buffer.from('LMEDB1', 'ascii');
+const RESTORE_UPLOAD = path.join(__dirname, '../data/restore-upload.bin');
+const RESTORE_CANDIDATE = path.join(__dirname, '../data/hospital.restore-candidate.db');
+const restoreFiles = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 * 1024 } })
+  .fields([{ name: 'db_file', maxCount: 1 }, { name: 'key_file', maxCount: 1 }]);
+
+function inspectDatabase(file) {
+  return new Promise((resolve, reject) => {
+    const probe = new sqlite3.Database(file, sqlite3.OPEN_READONLY, (openErr) => {
+      if (openErr) return reject(openErr);
+      const get = (sql) => new Promise((res, rej) => probe.get(sql, (err, row) => (err ? rej(err) : res(row))));
+      (async () => {
+        const check = await get('PRAGMA integrity_check');
+        if (!check || check.integrity_check !== 'ok') throw new Error('The copy failed its integrity check. It may be damaged.');
+        const patients = await get('SELECT COUNT(*) AS n FROM patients');
+        const visits = await get('SELECT COUNT(*) AS n, MAX(visit_date) AS latest FROM visits');
+        return { patients: patients ? patients.n : 0, visits: visits ? visits.n : 0, latest_visit: visits ? visits.latest : null };
+      })()
+        .then((facts) => probe.close(() => resolve(facts)))
+        .catch((err) => probe.close(() => reject(err)));
+    });
+  });
+}
+
+/*
+ * Every key that could open a backup-key copy, in the order to try them: the
+ * key on this computer, then the passphrase against the key file that came
+ * with the copy, the one kept here, and the one saved in the settings.
+ */
+async function unlockBackupCopy(source, passphrase, keyUpload) {
+  const attempts = [];
+  if (backup.keyFileExists()) attempts.push({ key: backup.dataKey(), how: 'the key on this computer' });
+  if (passphrase) {
+    const records = [];
+    if (keyUpload) records.push(keyUpload.toString('utf8'));
+    if (fs.existsSync(backup.WRAPPED_KEY_FILE)) records.push(fs.readFileSync(backup.WRAPPED_KEY_FILE, 'utf8'));
+    const row = await getQuery('SELECT backup_key_wrapped FROM hospital_settings LIMIT 1').catch(() => null);
+    if (row && row.backup_key_wrapped) records.push(row.backup_key_wrapped);
+    for (const record of records) {
+      try { attempts.push({ key: backup.unwrapKey(passphrase, record), how: 'the passphrase' }); } catch (err) { /* wrong passphrase for this record */ }
     }
+  }
+  for (const attempt of attempts) {
+    try {
+      backup.decryptFile(attempt.key, source, RESTORE_CANDIDATE);
+      return attempt.how;
+    } catch (err) { /* try the next key */ }
+  }
+  if (!passphrase) {
+    throw new Error('This copy was locked on another computer. Type the backup passphrase, and pick the backup.key.wrapped file that sits beside the copy on the stick.');
+  }
+  throw new Error('The passphrase did not open this copy. Check it, and that the key file is the one from the same clinic.');
+}
+
+router.post('/restore-db', requirePermission('settings.clearRecords'), restoreFiles, async (req, res) => {
+  try {
+    const files = req.files || {};
+    const uploaded = files.db_file && files.db_file[0] ? files.db_file[0] : null;
+    const keyUpload = files.key_file && files.key_file[0] ? files.key_file[0].buffer : null;
+    if (!uploaded) return res.status(400).json({ success: false, message: 'Choose the copy to bring back.' });
 
     const who = req.user.full_name;
-    const raw = fs.readFileSync(uploaded);
-    let database;
+    const raw = uploaded.buffer;
+    const secret = String(req.body.passphrase || req.body.password || '');
+    let unlockedWith = 'nothing, it was not locked';
 
-    if (raw.subarray(0, 8).equals(MAGIC)) {
-      // Encrypted: the password is whichever export password was set when
-      // the backup was made, which is normally the current one.
-      const password = (req.body.password || '').toString();
-      if (!password) {
-        return res.status(400).json({ success: false, message: 'This backup is encrypted. Type the export password it was made with.' });
-      }
-      database = decryptBuffer(raw, password);
+    if (raw.subarray(0, LMEDB.length).equals(LMEDB)) {
+      fs.writeFileSync(RESTORE_UPLOAD, raw, { mode: 0o600 });
+      unlockedWith = await unlockBackupCopy(RESTORE_UPLOAD, secret, keyUpload);
+    } else if (raw.subarray(0, 8).equals(MAGIC)) {
+      // The older download from this page, locked with the export password.
+      if (!secret) return res.status(400).json({ success: false, message: 'This file is locked with the export password it was made with. Type it and choose the file again.' });
+      fs.writeFileSync(RESTORE_CANDIDATE, decryptBuffer(raw, secret), { mode: 0o600 });
+      unlockedWith = 'the export password';
     } else if (isSqlite(raw)) {
-      // An older, unencrypted backup is still accepted so nothing made before
-      // this version is lost.
-      database = raw;
+      fs.writeFileSync(RESTORE_CANDIDATE, raw, { mode: 0o600 });
     } else {
-      await logEvent('Restore Refused', who, 'A restore was refused: the file was neither a Lloyds backup nor a database.', 'Warning');
-      return res.status(400).json({ success: false, message: 'That file is not a clinic backup. Nothing was changed.' });
+      await logEvent('Restore Refused', who, `A restore was refused: ${uploaded.originalname} is neither a clinic copy nor a database.`, 'Warning');
+      return res.status(400).json({ success: false, message: 'That file is not a clinic copy. Nothing was changed.' });
     }
 
-    if (!isSqlite(database)) {
-      await logEvent('Restore Refused', who, 'A restore was refused: the decrypted file was not a database.', 'Warning');
-      return res.status(400).json({ success: false, message: 'The file opened but does not contain a clinic database. Nothing was changed.' });
+    const head = Buffer.alloc(16);
+    const fd = fs.openSync(RESTORE_CANDIDATE, 'r');
+    try { fs.readSync(fd, head, 0, 16, 0); } finally { fs.closeSync(fd); }
+    if (!head.equals(SQLITE_HEADER)) {
+      await logEvent('Restore Refused', who, 'A restore was refused: the unlocked file was not a database.', 'Warning');
+      return res.status(400).json({ success: false, message: 'The file opened but does not contain clinic records. Nothing was changed.' });
     }
 
-    const targetDbPath = path.join(__dirname, '../data/hospital.db');
-    const asidePath = path.join(__dirname, `../data/hospital_pre_restore_${Date.now()}.db`);
+    const facts = await inspectDatabase(RESTORE_CANDIDATE);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const asidePath = path.join(path.dirname(DB_PATH), `hospital_pre_restore_${stamp}.db`);
 
-    // The current database is copied aside first, so a restore from the wrong
-    // file is always reversible.
-    if (fs.existsSync(targetDbPath)) fs.copyFileSync(targetDbPath, asidePath);
-    fs.writeFileSync(targetDbPath, database);
+    await reopenDatabase(() => {
+      // With no connection open: the live file goes aside under a dated
+      // name, any leftover journal beside it goes aside too, and the checked
+      // copy takes its place.
+      if (fs.existsSync(DB_PATH)) fs.renameSync(DB_PATH, asidePath);
+      for (const suffix of ['-wal', '-shm', '-journal']) {
+        if (fs.existsSync(DB_PATH + suffix)) fs.renameSync(DB_PATH + suffix, asidePath + suffix);
+      }
+      fs.copyFileSync(RESTORE_CANDIDATE, DB_PATH);
+    });
 
-    await logEvent('Database Restored', who, `The database was replaced from a backup. The previous copy is at ${path.basename(asidePath)}.`, 'Warning');
+    // The copy carries whatever sign-ins were live when it was made, some of
+    // them months old. They all end now; only the person doing the restore
+    // stays signed in, and only if their sign-in is in the copy at all.
+    await runQuery(
+      `UPDATE sessions SET expires_at = datetime('now', '-1 minute') WHERE token != ?`,
+      [req.sessionToken || '']
+    );
+    const stillSignedIn = !!(await getQuery('SELECT 1 FROM sessions WHERE token = ?', [req.sessionToken || '']));
+
+    await logEvent(
+      'Database Restored', who,
+      `The records were replaced from ${uploaded.originalname} (${facts.patients} patients, ${facts.visits} visits, unlocked with ${unlockedWith}). The previous records are kept at ${path.basename(asidePath)}.`,
+      'Warning'
+    );
 
     res.json({
       success: true,
-      message: 'Database restored. The previous database was saved alongside it before the overwrite. Restart the server to load the restored records.'
+      message: `The records are back: ${facts.patients} patients and ${facts.visits} visits${facts.latest_visit ? `, up to ${facts.latest_visit}` : ''}. ${stillSignedIn ? 'Everyone else has been signed out.' : 'Everyone has been signed out; sign in again to carry on.'}`,
+      ...facts,
+      signed_out: !stillSignedIn,
+      previous_copy: path.basename(asidePath)
     });
   } catch (err) {
     console.error('Restore DB error:', err);
     res.status(400).json({ success: false, message: err.message });
-  } finally {
-    if (uploaded && fs.existsSync(uploaded)) fs.rmSync(uploaded, { force: true });
   }
 });
 

@@ -57,6 +57,66 @@ router.get('/today', async (req, res) => {
 });
 
 /*
+ * GET /api/visits/board
+ *
+ * What the waiting room screen shows: ticket numbers by stage, and how many
+ * are waiting. No names, no reasons, no ages. The screen is a television on
+ * the wall that anyone in the building can read, so this route needs no
+ * sign-in and gives away nothing a ticket in somebody's hand does not.
+ *
+ * The number is the one printed on the ticket: the trailing digits of the
+ * visit code issued at check-in.
+ */
+let boardSeenWrittenAt = 0;
+
+function ticketNumberOf(code) {
+  const match = /(\d+)\s*$/.exec(String(code || ''));
+  return match ? parseInt(match[1], 10) : null;
+}
+
+router.get('/board', async (req, res) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const rows = await allQuery(
+      `SELECT id, visit_code, status, triage_priority, created_at
+       FROM visits WHERE visit_date = ?
+       ORDER BY CASE triage_priority WHEN 'Emergency' THEN 1 WHEN 'Urgent' THEN 2 ELSE 3 END, id ASC`,
+      [todayStr]
+    );
+    const settings = await getQuery('SELECT name, tagline FROM hospital_settings LIMIT 1');
+
+    const entry = (v) => ({
+      number: ticketNumberOf(v.visit_code),
+      priority: v.triage_priority || 'Standard'
+    });
+    const at = (status) => rows.filter((v) => v.status === status).map(entry);
+
+    // Written at most once a minute: the screen polls every few seconds and
+    // the fact it is in use does not need a row rewrite each time.
+    if (Date.now() - boardSeenWrittenAt > 60000) {
+      boardSeenWrittenAt = Date.now();
+      runQuery('UPDATE hospital_settings SET board_last_seen_at = CURRENT_TIMESTAMP').catch(() => {});
+    }
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      success: true,
+      facility: settings ? settings.name : '',
+      generated_at: new Date().toISOString(),
+      waiting: at('Waiting'),
+      nurse: at('Triage / Vitals'),
+      doctor: at('In Consultation'),
+      pharmacy: at('At Pharmacy'),
+      completed_today: rows.filter((v) => v.status === 'Completed').length,
+      open: rows.filter((v) => v.status !== 'Completed').length
+    });
+  } catch (err) {
+    console.error('Board error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/*
  * GET /api/visits/follow-ups?days=7
  * Patients asked to come back. A return is "due" from its date until the
  * patient attends again on or after that date, or a later consultation sets a

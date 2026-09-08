@@ -62,8 +62,11 @@ async function request(endpoint, options = {}) {
 
   if (!res.ok) {
     if (res.status === 401) {
+      // Only a session that existed can be lost. A request made before anyone
+      // signed in is simply refused, and must not put a notice on the sign-in
+      // screen.
       setToken(null);
-      if (onSessionLost) onSessionLost(data.message || 'Your session has ended.');
+      if (token && onSessionLost) onSessionLost(data.message || 'Your session has ended.');
     }
     const err = new Error(data.message || data.error || 'Server request failed');
     err.status = res.status;
@@ -148,6 +151,9 @@ export const api = {
   updateReferralOutcome: (id, outcome, outcome_note = '') =>
     request(`/referrals/${id}/outcome`, { method: 'PUT', body: JSON.stringify({ outcome, outcome_note }) }),
   getMonthlyReport: (month) => request(`/reports/monthly?month=${encodeURIComponent(month)}`),
+  getWeeklyReport: (date) => request(`/reports/weekly?date=${encodeURIComponent(date || '')}`),
+  // No sign-in: the waiting room screen shows ticket numbers only.
+  getWaitingRoomBoard: () => request('/visits/board'),
   getNotifiableCases: (from, to) => request(`/reports/notifiable?from=${from || ''}&to=${to || ''}`),
 
   // Drugs & Pharmacy Inventory
@@ -239,16 +245,30 @@ export const api = {
     `${BASE_URL}/export/backup-db?password=${encodeURIComponent(password)}&token=${encodeURIComponent(getToken() || '')}`,
   getGoogleDriveBundleUrl: () => `${BASE_URL}/cloud-sync/export-drive-bundle`,
   
-  // Restore DB File
-  restoreDb: async (file, password = '') => {
+  // The wrapped backup key, for bringing a copy back on another computer.
+  getBackupKeyUrl: () => `${BASE_URL}/security/backup-key?token=${encodeURIComponent(getToken() || '')}`,
+
+  // Bring the records back from a copy. The key file is only needed when the
+  // copy was made on a different computer.
+  restoreDb: async (file, passphrase = '', keyFile = null) => {
     const formData = new FormData();
     formData.append('db_file', file);
-    formData.append('password', password);
-    const res = await fetch(`${BASE_URL}/export/restore-db`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${getToken() || ''}` },
-      body: formData
-    });
-    return res.json();
+    if (keyFile) formData.append('key_file', keyFile);
+    formData.append('passphrase', passphrase);
+    let res;
+    try {
+      res = await fetch(`${BASE_URL}/export/restore-db`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken() || ''}` },
+        body: formData
+      });
+    } catch (cause) {
+      const err = new Error(UNREACHABLE_MESSAGE);
+      err.code = 'UNREACHABLE';
+      throw err;
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.message || `The copy could not be brought back (HTTP ${res.status}).`);
+    return body;
   }
 };

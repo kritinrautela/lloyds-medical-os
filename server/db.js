@@ -10,14 +10,57 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, 'hospital.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening SQLite database:', err.message);
-  } else {
-    console.log('Connected to local SQLite database at:', dbPath);
-    initDatabase();
-  }
-});
+
+/*
+ * The connection is a variable rather than a constant so a restore can close
+ * it, put the restored file in place and open it again while the server keeps
+ * running. Every query below reads the current binding, so nothing else in
+ * the server holds on to a closed handle.
+ */
+let db = openDatabase();
+
+function openDatabase() {
+  return new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error opening SQLite database:', err.message);
+    } else {
+      console.log('Connected to local SQLite database at:', dbPath);
+      initDatabase();
+    }
+  });
+}
+
+/*
+ * Replaces the live database in place. The caller's swap() runs between the
+ * close and the reopen, with no connection open on the file, so it can move
+ * the current database aside and copy the restored one in. The schema
+ * upgrades then run again on the restored file, exactly as they would at
+ * start-up, before the promise resolves and the server answers requests
+ * from the new records.
+ */
+function reopenDatabase(swap) {
+  return new Promise((resolve, reject) => {
+    db.close(async (closeErr) => {
+      if (closeErr) return reject(closeErr);
+      try {
+        if (typeof swap === 'function') await swap();
+      } catch (err) {
+        db = openDatabase();
+        return reject(err);
+      }
+      db = new sqlite3.Database(dbPath, async (err) => {
+        if (err) return reject(err);
+        console.log('Reopened local SQLite database at:', dbPath);
+        try {
+          await initDatabase();
+          resolve();
+        } catch (initErr) {
+          reject(initErr);
+        }
+      });
+    });
+  });
+}
 
 const runQuery = (sql, params = []) => {
   return new Promise((resolve, reject) => {
@@ -335,6 +378,10 @@ async function initDatabase() {
     // losing a single record.
     // ------------------------------------------------------------------
     await addColumnIfMissing('users', 'last_seen', 'DATETIME');
+    // When the waiting room screen and a phone were last seen, so the
+    // getting-started list on the board can tick those steps off from fact.
+    await addColumnIfMissing('hospital_settings', 'board_last_seen_at', 'DATETIME');
+    await addColumnIfMissing('hospital_settings', 'phone_last_seen_at', 'DATETIME');
     await addColumnIfMissing('dispensations', 'dispensed_by_user_id', 'INTEGER');
     await addColumnIfMissing('dispensations', 'dispensed_by_name', 'TEXT');
     await addColumnIfMissing('dispensations', 'dispensed_by_role', 'TEXT');
@@ -803,8 +850,10 @@ async function seedActivityLogsIfEmpty() {
 }
 
 module.exports = {
-  db,
+  get db() { return db; },
+  DB_PATH: dbPath,
   runQuery,
   getQuery,
-  allQuery
+  allQuery,
+  reopenDatabase
 };

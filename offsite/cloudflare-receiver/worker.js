@@ -16,7 +16,7 @@
  */
 
 const CLINIC = /^[A-Za-z0-9_.-]{1,64}$/;
-const FILE = /^[A-Za-z0-9_.-]{1,120}\.db\.enc$/;
+const FILE = /^([A-Za-z0-9_.-]{1,120}\.db\.enc|backup\.key\.wrapped)$/;
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {

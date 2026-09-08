@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  CalendarClock, FileBarChart, Printer, Send, ShieldAlert, UserCheck
+  CalendarClock, CalendarRange, ChevronLeft, ChevronRight, Copy, FileBarChart, MessageCircle, Printer, Send, ShieldAlert, UserCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,8 @@ const TABS = [
   { id: 'returns', label: 'Returns due', icon: CalendarClock },
   { id: 'referrals', label: 'Referrals', icon: Send },
   { id: 'notifiable', label: 'Reportable diseases', icon: ShieldAlert },
-  { id: 'monthly', label: 'Monthly return', icon: FileBarChart }
+  { id: 'monthly', label: 'Monthly return', icon: FileBarChart },
+  { id: 'weekly', label: 'Week in numbers', icon: CalendarRange }
 ];
 
 function today() {
@@ -48,7 +49,7 @@ export default function Registers({ settings, onCheckInPatient, initialTab = 're
 
   return (
     <div className="space-y-4">
-      <SectionTitle note="Returns, referrals, reportable diseases and the monthly return, read from the records">
+      <SectionTitle note="Returns, referrals, reportable diseases, the monthly return and the week's figures, read from the records">
         Clinical registers
       </SectionTitle>
 
@@ -76,6 +77,7 @@ export default function Registers({ settings, onCheckInPatient, initialTab = 're
       {tab === 'referrals' ? <ReferralsRegister settings={settings} /> : null}
       {tab === 'notifiable' ? <NotifiableRegister settings={settings} /> : null}
       {tab === 'monthly' ? <MonthlyReturn settings={settings} /> : null}
+      {tab === 'weekly' ? <WeekInNumbers settings={settings} /> : null}
     </div>
   );
 }
@@ -561,6 +563,154 @@ function MonthlySheet({ report, currency, print = false }) {
         A blank or dash means nothing was recorded, not zero. Diagnoses are counted as the clinician wrote
         them, so the same condition spelt two ways appears twice.
       </p>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------ week in numbers
+
+/*
+ * The week's figures beside last week's, and the same figures as a short
+ * message for the owner or the district office. The message is built on the
+ * server from the records; the page only shows it and hands it to WhatsApp.
+ */
+function shiftDays(iso, n) {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function WeekInNumbers({ settings }) {
+  const [date, setDate] = useState(today());
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    api.getWeeklyReport(date)
+      .then((r) => { if (!cancelled) setReport(r); })
+      .catch((err) => { if (!cancelled) { setReport(null); setError(err.message || 'The week could not be read.'); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [date]);
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const t = setTimeout(() => setCopied(false), 2500);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  const currency = settings?.currency_symbol || 'K';
+  const isThisWeek = report && today() >= report.from && today() <= report.to;
+  const weekLabel = report ? `${longDate(report.from)} to ${longDate(report.to)}` : '';
+  const digits = (report?.send_to || '').replace(/\D/g, '');
+  const waHref = report ? `https://wa.me/${digits}?text=${encodeURIComponent(report.text)}` : '#';
+
+  const copyText = async () => {
+    if (!report) return;
+    try {
+      await navigator.clipboard.writeText(report.text);
+      setCopied(true);
+    } catch {
+      setError('The message could not be copied. Select the text and copy it by hand.');
+    }
+  };
+
+  const kina = (n) => `${currency}${Math.abs(Number(n || 0)).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
+  const delta = (now, before, money = false) => {
+    if (before == null) return null;
+    const diff = Math.round(Number(now || 0) - Number(before || 0));
+    if (diff === 0) return { text: 'Same as last week' };
+    if (money) return { text: `${kina(diff)} ${diff > 0 ? 'up' : 'down'} on last week` };
+    return { text: `${Math.abs(diff).toLocaleString('en-GB')} ${diff > 0 ? 'more' : 'fewer'} than last week` };
+  };
+
+  const a = report?.attendances;
+  const prev = report?.previous?.attendances;
+  const money = report?.money;
+  const prevMoney = report?.previous?.money;
+
+  return (
+    <div className="space-y-4">
+      <Panel>
+        <PanelHead
+          title={report ? `Week ${weekLabel}` : 'Week in numbers'}
+          note={isThisWeek ? 'This week so far, beside the whole of last week' : 'Monday to Sunday, beside the week before'}
+        >
+          <div className="flex items-center gap-1">
+            <button type="button" className="btn btn-sm px-2" onClick={() => setDate(shiftDays(date, -7))} aria-label="Previous week">
+              <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            <input type="date" className="field w-auto" value={date} max={today()} onChange={(e) => setDate(e.target.value)} aria-label="Any day in the week" />
+            <button type="button" className="btn btn-sm px-2" onClick={() => setDate(shiftDays(date, 7))} disabled={shiftDays(date, 7) > today()} aria-label="Next week">
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </div>
+        </PanelHead>
+        {error ? <p className="px-4 py-3 text-xs text-critical">{error}</p> : null}
+        {loading ? <Loading /> : report ? (
+          <>
+            <MetricStrip columns={4}>
+              <Metric label="Patients seen" value={a.total} context={delta(a.total, prev?.total)?.text} />
+              <Metric label="New patients" value={a.new_patients} context={delta(a.new_patients, prev?.new_patients)?.text} />
+              <Metric label="Emergency and urgent" value={a.emergency + a.urgent} context={`${a.emergency} emergency, ${a.urgent} urgent`} tone={a.emergency > 0 ? 'warn' : 'neutral'} />
+              <Metric label="Referred out" value={report.referrals.total} context={report.referrals.awaiting ? `${report.referrals.awaiting} awaiting outcome` : report.referrals.total ? 'All outcomes recorded' : 'None this week'} tone={report.referrals.awaiting ? 'warn' : 'neutral'} />
+            </MetricStrip>
+            <MetricStrip columns={4}>
+              <Metric label="Fees taken" value={kina(money.fees)} context={delta(money.fees, prevMoney?.fees, true)?.text} />
+              <Metric label="Pharmacy sales" value={kina(money.pharmacy)} context={delta(money.pharmacy, prevMoney?.pharmacy, true)?.text} />
+              <Metric label="Out of stock now" value={report.shelf.out_of_stock.length} context={report.shelf.low_stock ? `${report.shelf.low_stock} more running low` : 'Nothing else running low'} tone={report.shelf.out_of_stock.length ? 'critical' : 'ok'} />
+              <Metric label="Shift closes" value={`${report.shift_closes} of ${report.trading_days}`} context={report.shift_closes < report.trading_days ? 'Not every clinic day closed' : 'Every clinic day closed'} tone={report.shift_closes < report.trading_days ? 'warn' : 'ok'} />
+            </MetricStrip>
+          </>
+        ) : null}
+      </Panel>
+
+      {report ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <Panel>
+            <PanelHead title="The message" note={report.send_to ? `Goes to ${report.send_to}` : 'Add the office WhatsApp number to the installation file to fill in who it goes to'}>
+              <button type="button" className="btn btn-sm" onClick={copyText}>
+                <Copy className="h-3.5 w-3.5" aria-hidden="true" /> {copied ? 'Copied' : 'Copy the message'}
+              </button>
+              <a className="btn btn-sm btn-primary" href={waHref} target="_blank" rel="noopener">
+                <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Send on WhatsApp
+              </a>
+            </PanelHead>
+            <pre className="whitespace-pre-wrap px-4 py-3 font-sans text-sm leading-relaxed text-ink">{report.text}</pre>
+            <p className="border-t border-line-soft px-4 py-2 text-2xs text-ink-3" role="status">
+              {copied ? 'The message is copied. Paste it into any chat or email.' : 'WhatsApp opens with the message typed in. Nothing is sent until you press send there.'}
+            </p>
+          </Panel>
+
+          <Panel>
+            <PanelHead title="What was seen" note="Diagnoses recorded this week" />
+            {report.diagnoses.length === 0 ? (
+              <EmptyState title="No diagnoses recorded" detail="Diagnoses typed on the consultation screen are counted here." />
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Diagnosis</th><th className="num">Cases</th></tr></thead>
+                <tbody>
+                  {report.diagnoses.slice(0, 12).map((d) => (
+                    <tr key={d.diagnosis}><td>{d.diagnosis}</td><td className="num tabular-nums">{d.cases}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {report.notifiable.length > 0 ? (
+              <p className="border-t border-line-soft px-4 py-2 text-xs text-ink-2">
+                <span className="font-semibold text-ink">Reportable:</span>{' '}
+                {report.notifiable.map((n) => `${n.condition} ${n.cases}`).join(', ')}
+              </p>
+            ) : null}
+          </Panel>
+        </div>
+      ) : null}
     </div>
   );
 }

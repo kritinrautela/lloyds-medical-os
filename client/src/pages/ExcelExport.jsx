@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import {
-  AlertTriangle, Database, Download, FileSpreadsheet, Loader2, Lock, Upload
+  AlertTriangle, Database, Download, FileSpreadsheet, KeyRound, Loader2, Lock, Upload
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Panel, PanelHead, Pill, SectionTitle } from '../components/ui';
+import { ConfirmDialog, Panel, PanelHead, Pill, SectionTitle } from '../components/ui';
 
 /*
  * Taking records off this machine.
@@ -30,7 +30,7 @@ const SHEETS = [
 ];
 
 export default function ExcelExport({ settings }) {
-  const { currentUser } = useAuth();
+  const { currentUser, signOutIdle } = useAuth();
   const isAdmin = currentUser?.role === 'Administrator';
   const passwordSet = !!settings?.export_password_set;
 
@@ -38,6 +38,10 @@ export default function ExcelExport({ settings }) {
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState(null);
   const fileRef = useRef(null);
+  // Bringing records back: the chosen files wait behind a confirmation.
+  const [restoreFiles, setRestoreFiles] = useState(null);
+  const [restorePass, setRestorePass] = useState('');
+  const [restoreResult, setRestoreResult] = useState(null);
 
   const say = (tone, text) => setMessage({ tone, text });
 
@@ -104,25 +108,50 @@ export default function ExcelExport({ settings }) {
     }
   };
 
-  const restore = async (file) => {
-    if (!file) return;
-    if (!password.trim() && file.name.endsWith('.lloydsbackup')) {
-      say('critical', 'Type the export password the backup was made with, then choose the file again.');
-      if (fileRef.current) fileRef.current.value = '';
-      return;
-    }
+  /*
+   * The picker accepts more than one file so the key file can be chosen in the
+   * same go. Whichever is the copy becomes the copy; a backup.key.wrapped
+   * beside it is the key.
+   */
+  const chooseFiles = (list) => {
+    const files = Array.from(list || []);
+    if (fileRef.current) fileRef.current.value = '';
+    if (files.length === 0) return;
+    const key = files.find((f) => /\.wrapped$/i.test(f.name)) || null;
+    const copy = files.find((f) => !/\.wrapped$/i.test(f.name)) || null;
+    if (!copy) { say('critical', 'Pick the copy itself, the file ending in .db.enc or .lloydsbackup. The key file goes with it, not instead of it.'); return; }
+    setMessage(null);
+    setRestoreFiles({ copy, key });
+  };
+
+  const restore = async () => {
+    if (!restoreFiles) return;
     setBusy('restore');
     setMessage(null);
     try {
-      const res = await api.restoreDb(file, password);
-      if (res.success) setPassword('');
-      say(res.success ? 'ok' : 'critical', res.message || 'Restore finished.');
+      const res = await api.restoreDb(restoreFiles.copy, restorePass.trim(), restoreFiles.key);
+      setRestoreFiles(null);
+      setRestorePass('');
+      if (res.signed_out) {
+        // The copy predates this sign-in, so it is not in there. Go to the
+        // sign-in screen now, with the result written on it, rather than
+        // letting the next request bounce there with nothing to show.
+        await signOutIdle(res.message);
+        return;
+      }
+      setRestoreResult(res);
     } catch (err) {
-      say('critical', err.message || 'The database could not be restored.');
+      setRestoreFiles(null);
+      say('critical', err.message || 'The copy could not be brought back. Nothing was changed.');
     } finally {
       setBusy('');
-      if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  const copyDate = (name) => {
+    const m = /(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(name || '');
+    if (!m) return null;
+    return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00`).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -247,48 +276,18 @@ export default function ExcelExport({ settings }) {
               <p className="text-xs leading-relaxed text-ink-2">
                 A copy of the whole clinic database, for keeping on a USB drive. It is
                 <span className="font-semibold text-ink"> encrypted with the export password</span>{' '}
-                typed above, so a lost drive gives away nothing. Restoring replaces everything
-                currently on this machine and needs the same password.
+                typed above, so a lost drive gives away nothing.
               </p>
 
               {isAdmin ? (
-                <>
-                  <button type="button" className="btn w-full justify-center" onClick={downloadDatabase}
-                    disabled={busy === 'backup' || !passwordSet}>
-                    {busy === 'backup' ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Encrypting</>
-                    ) : (
-                      <><Download className="h-3.5 w-3.5" aria-hidden="true" /> Download an encrypted backup</>
-                    )}
-                  </button>
-
-                  <div>
-                    <input
-                      ref={fileRef}
-                      id="restore-file"
-                      type="file"
-                      accept=".lloydsbackup,.db"
-                      className="hidden"
-                      onChange={(e) => restore(e.target.files?.[0])}
-                    />
-                    <button
-                      type="button"
-                      className="btn w-full justify-center"
-                      onClick={() => fileRef.current?.click()}
-                      disabled={busy === 'restore'}
-                    >
-                      {busy === 'restore' ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Restoring</>
-                      ) : (
-                        <><Upload className="h-3.5 w-3.5" aria-hidden="true" /> Restore from a backup</>
-                      )}
-                    </button>
-                    <p className="mt-1.5 text-2xs leading-relaxed text-ink-3">
-                      The current database is copied aside first, so a restore from the wrong file
-                      can be undone. The server must be restarted afterwards.
-                    </p>
-                  </div>
-                </>
+                <button type="button" className="btn w-full justify-center" onClick={downloadDatabase}
+                  disabled={busy === 'backup' || !passwordSet}>
+                  {busy === 'backup' ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Encrypting</>
+                  ) : (
+                    <><Download className="h-3.5 w-3.5" aria-hidden="true" /> Download an encrypted backup</>
+                  )}
+                </button>
               ) : (
                 <p className="flex items-center gap-1.5 rounded border border-line bg-subtle px-3 py-2 text-2xs text-ink-3">
                   <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -298,6 +297,94 @@ export default function ExcelExport({ settings }) {
               )}
             </div>
           </Panel>
+
+          <Panel>
+            <PanelHead title="Bring records back from a copy" note="From a stick, a phone, head office or a backup made here" />
+            <div className="space-y-3 px-4 py-3">
+              {restoreResult ? (
+                <div className="rounded-md border border-ok-line bg-ok-wash px-3 py-2.5 text-xs leading-relaxed text-ok">
+                  <p className="font-semibold">The records are back.</p>
+                  <p className="mt-0.5">{restoreResult.message}</p>
+                  <p className="mt-1 text-2xs">The records that were here before are kept beside the database as {restoreResult.previous_copy}.</p>
+                </div>
+              ) : null}
+
+              <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-ink-2">
+                <li>Plug in the stick, or save the file the phone or head office sent.</li>
+                <li>Press the button and pick the newest copy, the file ending in .db.enc.</li>
+                <li>On a different computer from the one that made it, pick backup.key.wrapped from the same folder as well, and type the backup passphrase.</li>
+              </ol>
+
+              {isAdmin ? (
+                <>
+                  <div>
+                    <label className="label" htmlFor="restore-pass">Backup passphrase, if this is a different computer</label>
+                    <input
+                      id="restore-pass"
+                      className="field"
+                      type="password"
+                      value={restorePass}
+                      onChange={(e) => setRestorePass(e.target.value)}
+                      autoComplete="off"
+                      placeholder="Leave empty on the computer that made the copy"
+                    />
+                  </div>
+                  <input
+                    ref={fileRef}
+                    id="restore-file"
+                    type="file"
+                    accept=".db.enc,.enc,.lloydsbackup,.db,.wrapped,.txt"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => chooseFiles(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    className="btn w-full justify-center"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={busy === 'restore'}
+                  >
+                    {busy === 'restore' ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Bringing the records back</>
+                    ) : (
+                      <><Upload className="h-3.5 w-3.5" aria-hidden="true" /> Choose the copy</>
+                    )}
+                  </button>
+                  <p className="text-2xs leading-relaxed text-ink-3">
+                    Nothing is thrown away. The records on this computer are put aside under a dated
+                    name first, so bringing back the wrong copy can be undone by Lloyds.
+                  </p>
+                </>
+              ) : (
+                <p className="flex items-center gap-1.5 rounded border border-line bg-subtle px-3 py-2 text-2xs text-ink-3">
+                  <KeyRound className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Only an administrator can bring records back.
+                </p>
+              )}
+            </div>
+          </Panel>
+
+          {restoreFiles ? (
+            <ConfirmDialog
+              title="Replace the records on this computer?"
+              confirmLabel="Bring the records back"
+              cancelLabel="Keep what is here"
+              danger
+              busy={busy === 'restore'}
+              onConfirm={restore}
+              onCancel={() => setRestoreFiles(null)}
+            >
+              <p className="text-sm text-ink-2">
+                Everything on this computer will be replaced with the copy{' '}
+                <span className="font-semibold text-ink">{restoreFiles.copy.name}</span>
+                {copyDate(restoreFiles.copy.name) ? <> made on <span className="font-semibold text-ink">{copyDate(restoreFiles.copy.name)}</span></> : null}.
+                {restoreFiles.key ? ' The key file beside it will be used.' : ''}
+              </p>
+              <p className="mt-2 text-xs text-ink-3">
+                Anything recorded here since that copy was made will not be in it. The current records are kept aside, not deleted. Everyone else is signed out afterwards.
+              </p>
+            </ConfirmDialog>
+          ) : null}
         </div>
       </div>
 

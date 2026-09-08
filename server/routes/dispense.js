@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
+const { allergyConflicts } = require('../lib/allergies');
 
 // GET /api/dispense?patient_id=&limit= (List recent dispensations)
 router.get('/', async (req, res) => {
@@ -116,7 +117,8 @@ router.post('/', requirePermission('dispense.sell'), async (req, res) => {
       discount_authorised_by,
       dispensed_by_user_id,
       dispensed_by_name,
-      dispensed_by_role
+      dispensed_by_role,
+      allergy_checked
     } = req.body;
 
     if (!patient_name || !items || !Array.isArray(items) || items.length === 0) {
@@ -152,6 +154,41 @@ router.post('/', requirePermission('dispense.sell'), async (req, res) => {
           success: false,
           message: `Insufficient stock for ${drug.name}. Available: ${drug.stock_quantity}, requested: ${item.quantity}`
         });
+      }
+    }
+
+    // Step 1b: a medicine that matches the patient's written allergy is
+    // refused unless the counter has said the warning was seen. The check
+    // runs here as well as on the screen so it cannot be skipped by a stale
+    // screen or a request that never came through one.
+    if (patient_id) {
+      const patient = await getQuery('SELECT full_name, allergies FROM patients WHERE id = ?', [patient_id]);
+      if (patient && patient.allergies) {
+        const conflicts = [];
+        for (const item of items) {
+          const drug = await getQuery('SELECT name FROM drugs WHERE id = ?', [item.drug_id]);
+          const words = drug ? allergyConflicts(patient.allergies, drug.name) : [];
+          if (words.length) conflicts.push({ drug_id: drug ? item.drug_id : null, drug: drug ? drug.name : '', words });
+        }
+        if (conflicts.length && !allergy_checked) {
+          return res.status(409).json({
+            success: false,
+            code: 'ALLERGY',
+            conflicts,
+            message: `${conflicts.map((c) => c.drug).join(', ')} matches the allergy recorded for ${patient.full_name} (${patient.allergies}). Confirm the warning has been checked before recording.`
+          });
+        }
+        if (conflicts.length) {
+          await runQuery(`
+            INSERT INTO activity_logs (action_type, user_name, user_role, patient_name, location, details, severity)
+            VALUES ('Allergy warning acknowledged', ?, ?, ?, 'Pharmacy Counter', ?, 'Warning')
+          `, [
+            req.user ? req.user.full_name : (dispensed_by_name || 'Unattributed'),
+            req.user ? req.user.role : (dispensed_by_role || 'Pharmacy'),
+            patient.full_name,
+            `Recorded despite the allergy note "${patient.allergies}": ${conflicts.map((c) => `${c.drug} (${c.words.join(', ')})`).join('; ')}.`
+          ]);
+        }
       }
     }
 

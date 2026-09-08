@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle, ArrowRight, BedDouble, Boxes, CalendarClock, CheckCircle2,
-  Cloud, CloudOff, CircleSlash, FileSpreadsheet, HardHat, Lock, Package,
+  Circle, Cloud, CloudOff, CircleSlash, FileSpreadsheet, HardHat, Lock, Package,
   PackageMinus, ScrollText, ShieldAlert, ShieldCheck, Sparkles, Users, Wallet,
-  Warehouse
+  Warehouse, X
 } from 'lucide-react';
 import {
   Bar, Donut, EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, Value,
@@ -26,6 +26,80 @@ const QUEUE_STAGES = [
   { key: 'At Pharmacy', label: 'At pharmacy', tokPisin: 'Kisim marasin' },
   { key: 'Completed', label: 'Completed today' }
 ];
+
+// ---------------------------------------------------------------------------
+// Getting started — seven things a new clinic does once, each read from the
+// records so a step only ticks when it has really been done
+// ---------------------------------------------------------------------------
+
+const SETUP_STEPS = [
+  { key: 'staff_accounts', title: 'Give each staff member their own sign-in', detail: 'So the records say who did what.', action: 'Staff', go: 'staff' },
+  { key: 'export_password', title: 'Set the export password', detail: 'Spreadsheets and backups leave the building locked.', action: 'Settings', go: 'settings' },
+  { key: 'backup_passphrase', title: 'Set the backup passphrase', detail: 'The nightly copy is useless to anyone without it.', action: 'Settings', go: 'settings' },
+  { key: 'offsite_copy', title: 'Make the first off-site copy', detail: 'Plug in a stick or send one to head office.', action: 'Off-site copies', go: 'cloud-sync' },
+  { key: 'phone_connected', title: 'Open the system on a phone', detail: 'Scan the code on the Settings page once.', action: 'Settings', go: 'settings' },
+  { key: 'board_seen', title: 'Put the waiting room screen on a television', detail: 'Ticket numbers only, no names.', action: 'Open the screen', href: '/waiting-room' },
+  { key: 'live', title: 'Go live', detail: 'Turns off practice mode and starts the real day count.', action: 'Settings', go: 'settings' }
+];
+
+const SETUP_HIDDEN_KEY = 'lloyds_setup_hidden';
+
+export function GettingStarted({ setup, onNavigate, isAdmin }) {
+  const [hidden, setHidden] = useState(() => {
+    try { return localStorage.getItem(SETUP_HIDDEN_KEY) === '1'; } catch { return false; }
+  });
+  if (!isAdmin || !setup || hidden) return null;
+
+  const done = SETUP_STEPS.filter((s) => setup[s.key]).length;
+  if (done === SETUP_STEPS.length) return null;
+
+  const dismiss = () => {
+    try { localStorage.setItem(SETUP_HIDDEN_KEY, '1'); } catch { /* storage may be blocked */ }
+    setHidden(true);
+  };
+
+  return (
+    <Panel className="enter">
+      <PanelHead title="Getting started" note={`${done} of ${SETUP_STEPS.length} done. Each one ticks itself off once the records show it.`}>
+        <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-subtle sm:block" aria-hidden="true">
+          <div className="h-full rounded-full bg-ok transition-[width] duration-500" style={{ width: `${(done / SETUP_STEPS.length) * 100}%` }} />
+        </div>
+        <button type="button" className="btn btn-sm" onClick={dismiss} aria-label="Hide the getting started list">
+          <X className="h-3.5 w-3.5" aria-hidden="true" /> Hide
+        </button>
+      </PanelHead>
+      <ol className="divide-y divide-line-soft">
+        {SETUP_STEPS.map((step) => {
+          const ok = !!setup[step.key];
+          return (
+            <li key={step.key} className={`flex items-center gap-3 px-4 py-2.5 ${ok ? 'opacity-70' : ''}`}>
+              {ok
+                ? <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" aria-hidden="true" />
+                : <Circle className="h-4 w-4 shrink-0 text-ink-3" aria-hidden="true" />}
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm ${ok ? 'text-ink-2 line-through decoration-line-strong' : 'font-medium text-ink'}`}>{step.title}</p>
+                {!ok ? <p className="text-2xs text-ink-3">{step.detail}</p> : null}
+              </div>
+              {ok ? (
+                <span className="text-2xs font-semibold uppercase tracking-wide text-ok">Done</span>
+              ) : step.href ? (
+                <a className="btn btn-sm shrink-0" href={step.href} target="_blank" rel="noopener">
+                  {step.action}
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </a>
+              ) : (
+                <button type="button" className="btn btn-sm shrink-0" onClick={() => onNavigate(step.go)}>
+                  {step.action}
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </Panel>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Attention board — only ever built from conditions that are actually true

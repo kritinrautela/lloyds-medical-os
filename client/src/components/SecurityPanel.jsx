@@ -279,6 +279,18 @@ function BackupSection({ backups, tone, word, busy, onBackupNow, onPassphraseSet
       </form>
       {note ? <p className="mt-2 rounded border border-critical-line bg-critical-wash px-3 py-2 text-2xs text-critical">{note}</p> : null}
 
+      {backups.passphrase_set_at ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-subtle px-3 py-2">
+          <p className="text-2xs leading-relaxed text-ink-2">
+            <span className="font-semibold text-ink">Key file.</span> Every stick copy carries it. Save it with copies that travelled by phone or to head office; it opens nothing without the passphrase.
+          </p>
+          <a className="btn btn-sm" href={api.getBackupKeyUrl()} download="backup.key.wrapped">
+            <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+            Save the key file
+          </a>
+        </div>
+      ) : null}
+
       {files.length > 0 ? (
         <details className="mt-3">
           <summary className="cursor-pointer text-2xs font-semibold text-ink-2">Files kept on this server ({files.length})</summary>
@@ -291,7 +303,7 @@ function BackupSection({ backups, tone, word, busy, onBackupNow, onPassphraseSet
             ))}
           </ul>
           <p className="mt-1.5 text-2xs text-ink-3">
-            Kept in the server's data folder. To restore one on another machine, run the restore script with the file and the passphrase; it never overwrites the live database.
+            Kept in the server's data folder. To bring one back, on this computer or a replacement, use "Bring records back from a copy" under Protected export. On a replacement computer it also needs the key file below and the passphrase.
           </p>
         </details>
       ) : null}

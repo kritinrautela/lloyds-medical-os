@@ -65,6 +65,7 @@ export function AuthProvider({ children }) {
   const [notice, setNotice] = useState(null);
 
   const applySession = useCallback((res) => {
+    setNotice(null);
     setCurrentUser(res.user);
     setCapabilities(res.capabilities || []);
     setSections(res.sections || []);

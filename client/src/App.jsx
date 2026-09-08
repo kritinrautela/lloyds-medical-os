@@ -31,6 +31,11 @@ const CloudSync = screen(() => import('./pages/CloudSync'));
 const ExcelExport = screen(() => import('./pages/ExcelExport'));
 const Settings = screen(() => import('./pages/Settings'));
 const QueueTicket = screen(() => import('./components/QueueTicket'));
+const WaitingRoom = screen(() => import('./pages/WaitingRoom'));
+
+// The waiting room screen lives at its own address so a television can be
+// pointed at it once and left. It needs no sign-in and shows no names.
+const IS_WAITING_ROOM = typeof window !== 'undefined' && /^\/waiting-room\/?$/.test(window.location.pathname);
 
 function HospitalAppContent() {
   const {
@@ -180,9 +185,11 @@ function HospitalAppContent() {
     }
   };
 
+  // Figures and settings are read once someone is signed in; before that
+  // the server refuses them, and there is nothing to draw them on.
   useEffect(() => {
-    refreshAppData();
-  }, []);
+    if (currentUser?.id) refreshAppData();
+  }, [currentUser?.id]);
 
   const handleOpenCheckIn = (patient = null) => {
     setPreSelectedPatientForCheckIn(patient);
@@ -198,6 +205,14 @@ function HospitalAppContent() {
     if (!query) return;
     setActiveTab('patients');
   };
+
+  if (IS_WAITING_ROOM) {
+    return (
+      <Suspense fallback={<div className="light-theme min-h-screen bg-canvas" aria-busy="true" />}>
+        <WaitingRoom />
+      </Suspense>
+    );
+  }
 
   // While the stored session is being re-checked, show nothing rather than a
   // flash of the sign-in screen for someone who is already signed in.

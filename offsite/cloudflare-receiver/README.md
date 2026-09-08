@@ -40,7 +40,9 @@ The server picks the file up within half a minute. The first copy goes about thr
 ```
 curl -H "Authorization: Bearer <key>" https://<worker>/backups/lae-clinic
 curl -H "Authorization: Bearer <key>" -o hospital.db.enc https://<worker>/backups/lae-clinic/<file>
-node server/scripts/restore-backup.js hospital.db.enc
+curl -H "Authorization: Bearer <key>" -o backup.key.wrapped https://<worker>/backups/lae-clinic/backup.key.wrapped
 ```
 
-The restore needs the clinic's backup passphrase. The receiver never has it.
+Put both files where the clinic computer can see them, open the system as an administrator, and under Protected export use "Bring records back from a copy": pick the `.db.enc` file, pick `backup.key.wrapped` beside it if this is a different computer from the one that made the copy, and type the clinic's backup passphrase. The receiver never has the passphrase. The old records on that computer are kept beside the database under a dated name, not deleted.
+
+`node server/scripts/restore-backup.js hospital.db.enc` still works from a terminal.

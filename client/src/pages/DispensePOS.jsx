@@ -359,6 +359,9 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
         paid_amount: total,
         payment_method: paymentMethod,
         pharmacist_notes: recordedNotes,
+        // The server runs the same allergy check and refuses unless told the
+        // warning was seen here.
+        allergy_checked: conflicts.length > 0 && allergyChecked,
         dispensed_by_user_id: currentUser?.id || null,
         dispensed_by_name: currentUser?.full_name || null,
         dispensed_by_role: currentUser?.role || null
@@ -384,6 +387,7 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
       setDrugs(fresh.drugs || []);
       refreshStats?.();
     } catch (err) {
+      if (err.code === 'ALLERGY') setAllergyChecked(false);
       setError(err.message || 'The dispensation could not be recorded. Nothing was taken from stock.');
     } finally {
       setSubmitting(false);
@@ -552,7 +556,8 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
                 <ul className="divide-y divide-line-soft overflow-hidden rounded-md border border-line">
                   {drugMatches.map((d) => {
                     const out = d.stock_quantity <= 0;
-                    const low = !out && d.reorder_level != null && d.stock_quantity <= d.reorder_level;
+                    const reorderAt = d.min_stock_alert ?? d.reorder_level;
+                    const low = !out && reorderAt != null && d.stock_quantity <= reorderAt;
                     const shelf = expiryState(d);
                     return (
                       <li key={d.id}>

@@ -84,7 +84,7 @@ function SignInForm({ error, loading, username, password, setUsername, setPasswo
 }
 
 export default function AuthModal({ facilityName, facility }) {
-  const { login, loading, currentUser, isAuthModalOpen, setIsAuthModalOpen } = useAuth();
+  const { login, loading, currentUser, isAuthModalOpen, setIsAuthModalOpen, notice } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -203,6 +203,11 @@ export default function AuthModal({ facilityName, facility }) {
             <p className="mt-0.5 text-xs text-ink-3">
               Use your own account. Everything you record today is kept under your name.
             </p>
+            {notice ? (
+              <p className="mt-3 rounded-md border border-info-line bg-info-wash px-3 py-2 text-xs leading-relaxed text-info" role="status">
+                {notice}
+              </p>
+            ) : null}
             <div className="mt-4">
               <SignInForm {...formProps} footer={<div className="pt-1">{forgot}</div>} />
             </div>

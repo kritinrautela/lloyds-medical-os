@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
-  ArrowRight, Printer, Send, Stethoscope, Ticket, Undo2, UserPlus, X
+  ArrowRight, Printer, Send, Stethoscope, Ticket, Tv, Undo2, UserPlus, X
 } from 'lucide-react';
 import ReferralModal from '../components/ReferralModal';
 import PrintableReferralLetter from '../components/PrintableReferralLetter';
@@ -215,7 +215,11 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
         <SectionTitle note={`${openVisits.length} still open of ${visits.length} today`}>
           Outpatient queue
         </SectionTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <a className="btn btn-sm" href="/waiting-room" target="_blank" rel="noopener" title="Opens in a new tab. Put it on the waiting room television.">
+            <Tv className="h-3.5 w-3.5" aria-hidden="true" />
+            Waiting room screen
+          </a>
           <button type="button" className="btn btn-sm" onClick={() => setRegisterOpen(true)}>
             <Printer className="h-3.5 w-3.5" aria-hidden="true" />
             Print today's register

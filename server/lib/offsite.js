@@ -166,12 +166,15 @@ function restoreNote() {
     'These files are encrypted copies of the clinic records.',
     'Each one is a complete copy at the moment named in the file.',
     'Nothing in them can be read without the backup passphrase set under Facility settings.',
+    'backup.key.wrapped is the key to the copies, locked under that passphrase. Keep it with them.',
     '',
-    'To restore one onto a clinic server:',
-    '  1. Copy the newest .db.enc file onto the server.',
-    '  2. In the server folder run:  node server/scripts/restore-backup.js <file>',
-    '  3. Type the backup passphrase when asked.',
-    '  4. The result is written as hospital.restored.db beside the live database, which is never overwritten.',
+    'To bring the records back onto a clinic computer:',
+    '  1. Start Lloyds Medical OS on that computer and sign in as an administrator.',
+    '  2. Open Protected export and press "Bring records back from a copy".',
+    '  3. Pick the newest .db.enc file in this folder.',
+    '  4. If it is not the computer that made the copy, also pick backup.key.wrapped',
+    '     from this folder and type the backup passphrase.',
+    '  5. The records already on that computer are kept aside, not thrown away.',
     '',
     'Or hand the stick to Lloyds and they will do this for you.',
     '',
@@ -213,6 +216,11 @@ async function copyToUsb(volumePath, actor, { refresh = true } = {}) {
     }
     fs.renameSync(partial, dest);
     try { fs.writeFileSync(path.join(folder, 'HOW TO RESTORE.txt'), restoreNote()); } catch (err) { /* optional */ }
+    // The wrapped key travels with the copies, so a replacement computer can
+    // open them with nothing but the stick and the passphrase.
+    try {
+      if (fs.existsSync(backup.WRAPPED_KEY_FILE)) fs.copyFileSync(backup.WRAPPED_KEY_FILE, path.join(folder, 'backup.key.wrapped'));
+    } catch (err) { /* the copy itself is what matters */ }
 
     const record = { at: new Date().toISOString(), volume: target.path, label: target.label, file: latest.name, size: written };
     state.usb = record;
@@ -230,6 +238,27 @@ function headOfficeConfig() {
   let host = '';
   try { host = configured ? new URL(cfg.offsite_url).host : ''; } catch (err) { host = ''; }
   return { ...cfg, configured, host };
+}
+
+/*
+ * The wrapped key goes to head office once, and again whenever the passphrase
+ * changes, so a copy held there can be brought back without the clinic's
+ * computer. It opens nothing on its own.
+ */
+async function sendWrappedKey(cfg) {
+  if (!fs.existsSync(backup.WRAPPED_KEY_FILE)) return;
+  const mtime = fs.statSync(backup.WRAPPED_KEY_FILE).mtime.toISOString();
+  if (state.head_office_key && state.head_office_key.mtime === mtime) return;
+  const body = fs.readFileSync(backup.WRAPPED_KEY_FILE);
+  const url = `${cfg.offsite_url.replace(/\/+$/, '')}/backups/${encodeURIComponent(cfg.clinic_id)}/backup.key.wrapped`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${cfg.offsite_key}`, 'Content-Type': 'application/octet-stream', 'Content-Length': String(body.length) },
+    body
+  });
+  if (!res.ok) throw new Error(`Head office answered HTTP ${res.status} for the key file.`);
+  state.head_office_key = { mtime, at: new Date().toISOString() };
+  saveState();
 }
 
 /*
@@ -275,6 +304,7 @@ async function sendToHeadOffice({ force = false, actor = null } = {}) {
       if (!res.ok) throw new Error(`Head office answered HTTP ${res.status}.`);
       result = { at: now, file: latest.name, size: body.length, status: 'Sent', message: `${latest.name} was accepted by ${cfg.host}.` };
       log('Head office copy sent', actor, result.message, 'Success');
+      await sendWrappedKey(cfg).catch(() => {});
     } catch (err) {
       let reason = err.message;
       if (err.name === 'AbortError') reason = 'Head office did not answer in time.';
