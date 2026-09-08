@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
   Activity, AlarmClock, AlertTriangle, BedDouble, ClipboardList, Coins, Download,
   HardHat, HeartPulse, Package, PackageCheck, Receipt, RefreshCw, ScrollText,
@@ -10,7 +10,7 @@ import {
   AttentionBoard, AuditBoard, ControlsBoard, HandoverBoard, PatientFlow,
   PharmacyBoard, PriorityPatients, SafetyBoard, TrendsBoard, WardBoard
 } from '../components/DashboardWidgets';
-import { EmptyState, Metric, MetricStrip, Panel, SectionTitle, Value, formatDuration } from '../components/ui';
+import { EmptyState, formatDuration, Metric, MetricStrip, Panel, SectionTitle, useFocusTrap, Value } from '../components/ui';
 
 /*
  * The clinical board.
@@ -248,10 +248,10 @@ function FacilityBar({ settings, currentUser, clock, staleMinutes, onRefresh, re
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Reading label="Local time">
-            {clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
           </Reading>
           <Reading label="Date">
-            {clock.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            {clock.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </Reading>
           <Reading label="Signed in">
             {currentUser?.full_name || '—'}
@@ -467,6 +467,8 @@ function Overview({ stats, money, onNavigate, onSelectSection }) {
 // ---------------------------------------------------------------------------
 
 function Modal({ open, title, note, onClose, children }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, open);
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -477,7 +479,7 @@ function Modal({ open, title, note, onClose, children }) {
   if (!open) return null;
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label={title}>
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label={title}>
       <div className="panel w-full max-w-xl shadow-overlay">
         <div className="flex items-start justify-between gap-4 border-b border-line-soft px-4 py-3">
           <div>

@@ -3,7 +3,8 @@ import { Camera, Check, Cloud, CloudOff, Copy, ExternalLink, KeyRound, Link2, Lo
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, formatDateTime
+  ConfirmDialog, EmptyState, Metric, MetricStrip, PageSkeleton, Panel, PanelHead, Pill, SectionTitle,
+  Value, formatDateTime
 } from '../components/ui';
 
 /*
@@ -50,6 +51,7 @@ export default function CloudSync({ settings, refreshStats }) {
   const { currentUser } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(null);
   const [url, setUrl] = useState('');
   const [account, setAccount] = useState('');
   const [auto, setAuto] = useState(false);
@@ -127,10 +129,13 @@ export default function CloudSync({ settings, refreshStats }) {
     } finally { setBusy(''); }
   };
 
-  const makeKey = async () => {
-    if (hasKey && !window.confirm(
-      'Making a new key stops the Google script accepting records until it is given the new key too. Continue?'
-    )) return;
+  const makeKey = () => {
+    if (hasKey) { setConfirming('key'); return; }
+    makeKeyNow();
+  };
+
+  const makeKeyNow = async () => {
+    setConfirming(null);
     setBusy('key'); setMessage(null);
     try {
       const res = await api.generateSyncKey();
@@ -167,8 +172,10 @@ export default function CloudSync({ settings, refreshStats }) {
     } finally { setBusy(''); }
   };
 
-  const disconnectGoogle = async () => {
-    if (!window.confirm('Disconnect the Google account? The spreadsheet and folder stay in that account, but the clinic stops writing to them.')) return;
+  const disconnectGoogle = () => setConfirming('disconnect');
+
+  const disconnectGoogleNow = async () => {
+    setConfirming(null);
     setBusy('disconnect'); setMessage(null);
     try {
       const res = await api.disconnectGoogle();
@@ -223,14 +230,7 @@ export default function CloudSync({ settings, refreshStats }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-20 text-sm text-ink-3">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        Reading the backup settings
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton label="Reading the backup settings" />;
 
   const lastStatus = config.last_sync_status;
   const statusTone = !configured ? 'neutral'
@@ -242,6 +242,28 @@ export default function CloudSync({ settings, refreshStats }) {
 
   return (
     <div className="space-y-4">
+      {confirming === 'key' ? (
+        <ConfirmDialog
+          title="Make a new key"
+          confirmLabel="Make a new key"
+          onConfirm={makeKeyNow}
+          onCancel={() => setConfirming(null)}
+        >
+          <p>The Google script stops accepting records until it is given the new key too.</p>
+          <p>Make the key, then paste it into the script before the next copy is due.</p>
+        </ConfirmDialog>
+      ) : null}
+      {confirming === 'disconnect' ? (
+        <ConfirmDialog
+          title="Disconnect the Google account"
+          confirmLabel="Disconnect"
+          danger
+          onConfirm={disconnectGoogleNow}
+          onCancel={() => setConfirming(null)}
+        >
+          <p>The spreadsheet and folder stay in that account, but the clinic stops writing to them.</p>
+        </ConfirmDialog>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionTitle note="An optional second copy of the records and photographs, kept in the company's Google account">
           Off-site copy

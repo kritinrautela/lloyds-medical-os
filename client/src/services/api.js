@@ -34,6 +34,8 @@ export function setSessionLostHandler(fn) {
   onSessionLost = fn;
 }
 
+export const UNREACHABLE_MESSAGE = 'The clinic server did not answer. Check that it is running and that this device is on the clinic network.';
+
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const token = getToken();
@@ -43,7 +45,19 @@ async function request(endpoint, options = {}) {
     ...(options.headers || {})
   };
 
-  const res = await fetch(url, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch (cause) {
+    // The browser could not reach the server at all: the server is down, or
+    // this device has dropped off the clinic network. Every screen says so in
+    // the same words, and can tell it apart from a refusal.
+    const err = new Error(UNREACHABLE_MESSAGE);
+    err.code = 'UNREACHABLE';
+    err.status = 0;
+    err.cause = cause;
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
@@ -64,6 +78,7 @@ export const api = {
   login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   getSession: () => request('/auth/session'),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  logoutAll: () => request('/auth/logout-all', { method: 'POST' }),
   getBootstrapStatus: () => request('/auth/bootstrap-status'),
   changeOwnPassword: (current_password, new_password) =>
     request('/auth/change-password', {
@@ -148,9 +163,23 @@ export const api = {
     request(`/drugs/${id}`, { method: 'DELETE', body: JSON.stringify({ removed_by }) }),
 
   // Dispensing POS
-  getDispensations: () => request('/dispense'),
+  getDispensations: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/dispense${query ? `?${query}` : ''}`);
+  },
+  // Has this patient had this medicine recently? Asked before a line is added
+  // to the cart, so a second course inside the window is a decision, not a slip.
+  repeatCheck: (patient_id, drug_id, days = 30) =>
+    request(`/dispense/repeat-check?patient_id=${encodeURIComponent(patient_id)}&drug_id=${encodeURIComponent(drug_id)}&days=${days}`),
   getDispensation: (id) => request(`/dispense/${id}`),
   dispenseMedications: (data) => request('/dispense', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Security: sessions, sign-in health and encrypted local backups
+  getSecurityStatus: () => request('/security/status'),
+  runBackup: () => request('/security/backup', { method: 'POST' }),
+  setBackupPassphrase: (passphrase) =>
+    request('/security/backup-passphrase', { method: 'POST', body: JSON.stringify({ passphrase }) }),
+  endSession: (id) => request(`/security/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   // End of Day Shift Closing
   getEndOfDayToday: () => request('/end-of-day/today'),

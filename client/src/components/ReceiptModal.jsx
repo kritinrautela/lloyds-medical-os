@@ -1,225 +1,169 @@
 import React, { useState } from 'react';
-import { Printer, X, CheckCircle2, FileText, Receipt, ShieldCheck } from 'lucide-react';
+import { FileText, Receipt, Tags } from 'lucide-react';
+import {
+  PrintFrame, FacilityHeader, DocMeta, DocFooter, SignatureLine, longDateTime, money
+} from './PrintFrame';
 
-const RECEIPT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// "6 Sep 2026, 2:32 PM" cannot be read as any other date.
-function receiptMoment(value) {
-  const at = value ? new Date(value) : new Date();
-  if (Number.isNaN(at.getTime())) return 'Not recorded';
-  const time = at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  return `${at.getDate()} ${RECEIPT_MONTHS[at.getMonth()]} ${at.getFullYear()}, ${time}`;
-}
-
-export default function ReceiptModal({ isOpen, onClose, data }) {
-  const [printFormat, setPrintFormat] = useState('a4'); // 'a4' or 'thermal'
-
+/*
+ * The receipt the patient takes home. It prints on an A4 sheet or an 80 mm
+ * till slip; the content is the same on both, so what the patient carries is
+ * what the ledger holds.
+ */
+export default function ReceiptModal({ isOpen, onClose, data, onPrintLabels }) {
+  const [format, setFormat] = useState('a4');
   if (!isOpen || !data) return null;
 
   const { invoice, items = [], hospital, patient } = data;
   const currency = hospital?.currency_symbol || 'K';
+  const thermal = format === 'thermal';
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const number = invoice?.invoice_number || 'Not issued';
+  const gross = items.reduce((sum, it) => sum + (parseFloat(it.subtotal) || 0), 0);
+  const discount = parseFloat(invoice?.discount) || 0;
+  const paid = parseFloat(invoice?.paid_amount ?? invoice?.total_amount ?? gross - discount) || 0;
+  const patientName = invoice?.patient_name || patient?.full_name || 'Walk-in';
+  const hospitalNumber = patient?.hospital_number || patient?.patient_code || null;
 
-  return (
-    <div 
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-900/40 backdrop-blur-xs overflow-y-auto"
-    >
-      <div className={`printable-modal-card relative w-full ${printFormat === 'thermal' ? 'max-w-md' : 'max-w-2xl'} bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-4 transition-all`}>
-        
-        {/* Modal Top Bar (Hidden during print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-slate-900 block">Official Medical Receipt</span>
-              <span className="text-[11px] text-slate-500 font-mono">Receipt {invoice?.invoice_number}</span>
-            </div>
-          </div>
+  const controls = (
+    <>
+    {onPrintLabels ? (
+      <button type="button" className="btn btn-sm" onClick={onPrintLabels} title="One label per medicine, for the bag">
+        <Tags className="h-3.5 w-3.5" aria-hidden="true" />
+        Medicine labels
+      </button>
+    ) : null}
+    <div className="flex rounded-md border border-line bg-subtle p-0.5" role="group" aria-label="Paper size">
+      {[['a4', 'A4 sheet', FileText], ['thermal', '80 mm slip', Receipt]].map(([key, label, Icon]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => setFormat(key)}
+          aria-pressed={format === key}
+          className={`inline-flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-semibold transition-colors ${
+            format === key ? 'bg-surface text-ink shadow-panel' : 'text-ink-3 hover:text-ink'
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+          {label}
+        </button>
+      ))}
+    </div>
+    </>
+  );
 
-          <div className="flex items-center gap-3">
-            {/* Format Selector */}
-            <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
-              <button
-                type="button"
-                onClick={() => setPrintFormat('a4')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  printFormat === 'a4' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>A4 sheet</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPrintFormat('thermal')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  printFormat === 'thermal' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Receipt className="w-3.5 h-3.5" />
-                <span>80mm slip</span>
-              </button>
-            </div>
+  const table = (
+    <table className={`doc-table ${thermal ? 'doc-table-plain' : ''}`}>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th className="num">Qty</th>
+          {thermal ? null : <th className="num">Unit ({currency})</th>}
+          <th className="num">Amount ({currency})</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.length === 0 ? (
+          <tr><td colSpan={thermal ? 3 : 4} className="text-center text-ink-3">No items on this receipt.</td></tr>
+        ) : items.map((item, idx) => (
+          <tr key={idx}>
+            <td>
+              <span className="font-semibold">{item.drug_name}</span>
+              {item.instructions ? <span className="block text-2xs text-ink-2">{item.instructions}</span> : null}
+              {thermal ? <span className="block text-2xs text-ink-3">{item.quantity} × {money(item.unit_price)}</span> : null}
+            </td>
+            <td className="num">{item.quantity}</td>
+            {thermal ? null : <td className="num">{money(item.unit_price)}</td>}
+            <td className="num font-semibold">{money(item.subtotal)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+  const totals = (
+    <div className={`ml-auto ${thermal ? 'w-full' : 'w-72'} space-y-1 text-xs`}>
+      <div className="flex justify-between text-ink-2">
+        <span>Items</span>
+        <span>{currency} {money(gross)}</span>
+      </div>
+      {discount > 0 ? (
+        <div className="flex justify-between text-ink-2">
+          <span>Price reduction{invoice?.discount_reason ? ` (${invoice.discount_reason})` : ''}</span>
+          <span>− {currency} {money(discount)}</span>
         </div>
-
-        {/* Printable Receipt Paper Container */}
-        <div className={`printable-area ${printFormat === 'thermal' ? 'p-5 max-w-[380px] mx-auto text-[11px]' : 'p-8 text-xs'} bg-white text-slate-900 font-sans leading-normal`}>
-          
-          {/* Header */}
-          <div className="text-center pb-4 border-b-2 border-slate-900">
-            <img 
-              src="/lloyds_metals_logo.png" 
-              alt="Lloyds Metals" 
-              className={`${printFormat === 'thermal' ? 'h-6' : 'h-8'} mx-auto mb-2 object-contain`}
-            />
-            <h2 className={`${printFormat === 'thermal' ? 'text-xs' : 'text-sm'} font-black text-slate-950 uppercase tracking-tight`}>
-              {hospital?.name || 'LLOYDS METALS & ENERGY LTD'}
-            </h2>
-            <p className="text-[10px] text-slate-700 font-bold">
-              {hospital?.tagline || 'Occupational Health Centre & Community Hospital — Papua New Guinea'}
-            </p>
-            <p className="text-[9px] text-slate-500 mt-0.5">
-              {hospital?.address} | {hospital?.district ? `${hospital.district}, ` : ''}{hospital?.province}
-            </p>
-            <p className="text-[9px] text-slate-500 font-mono">
-              Tel: {hospital?.phone} | Reg: {hospital?.reg_number}
-            </p>
-
-            <div className="mt-2 inline-block px-3 py-0.5 border border-slate-800 rounded text-[9px] font-mono font-bold uppercase tracking-widest text-slate-900 bg-slate-50">
-              OFFICIAL MEDICINE & CONSULTATION RECEIPT
-            </div>
-          </div>
-
-          {/* Metadata Grid */}
-          <div className="grid grid-cols-2 gap-2 py-3 border-b border-slate-300 text-[10px]">
-            <div className="space-y-0.5">
-              <p><span className="text-slate-500 font-semibold">Receipt No:</span> <strong className="font-mono text-slate-950">{invoice?.invoice_number}</strong></p>
-              {/* Written out in full. "9/6/2026" is 9 June to a Papua New
-                  Guinean reader and 6 September to an American one, and this
-                  is the date a patient may bring back months later to argue
-                  about what they were given. */}
-              <p><span className="text-slate-500 font-semibold">Date &amp; Time:</span> <span className="font-mono">{receiptMoment(invoice?.created_at)}</span></p>
-              {/* Whoever actually handed the medicine over. This used to print
-                  the facility's doctor-in-charge on every receipt, which named
-                  a person who had usually taken no part in the sale. */}
-              <p>
-                <span className="text-slate-500 font-semibold">Dispensed by:</span>{' '}
-                <span>{invoice?.dispensed_by_name || 'Not recorded'}</span>
-              </p>
-            </div>
-            <div className="text-right space-y-0.5">
-              <p><span className="text-slate-500 font-semibold">Patient:</span> <strong className="text-slate-950">{invoice?.patient_name || patient?.full_name}</strong></p>
-              {/* The number printed on the patient's own card. The register
-                  tells them this number is theirs for life, so it is the one
-                  that has to appear on what they carry home. */}
-              <p><span className="text-slate-500 font-semibold">Hospital No:</span> <span className="font-mono text-slate-800">{patient?.hospital_number || patient?.patient_code || 'Walk-in, not registered'}</span></p>
-              <p><span className="text-slate-500 font-semibold">Payment Mode:</span> <span>{invoice?.payment_method || 'Cash (Kina)'}</span></p>
-            </div>
-          </div>
-
-          {/* Items Table */}
-          <div className="py-3">
-            <table className="w-full text-left border-collapse text-[10px]">
-              <thead>
-                <tr className="border-b-2 border-slate-900 text-slate-700 font-bold uppercase text-[8px]">
-                  <th className="py-1">Medication / Service</th>
-                  <th className="py-1 text-center">Qty</th>
-                  <th className="py-1 text-right">Unit ({currency})</th>
-                  <th className="py-1 text-right">Amount ({currency})</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="py-3 text-center text-slate-400 italic">No items listed on invoice.</td>
-                  </tr>
-                ) : (
-                  items.map((item, idx) => (
-                    <tr key={idx} className="py-1">
-                      <td className="py-1 pr-2">
-                        <div className="font-bold text-slate-900">{item.drug_name}</div>
-                        {item.instructions && (
-                          <div className="text-[9px] text-slate-600 italic font-mono">{item.instructions}</div>
-                        )}
-                      </td>
-                      <td className="py-1 text-center font-mono font-medium">{item.quantity}</td>
-                      <td className="py-1 text-right font-mono">{parseFloat(item.unit_price).toFixed(2)}</td>
-                      <td className="py-1 text-right font-bold font-mono text-slate-950">{parseFloat(item.subtotal).toFixed(2)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Summary / Total Breakdown */}
-          <div className="pt-2 border-t-2 border-slate-900 space-y-1 text-[10px]">
-            {invoice?.discount > 0 && (
-              <div className="flex justify-between text-slate-600">
-                <span>
-                  Price reduction
-                  {invoice?.discount_reason ? ` (${invoice.discount_reason})` : ''}:
-                </span>
-                <span className="font-mono text-red-600">-{currency} {parseFloat(invoice.discount).toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xs font-black text-slate-950 pt-1 border-t border-slate-200">
-              <span className="uppercase">TOTAL PAID ({hospital?.currency_code || 'PGK'}):</span>
-              <span className="font-mono">{currency} {parseFloat(invoice?.paid_amount || invoice?.total_amount || 0).toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Footer & Signature / Stamp Box */}
-          <div className="mt-6 pt-3 border-t border-dashed border-slate-300 text-center avoid-break">
-            <p className="text-[9px] text-slate-600 italic">
-              {hospital?.receipt_footer || 'Lloyds Metals & Energy Ltd Healthcare Initiative. Tenkyu tru na lukautim gut!'}
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 mt-6 px-2 text-[9px] text-slate-600">
-              <div className="border border-slate-300 rounded p-2 bg-white text-center">
-                <div className="h-8 border-b border-slate-300 mb-1"></div>
-                <span className="font-bold uppercase text-slate-700 block">Dispensing Officer</span>
-                <span className="text-[8px] text-slate-500 font-mono">
-                  {invoice?.dispensed_by_name || 'Name not recorded'}
-                </span>
-              </div>
-
-              <div className="border border-slate-300 rounded p-2 bg-white text-center">
-                <div className="h-8 border-b border-slate-300 mb-1"></div>
-                <span className="font-bold uppercase text-slate-700 block">Patient / Guardian</span>
-                <span className="text-[8px] text-slate-500 font-mono">Acknowledgement</span>
-              </div>
-            </div>
-
-            <div className="mt-4 text-[8px] text-slate-400 font-mono">
-              System reference {invoice?.invoice_number || 'not issued'}
-            </div>
-          </div>
-
-        </div>
-
+      ) : null}
+      <div className="flex justify-between border-t-2 border-ink pt-1.5 text-sm font-bold text-ink">
+        <span>Total paid{hospital?.currency_code ? ` (${hospital.currency_code})` : ''}</span>
+        <span>{currency} {money(paid)}</span>
+      </div>
+      <div className="flex justify-between text-2xs text-ink-3">
+        <span>Payment</span>
+        <span>{invoice?.payment_method || 'Cash'}</span>
       </div>
     </div>
+  );
+
+  return (
+    <PrintFrame
+      title="Receipt"
+      subtitle={`${number} · ${patientName}`}
+      onClose={onClose}
+      printLabel="Print receipt"
+      page={thermal ? 'thermal' : 'a4'}
+      controls={controls}
+    >
+      <FacilityHeader settings={hospital} documentTitle="Receipt" reference={number} compact={thermal} />
+
+      {thermal ? (
+        <dl className="mt-3 space-y-1 text-2xs">
+          {[
+            ['Date', longDateTime(invoice?.created_at)],
+            ['Patient', patientName],
+            ['Hospital no.', hospitalNumber || 'Not registered'],
+            ['Served by', invoice?.dispensed_by_name || 'Not recorded']
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-3">
+              <dt className="text-ink-3">{k}</dt>
+              <dd className="text-right font-semibold text-ink">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <div className="mt-5">
+          <DocMeta
+            columns={3}
+            items={[
+              ['Receipt number', number, true],
+              ['Date and time', longDateTime(invoice?.created_at)],
+              ['Served by', invoice?.dispensed_by_name],
+              ['Patient', patientName],
+              ['Hospital number', hospitalNumber || 'Not registered', true],
+              ['Payment', invoice?.payment_method || 'Cash']
+            ]}
+          />
+        </div>
+      )}
+
+      <div className={thermal ? 'mt-3' : 'mt-5'}>{table}</div>
+      <div className={thermal ? 'mt-3' : 'mt-4'}>{totals}</div>
+
+      {hospital?.receipt_footer ? (
+        <p className={`${thermal ? 'mt-4 text-center' : 'mt-6'} text-2xs leading-relaxed text-ink-2`}>{hospital.receipt_footer}</p>
+      ) : null}
+
+      {thermal ? (
+        <p className="mt-4 border-t border-dashed border-line-strong pt-2 text-center text-2xs text-ink-3">
+          Keep this slip. Reference {number}.
+        </p>
+      ) : (
+        <>
+          <div className="avoid-break mt-10 grid grid-cols-2 gap-10">
+            <SignatureLine label="Dispensing officer" name={invoice?.dispensed_by_name} />
+            <SignatureLine label="Received by patient or guardian" />
+          </div>
+          <DocFooter settings={hospital} reference={number} note="Keep this receipt. It is the record of what was paid." />
+        </>
+      )}
+    </PrintFrame>
   );
 }

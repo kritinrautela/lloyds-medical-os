@@ -1,9 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Loader2, Package, Plus, Search, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { AlertTriangle, Package, Plus, Search, Trash2, X } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value
+  EmptyState,
+  Metric,
+  MetricStrip,
+  Panel,
+  PanelHead,
+  Pill,
+  SectionTitle,
+  TableSkeleton,
+  useEscapeKey,
+  useFocusTrap,
+  Value
 } from '../components/ui';
 
 /*
@@ -166,10 +176,7 @@ export default function Pharmacy({ settings, refreshStats }) {
         ) : null}
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Reading the store
-          </div>
+          <TableSkeleton rows={6} columns={6} label="Reading the store" />
         ) : shown.length === 0 ? (
           <EmptyState
             title={query || filter !== 'all' ? 'Nothing matches' : 'The formulary is empty'}
@@ -180,7 +187,7 @@ export default function Pharmacy({ settings, refreshStats }) {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" aria-label="Formulary and stock">
               <thead>
                 <tr>
                   <th>Medicine</th>
@@ -266,12 +273,16 @@ export default function Pharmacy({ settings, refreshStats }) {
 // ---------------------------------------------------------------------------
 
 function StockModal({ drug, currentUser, onClose, onSaved }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef);
   const removing = !!drug.removing;
   const [direction, setDirection] = useState('in');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEscapeKey(onClose);
 
   const reasons = direction === 'in' ? RECEIVE_REASONS : REMOVE_REASONS;
   const units = parseInt(amount, 10) || 0;
@@ -309,7 +320,7 @@ function StockModal({ drug, currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label={removing ? 'Remove medicine' : 'Change stock'}>
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label={removing ? 'Remove medicine' : 'Change stock'}>
       <div className="panel w-full max-w-md shadow-overlay">
         <div className="flex items-start justify-between gap-4 border-b border-line-soft px-4 py-3">
           <div>
@@ -406,9 +417,13 @@ function StockModal({ drug, currentUser, onClose, onSaved }) {
 // ---------------------------------------------------------------------------
 
 function AddDrugModal({ currency, onClose, onSaved }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef);
   const [form, setForm] = useState(EMPTY_DRUG);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEscapeKey(onClose);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -427,7 +442,7 @@ function AddDrugModal({ currency, onClose, onSaved }) {
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Add a medicine">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Add a medicine">
       <form onSubmit={submit} className="panel max-h-[92vh] w-full max-w-2xl overflow-y-auto shadow-overlay">
         <div className="sticky top-0 flex items-center justify-between border-b border-line-soft bg-surface px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Add a medicine to the formulary</h2>

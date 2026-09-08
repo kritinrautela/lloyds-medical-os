@@ -26,16 +26,29 @@
       a remote font request would hang and then fall back silently, so the
       typography is built on the platform UI stack (see index.css).
     -->
-    <script type="module" crossorigin src="/assets/index-Dehh6j_3.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DJN18Ox0.css">
+    <script type="module" crossorigin src="/assets/index-CpsehMA-.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/icons-DhNiFPlp.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-CVT4h-WC.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DknTmP_3.css">
   </head>
   <body>
     <div id="root"></div>
     <script>
       // Registered only for a real build. Under the dev server it would cache
-      // module output and serve stale code back during development.
-      if ('serviceWorker' in navigator && location.port !== '5173') {
+      // module output and serve stale code back during development. The dev
+      // server is recognised by the client script Vite injects, not by a port
+      // number, so it holds on whatever port the developer happens to use.
+      if ('serviceWorker' in navigator) {
+        var underDevServer = !!document.querySelector('script[src*="/@vite/client"]');
         window.addEventListener('load', function () {
+          if (underDevServer) {
+            // A worker left behind by an earlier build on this port would keep
+            // serving old modules, so it is removed rather than merely skipped.
+            navigator.serviceWorker.getRegistrations().then(function (list) {
+              list.forEach(function (r) { r.unregister(); });
+            }).catch(function () {});
+            return;
+          }
           navigator.serviceWorker.register('/service-worker.js').catch(function () {
             // An install that cannot register a worker still runs as a normal
             // page over the clinic network, so this is not worth interrupting

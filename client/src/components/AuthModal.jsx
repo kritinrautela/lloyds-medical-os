@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useFocusTrap } from './ui';
 import { HardDrive, Loader2, LogIn, ShieldCheck, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LloydsLogo from './LloydsLogo';
@@ -91,6 +92,8 @@ export default function AuthModal({ facilityName, facility }) {
 
   const mustSignIn = !currentUser;
   const open = mustSignIn || isAuthModalOpen;
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, open);
 
   useEffect(() => {
     if (open) window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -126,7 +129,7 @@ export default function AuthModal({ facilityName, facility }) {
 
   if (!mustSignIn) {
     return (
-      <div className="scrim" role="dialog" aria-modal="true" aria-label="Sign in">
+      <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Sign in">
         <div className="panel w-full max-w-sm shadow-overlay">
           <div className="identity-band" />
           <div className="px-5 py-5">

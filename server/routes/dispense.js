@@ -3,20 +3,70 @@ const router = express.Router();
 const { requirePermission } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../db');
 
-// GET /api/dispense (List recent dispensations)
+// GET /api/dispense?patient_id=&limit= (List recent dispensations)
 router.get('/', async (req, res) => {
   try {
+    const limitRaw = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 500) : 100;
+    const patientId = parseInt(req.query.patient_id, 10);
+    const params = [];
+    let where = '';
+    if (Number.isFinite(patientId)) {
+      where = 'WHERE d.patient_id = ?';
+      params.push(patientId);
+    }
     const dispensations = await allQuery(`
       SELECT d.*, 
         (SELECT GROUP_CONCAT(di.drug_name || ' (x' || di.quantity || ')', ', ') 
-         FROM dispensation_items di WHERE di.dispensation_id = d.id) as items_summary
+         FROM dispensation_items di WHERE di.dispensation_id = d.id) as items_summary,
+        COALESCE(d.dispensed_by, d.dispensed_by_name) AS dispensed_by
       FROM dispensations d
-      ORDER BY d.created_at DESC
-      LIMIT 100
-    `);
-    res.json({ success: true, count: dispensations.length, dispensations });
+      ${where}
+      ORDER BY d.created_at DESC, d.id DESC
+      LIMIT ?
+    `, [...params, limit]);
+    res.json({ success: true, count: dispensations.length, dispensations, limit });
   } catch (err) {
     console.error('Fetch dispensations error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/*
+ * GET /api/dispense/repeat-check?patient_id=&drug_id=&days=30
+ *
+ * Whether this patient was given this medicine recently. The counter asks
+ * before adding an item, so a second course inside the window is a decision
+ * somebody makes knowingly, with the earlier date and quantity in front of
+ * them, rather than something nobody noticed.
+ */
+router.get('/repeat-check', async (req, res) => {
+  try {
+    const patientId = parseInt(req.query.patient_id, 10);
+    const drugId = parseInt(req.query.drug_id, 10);
+    const daysRaw = parseInt(req.query.days, 10);
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 365) : 30;
+    if (!Number.isFinite(patientId) || !Number.isFinite(drugId)) {
+      return res.status(400).json({ success: false, message: 'patient_id and drug_id are required.' });
+    }
+    const previous = await getQuery(`
+      SELECT d.created_at AS at, di.quantity, d.invoice_number,
+             COALESCE(d.dispensed_by, d.dispensed_by_name) AS dispensed_by, di.instructions
+      FROM dispensation_items di
+      JOIN dispensations d ON d.id = di.dispensation_id
+      WHERE d.patient_id = ? AND di.drug_id = ?
+        AND d.created_at >= datetime('now', ?)
+      ORDER BY d.created_at DESC, d.id DESC
+      LIMIT 1
+    `, [patientId, drugId, `-${days} days`]);
+    // SQLite stores CURRENT_TIMESTAMP as UTC without saying so; the counter is
+    // handed an unambiguous instant to show in clinic time.
+    if (previous && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(previous.at))) {
+      previous.at = String(previous.at).replace(' ', 'T') + 'Z';
+    }
+    res.json({ success: true, found: !!previous, days, previous: previous || null });
+  } catch (err) {
+    console.error('Repeat check error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -142,8 +192,8 @@ router.post('/', requirePermission('dispense.sell'), async (req, res) => {
         invoice_number, patient_id, visit_id, patient_name, total_amount, discount,
         paid_amount, payment_method, payment_status, pharmacist_notes,
         discount_reason, discount_authorised_by,
-        dispensed_by_user_id, dispensed_by_name, dispensed_by_role
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?, ?)
+        dispensed_by_user_id, dispensed_by_name, dispensed_by_role, dispensed_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?, ?, ?)
     `, [
       invoice_number,
       patient_id || null,
@@ -158,7 +208,10 @@ router.post('/', requirePermission('dispense.sell'), async (req, res) => {
       discountVal > 0 ? (discount_authorised_by || dispensed_by_name || null) : null,
       dispensed_by_user_id || null,
       dispensed_by_name || null,
-      dispensed_by_role || null
+      dispensed_by_role || null,
+      // From the session, never from the body: the name on the record is the
+      // person who was signed in at the counter.
+      req.user ? req.user.full_name : null
     ]);
 
     const dispensationId = dispResult.lastID;

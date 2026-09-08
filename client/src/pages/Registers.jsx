@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  CalendarClock, FileBarChart, Loader2, Printer, Send, ShieldAlert, UserCheck
+  CalendarClock, FileBarChart, Printer, Send, ShieldAlert, UserCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, formatDateTime
+  EmptyState, Metric, MetricStrip, NoteDialog, Panel, PanelHead, Pill, SectionTitle, TableSkeleton, Value, formatDateTime
 } from '../components/ui';
 import { REFERRAL_OUTCOMES } from '../lib/publicHealth';
 import PrintableReferralLetter from '../components/PrintableReferralLetter';
-import { PrintFrame, FacilityHeader, longDate } from '../components/PrintFrame';
+import { PrintFrame, FacilityHeader, SignatureLine, longDate } from '../components/PrintFrame';
 
 /*
  * Clinical registers.
@@ -119,7 +119,7 @@ function ReturnsDue({ onCheckInPatient }) {
           <EmptyState title="Nobody is due back" detail="Return dates set at consultation appear here, overdue first." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" aria-label="Patients asked to return">
               <thead>
                 <tr>
                   <th>Return date</th><th>Patient</th><th>Reason for return</th><th>Last diagnosis</th><th>Seen by</th><th>Contact</th><th />
@@ -168,6 +168,7 @@ function ReferralsRegister({ settings }) {
   const [printing, setPrinting] = useState(null);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -179,20 +180,27 @@ function ReferralsRegister({ settings }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const setOutcome = async (r, outcome) => {
-    if (outcome === r.outcome) return;
-    const note = outcome === 'Awaiting outcome' ? '' : window.prompt(`Outcome for ${r.patient_name}: ${outcome}. Add a note (optional).`, r.outcome_note || '');
-    if (note === null) return;
+  const saveOutcome = async (r, outcome, note) => {
     setBusy(r.id);
     setError('');
     try {
       await api.updateReferralOutcome(r.id, outcome, note);
+      setPending(null);
       load();
     } catch (err) {
       setError(err.message || 'The outcome could not be saved.');
     } finally {
       setBusy(null);
     }
+  };
+
+  // Reopening a referral needs no note; closing one asks for what the
+  // receiving facility said, in a dialog of our own rather than the
+  // browser's prompt box.
+  const setOutcome = (r, outcome) => {
+    if (outcome === r.outcome) return;
+    if (outcome === 'Awaiting outcome') { saveOutcome(r, outcome, ''); return; }
+    setPending({ referral: r, outcome });
   };
 
   const canClose = typeof can === 'function' ? can('queue.triage') : true;
@@ -213,7 +221,7 @@ function ReferralsRegister({ settings }) {
             detail="A referral is made from the consultation screen or the patient record." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" aria-label="Referrals register">
               <thead>
                 <tr><th>Referred</th><th>Patient</th><th>Sent to</th><th>Reason</th><th>By</th><th>Outcome</th><th /></tr>
               </thead>
@@ -254,6 +262,20 @@ function ReferralsRegister({ settings }) {
           </div>
         )}
       </Panel>
+      {pending ? (
+        <NoteDialog
+          title={`Record the outcome: ${pending.outcome}`}
+          note={`${pending.referral.patient_name} · ${pending.referral.referral_code}`}
+          label="Note (optional)"
+          placeholder="What the receiving facility reported, if anything"
+          initialValue={pending.referral.outcome_note || ''}
+          confirmLabel="Record outcome"
+          busy={busy === pending.referral.id}
+          error={error}
+          onSubmit={(note) => saveOutcome(pending.referral, pending.outcome, note)}
+          onCancel={() => setPending(null)}
+        />
+      ) : null}
       {printing ? <PrintableReferralLetter referral={printing} settings={settings} onClose={() => setPrinting(null)} /> : null}
       <p className="text-2xs text-ink-3">Signed in as {currentUser?.full_name}. Outcomes are recorded against your name.</p>
     </div>
@@ -284,7 +306,7 @@ function NotifiableRegister({ settings }) {
   }, [rows]);
 
   const table = (
-    <table className="data-table">
+    <table className="data-table" aria-label="Reportable diseases line list">
       <thead>
         <tr><th>Date</th><th>Condition</th><th>Patient</th><th>Age / sex</th><th>Village</th><th>Diagnosis as written</th><th>Test</th><th>Seen by</th></tr>
       </thead>
@@ -336,15 +358,15 @@ function NotifiableRegister({ settings }) {
       {printing ? (
         <PrintFrame title="Reportable diseases line list" subtitle={`${from} to ${to}`} onClose={() => setPrinting(false)} printLabel="Print" wide>
           <FacilityHeader settings={settings} documentTitle="Notifiable disease line list" reference={`${from} to ${to}`} />
-          <p className="mt-4 text-sm text-[#334155]">
+          <p className="mt-4 text-sm text-ink-2">
             {rows.length} {rows.length === 1 ? 'case' : 'cases'} recorded between {longDate(from)} and {longDate(to)}. Reported by {settings?.name || 'the clinic'}.
           </p>
-          <div className="mt-3 text-xs [&_table]:w-full [&_td]:border-b [&_td]:border-[#e2e8f0] [&_td]:px-2 [&_td]:py-1 [&_th]:border-b [&_th]:border-[#0f172a] [&_th]:px-2 [&_th]:py-1 [&_th]:text-left">
+          <div className="mt-3 text-xs [&_table]:w-full [&_td]:border-b [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_th]:border-b [&_th]:border-ink [&_th]:px-2 [&_th]:py-1 [&_th]:text-left">
             {table}
           </div>
           <div className="mt-8 grid grid-cols-2 gap-10">
-            <div><div className="h-10 border-b border-[#0f172a]" /><p className="mt-1 text-xs text-[#475569]">Officer in charge</p></div>
-            <div><div className="h-10 border-b border-[#0f172a]" /><p className="mt-1 text-xs text-[#475569]">Date sent to the provincial health office</p></div>
+            <SignatureLine label="Officer in charge" />
+            <SignatureLine label="Date sent to the provincial health office" />
           </div>
         </PrintFrame>
       ) : null}
@@ -392,16 +414,16 @@ function MonthlyReturn({ settings }) {
       {printing && report ? (
         <PrintFrame title={`Monthly return, ${monthLabel}`} onClose={() => setPrinting(false)} printLabel="Print" wide>
           <FacilityHeader settings={settings} documentTitle="Monthly health return" reference={monthLabel} />
-          <p className="mt-3 text-xs text-[#475569]">
+          <p className="mt-3 text-xs text-ink-2">
             Period {longDate(report.from)} to {longDate(report.to)}. Prepared {new Date(report.generated_at).toLocaleString('en-GB')} from the clinic records.
             {settings?.doctor_in_charge ? ` Officer in charge: ${settings.doctor_in_charge}.` : ''}
           </p>
-          <div className="mt-3 text-xs [&_.metric-cell]:border [&_.metric-cell]:border-[#e2e8f0] [&_table]:w-full [&_td]:border-b [&_td]:border-[#e2e8f0] [&_td]:px-2 [&_td]:py-1 [&_th]:border-b [&_th]:border-[#0f172a] [&_th]:px-2 [&_th]:py-1 [&_th]:text-left">
+          <div className="mt-3 text-xs [&_.metric-cell]:border [&_.metric-cell]:border-line [&_table]:w-full [&_td]:border-b [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_th]:border-b [&_th]:border-ink [&_th]:px-2 [&_th]:py-1 [&_th]:text-left">
             <MonthlySheet report={report} currency={currency} print />
           </div>
           <div className="mt-8 grid grid-cols-2 gap-10">
-            <div><div className="h-10 border-b border-[#0f172a]" /><p className="mt-1 text-xs text-[#475569]">Prepared by</p></div>
-            <div><div className="h-10 border-b border-[#0f172a]" /><p className="mt-1 text-xs text-[#475569]">Officer in charge</p></div>
+            <SignatureLine label="Prepared by" />
+            <SignatureLine label="Officer in charge" />
           </div>
         </PrintFrame>
       ) : null}
@@ -544,10 +566,6 @@ function MonthlySheet({ report, currency, print = false }) {
 }
 
 function Loading() {
-  return (
-    <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
-      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Reading the records
-    </div>
-  );
+  return <TableSkeleton rows={5} columns={5} label="Reading the records" />;
 }
 

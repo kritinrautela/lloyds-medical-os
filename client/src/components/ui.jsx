@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 /*
  * Shared interface primitives.
@@ -46,14 +47,30 @@ export function formatClock(value) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+/**
+ * Day first, month as a word, 24-hour clock: "07 Sep, 00:10". The year is
+ * added only when it is not the current one. Numeric-only dates are avoided
+ * because 07/09 reads two ways; this form reads one way on every device.
+ */
 export function formatDateTime(value) {
   if (!value) return null;
   const d = new Date(String(value).includes('T') ? value : `${value}Z`.replace(' ', 'T'));
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString([], {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false
-  });
+  const thisYear = d.getFullYear() === new Date().getFullYear();
+  const day = `${pad2(d.getDate())} ${MONTHS[d.getMonth()]}${thisYear ? '' : ` ${d.getFullYear()}`}`;
+  return `${day}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
+
+/** Day first with the year, no time: "07 Sep 2026". */
+export function formatDate(value) {
+  if (!value) return null;
+  const d = new Date(String(value).includes('T') ? value : `${value}Z`.replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return null;
+  return `${pad2(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pad2 = (n) => String(n).padStart(2, '0');
 
 export function Panel({ children, className = '', as: Tag = 'section', ...rest }) {
   return (
@@ -85,9 +102,9 @@ const TONES = {
   critical: 'pill-critical'
 };
 
-export function Pill({ tone = 'neutral', children, title }) {
+export function Pill({ tone = 'neutral', children, title, className = '' }) {
   return (
-    <span className={`pill ${TONES[tone] || TONES.neutral}`} title={title}>
+    <span className={`pill ${TONES[tone] || TONES.neutral} ${className}`} title={title}>
       {children}
     </span>
   );
@@ -204,6 +221,101 @@ export function MetricStrip({ children, columns = 6 }) {
   return (
     <div className={`panel grid grid-cols-2 ${cols} divide-x divide-y sm:divide-y-0 divide-line-soft overflow-hidden`}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * A column heading that sorts the table. The arrow shows the current order;
+ * aria-sort tells a screen reader the same thing.
+ */
+export function SortableTh({ label, sortKey, sort, dir, onSort, className = '' }) {
+  const active = sort === sortKey;
+  const next = active && dir === 'asc' ? 'desc' : 'asc';
+  const Icon = active ? (dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th className={className} aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1 rounded-sm font-[inherit] uppercase tracking-[inherit] transition-colors hover:text-ink ${active ? 'text-ink' : ''}`}
+        onClick={() => onSort(sortKey, next)}
+        title={`Sort by ${label.toLowerCase()}`}
+      >
+        {label}
+        <Icon className={`h-3 w-3 ${active ? '' : 'opacity-50'}`} aria-hidden="true" />
+      </button>
+    </th>
+  );
+}
+
+/**
+ * Bottom-of-table paging: what is on screen out of how many, a page size to
+ * choose, and previous/next. Rows that never load are rows nobody has to scroll past.
+ */
+export function Pagination({ total, limit, offset, onChange, sizes = [25, 50, 100], noun = 'rows' }) {
+  if (!total) return null;
+  const from = offset + 1;
+  const to = Math.min(offset + limit, total);
+  const canPrev = offset > 0;
+  const canNext = offset + limit < total;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-4 py-2.5">
+      <p className="text-2xs text-ink-3">
+        Showing <span className="font-semibold text-ink-2">{from}–{to}</span> of <span className="font-semibold text-ink-2">{total}</span> {noun}
+      </p>
+      <div className="flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-2xs text-ink-3">
+          Per page
+          <select
+            className="field h-7 w-auto py-0 text-xs"
+            value={limit}
+            onChange={(e) => onChange({ limit: Number(e.target.value), offset: 0 })}
+          >
+            {sizes.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        <button type="button" className="btn btn-sm" disabled={!canPrev} onClick={() => onChange({ limit, offset: Math.max(0, offset - limit) })} aria-label="Previous page">
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+        <button type="button" className="btn btn-sm" disabled={!canNext} onClick={() => onChange({ limit, offset: offset + limit })} aria-label="Next page">
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Hours since a timestamp, or null when it cannot be read. */
+export function hoursSince(value) {
+  if (!value) return null;
+  const d = new Date(String(value).includes('T') ? value : `${value}Z`.replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return null;
+  return (Date.now() - d.getTime()) / 3600000;
+}
+
+/** "2 h ago", "3 d ago", "just now". */
+export function ageLabel(value) {
+  const h = hoursSince(value);
+  if (h === null) return null;
+  if (h < 1) return 'just now';
+  if (h < 48) return `${Math.round(h)} h ago`;
+  return `${Math.round(h / 24)} d ago`;
+}
+
+/**
+ * A failure that blocks a list is shown in the list's place, with a way to
+ * try again, rather than as a passing toast the user may not see.
+ */
+export function ErrorState({ title = 'This could not be read', detail, onRetry, retryLabel = 'Try again' }) {
+  return (
+    <div role="alert" className="m-4 rounded-md border border-critical-line bg-critical-wash px-5 py-6 text-center">
+      <p className="text-sm font-semibold text-critical">{title}</p>
+      {detail ? <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-ink-2">{detail}</p> : null}
+      {onRetry ? (
+        <div className="mt-3">
+          <button type="button" className="btn btn-sm" onClick={onRetry}>{retryLabel}</button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -383,4 +495,278 @@ const NO_ALLERGY = /^(none|none known|no known allergies|nka|nkda|nil|nil known|
 
 export function hasAllergy(value) {
   return !!value && !NO_ALLERGY.test(String(value).trim());
+}
+
+/**
+ * "Nobody has asked" and "asked, and there are none" are different facts and
+ * must never collapse into one line. Returns 'unknown', 'none' or 'allergy'.
+ */
+export function allergyState(value) {
+  const text = String(value || '').trim();
+  if (!text || /^(unknown|not known)[.\s]*$/i.test(text)) return 'unknown';
+  if (NO_ALLERGY.test(text)) return 'none';
+  return 'allergy';
+}
+
+// ---------------------------------------------------------------------------
+// Loading placeholders
+// ---------------------------------------------------------------------------
+
+/** A block the shape of the text it stands in for while the record loads. */
+export function Skeleton({ className = '' }) {
+  return <span className={`skeleton block ${className}`} aria-hidden="true" />;
+}
+
+/**
+ * Rows of a data table before the data arrives. The columns are already in
+ * place, so the page does not jump when the rows fill in.
+ */
+export function TableSkeleton({ rows = 6, columns = 5, label = 'Loading' }) {
+  const widths = ['w-40', 'w-24', 'w-20', 'w-28', 'w-16', 'w-24', 'w-20'];
+  return (
+    <div role="status" aria-live="polite" className="px-4 py-1">
+      <span className="sr-only">{label}</span>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex items-center gap-6 border-b border-line-soft py-3.5 last:border-b-0" aria-hidden="true">
+          {Array.from({ length: columns }).map((_, c) => (
+            <Skeleton key={c} className={`h-3 ${c === columns - 1 ? 'ml-auto w-16' : widths[c % widths.length]}`} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Rows of a people list, each with the disc where the avatar will sit. */
+export function ListSkeleton({ rows = 4, label = 'Loading' }) {
+  return (
+    <div role="status" aria-live="polite">
+      <span className="sr-only">{label}</span>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex items-center gap-3 border-b border-line-soft px-4 py-3.5 last:border-b-0" aria-hidden="true">
+          <Skeleton className="h-11 w-11 shrink-0 !rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3 w-44 max-w-full" />
+            <Skeleton className="h-2.5 w-64 max-w-full" />
+          </div>
+          <Skeleton className="hidden h-7 w-24 sm:block" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A block of panels before the page has read anything. */
+export function PageSkeleton({ label = 'Loading' }) {
+  return (
+    <div role="status" aria-live="polite" className="space-y-4">
+      <span className="sr-only">{label}</span>
+      <div className="panel grid grid-cols-2 gap-px overflow-hidden sm:grid-cols-4" aria-hidden="true">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-2.5 px-4 py-4">
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-6 w-14" />
+            <Skeleton className="h-2.5 w-28" />
+          </div>
+        ))}
+      </div>
+      <div className="panel" aria-hidden="true">
+        <div className="panel-head"><Skeleton className="h-3 w-32" /></div>
+        <TableSkeleton rows={5} columns={4} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dialogs
+// ---------------------------------------------------------------------------
+
+/*
+ * Escape closes the topmost open dialog and only that one. Dialogs stack, a
+ * referral letter over a consultation over the queue, and a single key press
+ * must not collapse the lot.
+ */
+const escapeStack = [];
+
+export function useEscapeKey(onClose, active = true) {
+  const handler = useRef(onClose);
+  handler.current = onClose;
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const entry = {};
+    escapeStack.push(entry);
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (escapeStack[escapeStack.length - 1] !== entry) return;
+      e.preventDefault();
+      handler.current?.();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      const i = escapeStack.indexOf(entry);
+      if (i >= 0) escapeStack.splice(i, 1);
+    };
+  }, [active]);
+}
+
+const DIALOG_WIDTH = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+  xl: 'max-w-3xl'
+};
+
+/**
+ * The one dialog shell. A titled panel over the scrim, with a close button,
+ * an optional footer row for its actions, and Escape wired to close.
+ */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Keeps keyboard focus inside a dialog while it is open and hands it back to
+ * the control that opened it when it closes. Tab from the last control wraps
+ * to the first. Without this a keyboard user can tab behind the scrim into a
+ * page they cannot see.
+ */
+export function useFocusTrap(ref, active = true) {
+  useEffect(() => {
+    if (!active) return undefined;
+    const node = ref.current;
+    if (!node) return undefined;
+    const opener = document.activeElement;
+    const focusables = () => Array.from(node.querySelectorAll(FOCUSABLE))
+      .filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+    const frame = window.requestAnimationFrame(() => {
+      if (node.contains(document.activeElement)) return;
+      const preferred = node.querySelector('[autofocus]');
+      const target = preferred || focusables()[0] || node;
+      if (typeof target.focus === 'function') target.focus({ preventScroll: true });
+    });
+
+    const onKey = (e) => {
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) { e.preventDefault(); return; }
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === node)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    node.addEventListener('keydown', onKey);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      node.removeEventListener('keydown', onKey);
+      if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
+        opener.focus({ preventScroll: true });
+      }
+    };
+  }, [ref, active]);
+}
+
+export function Dialog({ title, note, onClose, children, footer, size = 'md', label, className = '', bodyClassName = 'px-4 py-4' }) {
+  useEscapeKey(onClose);
+  const panelRef = useRef(null);
+  useFocusTrap(panelRef);
+  return (
+    <div className="scrim" role="dialog" aria-modal="true" aria-label={label || title}>
+      <div ref={panelRef} tabIndex={-1} className={`panel enter flex max-h-[92vh] w-full flex-col shadow-overlay outline-none ${DIALOG_WIDTH[size] || DIALOG_WIDTH.md} ${className}`}>
+        <div className="flex items-start justify-between gap-4 border-b border-line-soft px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-ink">{title}</h2>
+            {note ? <p className="mt-0.5 text-2xs text-ink-3">{note}</p> : null}
+          </div>
+          {onClose ? (
+            <button type="button" className="btn btn-sm shrink-0" onClick={onClose} aria-label="Close">
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+        <div className={`min-h-0 flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
+        {footer ? (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft px-4 py-3">{footer}</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A yes-or-no question before something that cannot be undone. The confirm
+ * button says what will happen, never "OK".
+ */
+export function ConfirmDialog({
+  title, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel',
+  danger = false, busy = false, onConfirm, onCancel
+}) {
+  return (
+    <Dialog
+      title={title}
+      onClose={busy ? null : onCancel}
+      size="sm"
+      footer={(
+        <>
+          <button type="button" className="btn" onClick={onCancel} disabled={busy}>{cancelLabel}</button>
+          <button
+            type="button"
+            className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
+            onClick={onConfirm}
+            disabled={busy}
+            autoFocus
+          >
+            {busy ? 'Working' : confirmLabel}
+          </button>
+        </>
+      )}
+    >
+      <div className="space-y-2 text-sm leading-relaxed text-ink-2">{children}</div>
+    </Dialog>
+  );
+}
+
+/**
+ * Asks for a line of text, in place of the browser's prompt box, which cannot
+ * be styled, cannot be read by a screen reader as part of the page, and does
+ * not show on some tablets at all.
+ */
+export function NoteDialog({
+  title, note, label = 'Note', placeholder = '', initialValue = '',
+  confirmLabel = 'Save', busy = false, error = '', onSubmit, onCancel, rows = 3
+}) {
+  const [value, setValue] = useState(initialValue);
+  return (
+    <Dialog title={title} note={note} onClose={busy ? null : onCancel} size="md" bodyClassName="">
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (!busy) onSubmit(value.trim()); }}
+        className="flex flex-col"
+      >
+        <div className="px-4 py-4">
+          <label className="label" htmlFor="note-dialog-field">{label}</label>
+          <textarea
+            id="note-dialog-field"
+            className="field"
+            rows={rows}
+            value={value}
+            placeholder={placeholder}
+            onChange={(e) => setValue(e.target.value)}
+            autoFocus
+          />
+          {error ? <p className="mt-2 text-xs text-critical">{error}</p> : null}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft px-4 py-3">
+          <button type="button" className="btn" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Saving' : confirmLabel}</button>
+        </div>
+      </form>
+    </Dialog>
+  );
 }

@@ -1062,10 +1062,10 @@ export function TrendsBoard({ stats, money }) {
                       />
                     </div>
                     <span className={`text-2xs ${isToday ? 'font-semibold text-brand' : 'text-ink-3'}`}>
-                      {isToday ? 'Today' : date.toLocaleDateString([], { weekday: 'short' })}
+                      {isToday ? 'Today' : date.toLocaleDateString('en-GB', { weekday: 'short' })}
                     </span>
                     <span className="hidden text-2xs text-ink-3 sm:block">
-                      {date.toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                      {date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 );

@@ -231,8 +231,8 @@ export default function PatientPhotoCapture({ patient, takenBy, onSaved }) {
 
       {patient?.photo_taken_at ? (
         <p className="text-2xs text-ink-3">
-          Taken {new Date(`${patient.photo_taken_at}Z`.replace(' ', 'T')).toLocaleString([], {
-            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          Taken {new Date(`${patient.photo_taken_at}Z`.replace(' ', 'T')).toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
           })}
           {patient.photo_taken_by ? ` by ${patient.photo_taken_by}` : ''}.
         </p>

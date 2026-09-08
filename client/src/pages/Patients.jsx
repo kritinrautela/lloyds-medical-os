@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
-  AlertTriangle, ArrowLeft, BadgeCheck, ChevronRight, CreditCard, FileCheck, Loader2, Pill as Pill_, Printer, Search, Send, UserPlus, Users, X
+  AlertTriangle, ArrowLeft, BadgeCheck, CalendarCheck, ChevronRight, CreditCard, FileCheck, Pill as Pill_, Printer, Receipt, Search, Send, ShieldAlert, Tags, UserPlus, Users, X
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -10,9 +10,35 @@ import PrintableReferralLetter from '../components/PrintableReferralLetter';
 import PrintableFitnessCertificate from '../components/PrintableFitnessCertificate';
 import { REFERRAL_OUTCOMES } from '../lib/publicHealth';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, Vital,
-  formatDateTime, hasAllergy, scoreVital, systolicOf
+  ageLabel,
+  allergyState,
+  EmptyState,
+  ErrorState,
+  formatDateTime,
+  hasAllergy,
+  hoursSince,
+  ListSkeleton,
+  Metric,
+  MetricStrip,
+  NoteDialog,
+  PageSkeleton,
+  Pagination,
+  Panel,
+  PanelHead,
+  Pill,
+  scoreVital,
+  SectionTitle,
+  SortableTh,
+  systolicOf,
+  useEscapeKey,
+  useFocusTrap,
+  Value,
+  Vital
 } from '../components/ui';
+import ReceiptModal from '../components/ReceiptModal';
+import PrescriptionLabels from '../components/PrescriptionLabels';
+import ReturnSlip from '../components/ReturnSlip';
+import { useToast } from '../components/toast';
 
 /*
  * The patient register.
@@ -50,37 +76,63 @@ const EMPTY_FORM = {
   medical_history: ''
 };
 
+const SORT_LABEL = {
+  name: 'By name',
+  number: 'By hospital number',
+  age: 'By age',
+  village: 'By village',
+  registered: 'Newest registration first'
+};
+
 export default function Patients({ settings, onCheckInPatient, onDispensePatient, refreshStats }) {
   const { currentUser } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [query, setQuery] = useState('');
   const [province, setProvince] = useState('');
+  const [sort, setSort] = useState('registered');
+  const [dir, setDir] = useState('desc');
+  const [page, setPage] = useState({ limit: 25, offset: 0 });
+  const [total, setTotal] = useState(0);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [cardPatient, setCardPatient] = useState(null);
 
+  // The server does the sorting and paging, so a register of ten thousand
+  // names costs the same to open as one of ten. Only the page asked for is sent.
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.getPatients({ q: query, province });
+      const res = await api.getPatients({ q: query, province, sort, dir, limit: page.limit, offset: page.offset });
       setPatients(res.patients || []);
+      setTotal(Number.isFinite(res.total) ? res.total : (res.patients || []).length);
+      setLoadError('');
     } catch (err) {
       console.error('Load patients failed:', err);
       setPatients([]);
+      setLoadError(err.message || 'The server did not answer.');
     } finally {
       setLoading(false);
     }
-  }, [query, province]);
+  }, [query, province, sort, dir, page.limit, page.offset]);
+
+  // A new search or a new order starts from the first page again.
+  useEffect(() => {
+    setPage((p) => (p.offset === 0 ? p : { ...p, offset: 0 }));
+  }, [query, province, sort, dir]);
 
   useEffect(() => {
     const id = setTimeout(load, query ? 220 : 0);
     return () => clearTimeout(id);
   }, [load, query]);
 
+  const onSort = (key, nextDir) => { setSort(key); setDir(nextDir); };
+  const filtered = Boolean(query || province);
+
   return (
     <div className="space-y-4">
-      <SectionTitle note={`${patients.length} shown${patients.length === 100 ? ', newest 100' : ''}`}>
+      <SectionTitle note={filtered ? `${total} match${total === 1 ? 'es' : ''} the search` : `${total} on the register`}>
         Patient register
       </SectionTitle>
 
@@ -124,14 +176,17 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
       <Panel>
         <PanelHead
           title="Registered patients"
-          note="Newest registration first"
+          note={`${SORT_LABEL[sort] || 'Registration'}, ${dir === 'asc' ? 'ascending' : 'descending'}`}
         />
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Reading the register
-          </div>
+          <ListSkeleton rows={6} label="Reading the register" />
+        ) : loadError ? (
+          <ErrorState
+            title="The register could not be read"
+            detail="The server did not answer. Check that it is running and that this device is on the clinic network."
+            onRetry={load}
+          />
         ) : patients.length === 0 ? (
           <EmptyState
             title={query || province ? 'No patient matches that search' : 'No patients registered yet'}
@@ -141,93 +196,147 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
                 : 'The first patient you register will appear here with a hospital number of their own.'
             }
             action={
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => setRegisterOpen(true)}>
-                Register a patient
-              </button>
+              query || province ? (
+                <button type="button" className="btn btn-sm" onClick={() => { setQuery(''); setProvince(''); }}>
+                  Clear the filters
+                </button>
+              ) : (
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => setRegisterOpen(true)}>
+                  Register a patient
+                </button>
+              )
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Hospital number</th>
-                  <th>Age · Sex</th>
-                  <th>Village or address</th>
-                  <th>Allergies</th>
-                  <th>Registered</th>
-                  <th aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {patients.map((p) => {
-                  const allergic = hasAllergy(p.allergies);
-                  return (
-                    <tr key={p.id}>
-                      <td className="max-w-[15rem]">
-                        <span className="flex items-center gap-2.5">
-                          <PatientAvatar patient={p} size={34} />
-                          <span className="min-w-0">
-                            <span className="block truncate font-medium text-ink">{p.full_name}</span>
-                            <span className="block truncate text-2xs text-ink-3">
-                              <Value>{p.phone}</Value>
+          <>
+            <ul className="divide-y divide-line-soft md:hidden">
+              {patients.map((p) => {
+                const allergic = hasAllergy(p.allergies);
+                return (
+                  <li key={p.id} className="px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <PatientAvatar patient={p} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">{p.full_name}</p>
+                        <p className="mt-0.5 text-2xs text-ink-3">
+                          <span className="font-mono font-semibold text-ink-2"><Value>{p.hospital_number}</Value></span>
+                          {' · '}<Value>{p.age}</Value>{p.age ? 'y' : ''}{' · '}<Value>{p.gender}</Value>
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-ink-2">
+                          <Value>{p.address_or_village}</Value>{p.province ? `, ${p.province}` : ''}
+                        </p>
+                        {allergic ? (
+                          <p className="mt-1">
+                            <Pill tone="critical" title={p.allergies}>
+                              {p.allergies.length > 24 ? `${p.allergies.slice(0, 23).trim()}…` : p.allergies}
+                            </Pill>
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex gap-2">
+                      <button type="button" className="btn btn-sm flex-1" onClick={() => onCheckInPatient?.(p)}>
+                        Check in
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm flex-1"
+                        onClick={() => setSelectedId(p.id)}
+                        aria-label={`Open the record for ${p.full_name}`}
+                      >
+                        Record
+                        <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="data-table" aria-label="Registered patients">
+                <thead>
+                  <tr>
+                    <SortableTh label="Patient" sortKey="name" sort={sort} dir={dir} onSort={onSort} />
+                    <SortableTh label="Hospital number" sortKey="number" sort={sort} dir={dir} onSort={onSort} />
+                    <SortableTh label="Age · Sex" sortKey="age" sort={sort} dir={dir} onSort={onSort} />
+                    <SortableTh label="Village or address" sortKey="village" sort={sort} dir={dir} onSort={onSort} />
+                    <th>Allergies</th>
+                    <SortableTh label="Registered" sortKey="registered" sort={sort} dir={dir} onSort={onSort} />
+                    <th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients.map((p) => {
+                    const allergic = hasAllergy(p.allergies);
+                    return (
+                      <tr key={p.id}>
+                        <td className="max-w-[15rem]">
+                          <span className="flex items-center gap-2.5">
+                            <PatientAvatar patient={p} size={34} />
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-ink">{p.full_name}</span>
+                              <span className="block truncate text-2xs text-ink-3">
+                                <Value>{p.phone}</Value>
+                              </span>
                             </span>
                           </span>
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap font-mono text-xs font-semibold text-ink">
-                        <Value>{p.hospital_number}</Value>
-                      </td>
-                      <td className="whitespace-nowrap">
-                        <span className="num"><Value>{p.age}</Value></span>
-                        <span className="text-ink-3"> · </span>
-                        <Value>{p.gender}</Value>
-                      </td>
-                      <td className="max-w-[10rem] truncate">
-                        <Value>{p.address_or_village}</Value>
-                        <span className="block text-2xs text-ink-3">
-                          <Value>{p.province}</Value>
-                        </span>
-                      </td>
-                      <td>
-                        {allergic ? (
-                          <Pill tone="critical" title={p.allergies}>
-                            {p.allergies.length > 16 ? `${p.allergies.slice(0, 15).trim()}…` : p.allergies}
-                          </Pill>
-                        ) : (
-                          <span className="text-2xs text-ink-3">None recorded</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap text-xs">
-                        <Value>{formatDateTime(p.created_at)}</Value>
-                      </td>
-                      <td className="whitespace-nowrap text-right">
-                        <span className="inline-flex gap-1.5">
-                          <button
-                            type="button"
-                            className="btn btn-sm"
-                            onClick={() => onCheckInPatient?.(p)}
-                          >
-                            Check in
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm"
-                            onClick={() => setSelectedId(p.id)}
-                            aria-label={`Open the record for ${p.full_name}`}
-                          >
-                            Record
-                            <ChevronRight className="h-3 w-3" aria-hidden="true" />
-                          </button>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="whitespace-nowrap font-mono text-xs font-semibold text-ink">
+                          <Value>{p.hospital_number}</Value>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <span className="num"><Value>{p.age}</Value></span>
+                          <span className="text-ink-3"> · </span>
+                          <Value>{p.gender}</Value>
+                        </td>
+                        <td className="max-w-[10rem] truncate">
+                          <Value>{p.address_or_village}</Value>
+                          <span className="block text-2xs text-ink-3">
+                            <Value>{p.province}</Value>
+                          </span>
+                        </td>
+                        <td>
+                          {allergic ? (
+                            <Pill tone="critical" title={p.allergies}>
+                              {p.allergies.length > 16 ? `${p.allergies.slice(0, 15).trim()}…` : p.allergies}
+                            </Pill>
+                          ) : allergyState(p.allergies) === 'none' ? (
+                            <span className="text-2xs text-ink-3">No known allergies</span>
+                          ) : (
+                            <span className="text-2xs italic text-ink-3">Not asked yet</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap text-xs">
+                          <Value>{formatDateTime(p.created_at)}</Value>
+                        </td>
+                        <td className="whitespace-nowrap text-right">
+                          <span className="inline-flex gap-1.5">
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              onClick={() => onCheckInPatient?.(p)}
+                            >
+                              Check in
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              onClick={() => setSelectedId(p.id)}
+                              aria-label={`Open the record for ${p.full_name}`}
+                            >
+                              Record
+                              <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                            </button>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <Pagination total={total} limit={page.limit} offset={page.offset} onChange={setPage} noun="patients" />
+          </>
         )}
       </Panel>
 
@@ -277,6 +386,8 @@ export default function Patients({ settings, onCheckInPatient, onDispensePatient
 // ---------------------------------------------------------------------------
 
 function RegisterModal({ open, currentUser, onClose, onSaved, onPrintCard, onOpenExisting }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, open);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -339,7 +450,7 @@ function RegisterModal({ open, currentUser, onClose, onSaved, onPrintCard, onOpe
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Register a patient">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Register a patient">
       <div className="panel max-h-[92vh] w-full max-w-3xl overflow-y-auto shadow-overlay">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line-soft bg-surface px-4 py-3">
           <div>
@@ -562,7 +673,13 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
   const [referring, setReferring] = useState(false);
   const [printReferral, setPrintReferral] = useState(null);
   const [certificateVisit, setCertificateVisit] = useState(null);
+  const [slipVisit, setSlipVisit] = useState(null);
+  const [reprint, setReprint] = useState(null);
+  const [labelsData, setLabelsData] = useState(null);
+  const toast = useToast();
   const [outcomeError, setOutcomeError] = useState('');
+  const [pendingOutcome, setPendingOutcome] = useState(null);
+  const [savingOutcome, setSavingOutcome] = useState(false);
 
   const reload = useCallback(() => {
     if (!patientId) { setData(null); return; }
@@ -587,33 +704,40 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
     }
   };
 
-  const recordOutcome = async (referral, outcome) => {
-    if (!outcome || outcome === referral.outcome) return;
+  const saveOutcome = async (referral, outcome, note) => {
     setOutcomeError('');
-    const note = window.prompt(`Outcome for ${referral.referral_code}: ${outcome}. Add a note if there is one.`, referral.outcome_note || '');
-    if (note === null) return;
+    setSavingOutcome(true);
     try {
       await api.updateReferralOutcome(referral.id, outcome, note);
+      setPendingOutcome(null);
       reload();
       onChanged?.();
     } catch (err) {
       setOutcomeError(err.message || 'The outcome could not be saved.');
+    } finally {
+      setSavingOutcome(false);
     }
+  };
+
+  // Reopening a referral needs no note; closing one asks for what the
+  // receiving facility said, in a dialog of our own rather than the
+  // browser's prompt box.
+  const recordOutcome = (referral, outcome) => {
+    if (!outcome || outcome === referral.outcome) return;
+    setOutcomeError('');
+    if (outcome === 'Awaiting outcome') { saveOutcome(referral, outcome, ''); return; }
+    setPendingOutcome({ referral, outcome });
   };
 
   // Escape goes back, and the page behind does not scroll while the record
   // is open, so the scroll position of the register is where it was left.
+  useEscapeKey(onClose, !!patientId);
   useEffect(() => {
     if (!patientId) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [patientId, onClose]);
+    return () => { document.body.style.overflow = previous; };
+  }, [patientId]);
 
   if (!patientId) return null;
 
@@ -625,6 +749,19 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
   const latestVisit = visits[0] || null;
   const canRefer = can?.('queue.consult');
   const canRecordOutcome = can?.('queue.triage');
+
+  // An old invoice is read back in full, so the reprint carries the same lines
+  // and prices as the day it was issued, not what the formulary says now.
+  const openInvoice = async (id, what) => {
+    try {
+      const res = await api.getDispensation(id);
+      const doc = { invoice: res.invoice, items: res.items || [], hospital: res.hospital, patient: res.patient || patient };
+      if (what === 'labels') setLabelsData(doc);
+      else setReprint(doc);
+    } catch (err) {
+      toast.error('That invoice could not be read', { detail: err.message || 'The clinic server did not answer.' });
+    }
+  };
 
   // The most recent visit that carries at least one observation.
   const observed = visits.find((v) => v.bp || v.pulse || v.temp || v.spo2 || v.resp_rate || v.weight);
@@ -687,9 +824,8 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading || !patient ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-24 text-sm text-ink-3">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Reading the record
+          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+            <PageSkeleton label="Reading the record" />
           </div>
         ) : (
           <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
@@ -702,7 +838,23 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                   <p className="mt-0.5 text-2xs text-critical/80">The dispensing counter checks every medicine against this line before it is handed over.</p>
                 </div>
               </div>
-            ) : null}
+            ) : allergyState(patient.allergies) === 'none' ? (
+              <div className="mb-4 flex items-center gap-3 rounded-md border border-ok-line bg-ok-wash px-4 py-2.5">
+                <ShieldAlert className="h-4 w-4 shrink-0 text-ok" aria-hidden="true" />
+                <p className="text-xs text-ink-2">
+                  <span className="font-semibold text-ink">No known allergies.</span>{' '}
+                  Recorded as asked and clear. Update the line under Details if that changes.
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4 flex items-center gap-3 rounded-md border border-line bg-subtle px-4 py-2.5">
+                <ShieldAlert className="h-4 w-4 shrink-0 text-ink-3" aria-hidden="true" />
+                <p className="text-xs text-ink-2">
+                  <span className="font-semibold text-ink">Allergies: not yet asked.</span>{' '}
+                  An empty line means nobody has asked, not that the patient is clear. Ask, then record it under Details.
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
               {/* Identity */}
@@ -758,8 +910,16 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                 <Panel>
                   <PanelHead
                     title="Latest observations"
-                    note={observed ? `Recorded at the visit of ${observed.visit_date}` : 'No observations have been recorded'}
-                  />
+                    note={observed
+                      ? `Recorded ${ageLabel(observed.created_at || observed.visit_date) || 'on'} at the visit of ${observed.visit_date}`
+                      : 'No observations have been recorded'}
+                  >
+                    {observed && (hoursSince(observed.created_at || observed.visit_date) ?? 0) > 24 ? (
+                      <Pill tone="warn" title="These readings are from an earlier visit. Take a fresh set before acting on them.">
+                        Older than a day
+                      </Pill>
+                    ) : null}
+                  </PanelHead>
                   {observed ? (
                     <div className="grid grid-cols-3 gap-px bg-line-soft sm:grid-cols-6">
                       <Vital label="Blood pressure" value={observed.bp} unit="mmHg"
@@ -785,7 +945,7 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                     <EmptyState title="This patient has not been seen yet" />
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="data-table">
+                      <table className="data-table" aria-label="Visits">
                         <thead>
                           <tr>
                             <th>Date</th>
@@ -811,13 +971,22 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                                 <td className="num">{v.consultation_fee != null ? Number(v.consultation_fee).toFixed(2) : '—'}</td>
                                 <td><Pill tone={v.status === 'Completed' ? 'ok' : v.status === 'Cancelled' ? 'neutral' : 'warn'}>{v.status}</Pill></td>
                                 <td className="whitespace-nowrap">
-                                  {v.fitness_status && v.fitness_status !== 'Not assessed' ? (
-                                    <button type="button" className="btn btn-sm" onClick={() => setCertificateVisit(v)}
-                                      title="Print the fitness for work certificate">
-                                      <FileCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                      Certificate
-                                    </button>
-                                  ) : null}
+                                  <span className="inline-flex gap-1.5">
+                                    {v.follow_up_date ? (
+                                      <button type="button" className="btn btn-sm" onClick={() => setSlipVisit(v)}
+                                        title="Print the return visit slip">
+                                        <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Return slip
+                                      </button>
+                                    ) : null}
+                                    {v.fitness_status && v.fitness_status !== 'Not assessed' ? (
+                                      <button type="button" className="btn btn-sm" onClick={() => setCertificateVisit(v)}
+                                        title="Print the fitness for work certificate">
+                                        <FileCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Certificate
+                                      </button>
+                                    ) : null}
+                                  </span>
                                 </td>
                               </tr>
                               {v.doctor_notes || v.follow_up_date || (v.rdt_result && v.rdt_result !== 'Not done') || v.notifiable_condition || (v.fitness_status && v.fitness_status !== 'Not assessed') ? (
@@ -861,7 +1030,7 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                       detail={canRefer ? 'Use Refer at the top of the record, or Refer out during a consultation.' : undefined} />
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="data-table">
+                      <table className="data-table" aria-label="Referrals">
                         <thead>
                           <tr>
                             <th>Date</th>
@@ -912,7 +1081,7 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                     <EmptyState title="No medicines have been dispensed to this patient" />
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="data-table">
+                      <table className="data-table" aria-label="Medicines dispensed">
                         <thead>
                           <tr>
                             <th>When</th>
@@ -921,6 +1090,7 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                             <th>Dispensed by</th>
                             <th>Paid</th>
                             <th className="num">Collected</th>
+                            <th aria-label="Actions" />
                           </tr>
                         </thead>
                         <tbody>
@@ -929,9 +1099,23 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
                               <td className="whitespace-nowrap"><Value>{formatDateTime(d.created_at)}</Value></td>
                               <td className="whitespace-nowrap font-mono text-xs">{d.invoice_number}</td>
                               <td className="max-w-[22rem]"><Value>{d.drugs_summary}</Value></td>
-                              <td className="whitespace-nowrap"><Value>{d.dispensed_by_name}</Value></td>
+                              <td className="whitespace-nowrap"><Value>{d.dispensed_by || d.dispensed_by_name}</Value></td>
                               <td className="whitespace-nowrap"><Value>{d.payment_method}</Value>{Number(d.discount) > 0 ? <span className="block text-2xs text-warn">Reduced by {Number(d.discount).toFixed(2)}</span> : null}</td>
                               <td className="num">{Number(d.paid_amount).toFixed(2)}</td>
+                              <td className="whitespace-nowrap text-right">
+                                <span className="inline-flex gap-1.5">
+                                  <button type="button" className="btn btn-sm" onClick={() => openInvoice(d.id, 'receipt')}
+                                    aria-label={`Reprint receipt ${d.invoice_number}`} title="Reprint the receipt">
+                                    <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Receipt
+                                  </button>
+                                  <button type="button" className="btn btn-sm" onClick={() => openInvoice(d.id, 'labels')}
+                                    aria-label={`Print medicine labels for ${d.invoice_number}`} title="Print one label per medicine">
+                                    <Tags className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Labels
+                                  </button>
+                                </span>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -974,6 +1158,20 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
           onPrint={(r) => { setReferring(false); setPrintReferral(r); }}
         />
       ) : null}
+      {pendingOutcome ? (
+        <NoteDialog
+          title={`Record the outcome: ${pendingOutcome.outcome}`}
+          note={`${pendingOutcome.referral.referred_to || 'Referral'} · ${pendingOutcome.referral.referral_code}`}
+          label="Note (optional)"
+          placeholder="What the receiving facility reported, if anything"
+          initialValue={pendingOutcome.referral.outcome_note || ''}
+          confirmLabel="Record outcome"
+          busy={savingOutcome}
+          error={outcomeError}
+          onSubmit={(note) => saveOutcome(pendingOutcome.referral, pendingOutcome.outcome, note)}
+          onCancel={() => setPendingOutcome(null)}
+        />
+      ) : null}
       {printReferral ? (
         <PrintableReferralLetter referral={printReferral} settings={settings} onClose={() => setPrintReferral(null)} />
       ) : null}
@@ -981,6 +1179,28 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
         <PrintableFitnessCertificate visit={certificateVisit} patient={patient} settings={settings}
           onClose={() => setCertificateVisit(null)} />
       ) : null}
+      <ReturnSlip
+        isOpen={Boolean(slipVisit)}
+        onClose={() => setSlipVisit(null)}
+        settings={settings}
+        patient={patient}
+        visit={slipVisit}
+        returnDate={slipVisit?.follow_up_date}
+        note={slipVisit?.follow_up_note}
+        issuedBy={slipVisit?.doctor_name || currentUser?.full_name || ''}
+      />
+      <ReceiptModal
+        isOpen={Boolean(reprint)}
+        onClose={() => setReprint(null)}
+        data={reprint}
+        onPrintLabels={() => { setLabelsData(reprint); setReprint(null); }}
+      />
+      <PrescriptionLabels
+        isOpen={Boolean(labelsData)}
+        onClose={() => setLabelsData(null)}
+        data={labelsData}
+        dispenser={labelsData?.invoice?.dispensed_by || labelsData?.invoice?.dispensed_by_name || ''}
+      />
     </div>
   );
 }
@@ -1054,7 +1274,9 @@ function IdCardSheet({ patient, settings, onClose }) {
               <div className="flex justify-between gap-3">
                 <dt className="text-ink-3">Allergies</dt>
                 <dd className="truncate font-semibold text-ink-2">
-                  {hasAllergy(patient.allergies) ? patient.allergies : 'None recorded'}
+                  {hasAllergy(patient.allergies)
+                    ? patient.allergies
+                    : allergyState(patient.allergies) === 'none' ? 'No known allergies' : 'Not asked yet'}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">

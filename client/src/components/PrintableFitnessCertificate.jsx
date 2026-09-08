@@ -10,9 +10,9 @@ import { PrintFrame, FacilityHeader, Row, SignatureLine, longDate } from './Prin
 export default function PrintableFitnessCertificate({ visit, patient, settings, onClose }) {
   if (!visit || !patient) return null;
   const status = visit.fitness_status || 'Not assessed';
-  const tone = status === 'Fit for full duty' ? 'border-[#059669] text-[#047857]'
-    : status === 'Fit with restrictions' ? 'border-[#d97706] text-[#b45309]'
-      : status === 'Unfit for work' ? 'border-[#dc2626] text-[#b91c1c]' : 'border-[#94a3b8] text-[#475569]';
+  const tone = status === 'Fit for full duty' ? 'border-ok text-ok'
+    : status === 'Fit with restrictions' ? 'border-warn text-warn'
+      : status === 'Unfit for work' ? 'border-critical text-critical' : 'border-line-strong text-ink-2';
 
   return (
     <PrintFrame title="Fitness for work certificate" subtitle={visit.visit_code} onClose={onClose} printLabel="Print the certificate">
@@ -20,8 +20,8 @@ export default function PrintableFitnessCertificate({ visit, patient, settings, 
 
       <div className="mt-6 flex items-start justify-between gap-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Certificate of fitness for work</p>
-          <p className="mt-1 text-sm text-[#334155]">Issued after a consultation on {longDate(visit.visit_date)}.</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Certificate of fitness for work</p>
+          <p className="mt-1 text-sm text-ink-2">Issued after a consultation on {longDate(visit.visit_date)}.</p>
         </div>
         <p className={`shrink-0 rounded border-2 px-3 py-1.5 text-sm font-bold uppercase tracking-wide ${tone}`}>{status}</p>
       </div>
@@ -38,7 +38,7 @@ export default function PrintableFitnessCertificate({ visit, patient, settings, 
         <Row label="Return to clinic">{visit.follow_up_date ? longDate(visit.follow_up_date) : 'Not set'}</Row>
       </dl>
 
-      <p className="mt-5 text-xs leading-relaxed text-[#475569]">
+      <p className="mt-5 text-xs leading-relaxed text-ink-2">
         This certificate states the clinician's assessment of the worker's fitness for their duties on the
         date shown. It does not describe the medical condition. The worker should be reviewed before the
         end date if their condition changes, and on the end date if a restriction is to continue.
@@ -48,7 +48,7 @@ export default function PrintableFitnessCertificate({ visit, patient, settings, 
         <SignatureLine label="Clinician" name={visit.doctor_name} />
         <SignatureLine label="Worker's signature" name={patient.full_name} />
       </div>
-      <p className="mt-6 text-[10px] text-[#64748b]">
+      <p className="mt-6 text-[10px] text-ink-3">
         Printed {new Date().toLocaleString('en-GB')} from {settings?.name || 'the clinic'} records.
       </p>
     </PrintFrame>

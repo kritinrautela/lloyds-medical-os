@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Loader2, UserCheck, X } from 'lucide-react';
+import { useFocusTrap, Value } from './ui';
+import { PatientAvatar } from './PatientPhoto';
+import { AlertTriangle, Loader2, Search, UserCheck, X } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,9 +21,17 @@ import { useAuth } from '../context/AuthContext';
  * number that has to appear here too, not an internal code.
  */
 export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onSuccess, settings }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, isOpen);
   const { currentUser } = useAuth();
-  const [patients, setPatients] = useState([]);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
+  // The chosen patient, and the search that finds one. The register is asked
+  // by the server, which knows the check digit on the hospital number, rather
+  // than by scrolling a list of every name the clinic has ever seen.
+  const [selected, setSelected] = useState(null);
+  const [patientQuery, setPatientQuery] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const selectedPatientId = selected ? String(selected.id) : '';
   const [reason, setReason] = useState('');
   const [priority, setPriority] = useState('Standard');
   const [doctorName, setDoctorName] = useState('');
@@ -36,7 +46,9 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
     setError('');
     setReason('');
     setPriority('Standard');
-    setSelectedPatientId(defaultPatient ? String(defaultPatient.id) : '');
+    setSelected(defaultPatient || null);
+    setPatientQuery('');
+    setMatches([]);
 
     // The fee is what this clinic has decided to charge, not a number invented
     // here. If no fee has been set in Facility settings the field stays empty
@@ -49,11 +61,21 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
     // will be seeing the patient.
     setDoctorName(currentUser?.full_name || '');
 
-    api
-      .getPatients()
-      .then((res) => setPatients(res.patients || []))
-      .catch(() => setError('The patient register could not be read. Check that the clinic server is running.'));
   }, [isOpen, defaultPatient, settings, currentUser]);
+
+  useEffect(() => {
+    const q = patientQuery.trim();
+    if (!isOpen || q.length < 2) { setMatches([]); return undefined; }
+    let live = true;
+    setSearching(true);
+    const id = setTimeout(() => {
+      api.getPatients({ q, limit: 8 })
+        .then((res) => { if (live) setMatches(res.patients || []); })
+        .catch(() => { if (live) setError('The patient register could not be read. Check that the clinic server is running.'); })
+        .finally(() => { if (live) setSearching(false); });
+    }, 180);
+    return () => { live = false; clearTimeout(id); };
+  }, [patientQuery, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -77,14 +99,14 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
 
     try {
       setSubmitting(true);
-      await api.checkInPatient({
+      const res = await api.checkInPatient({
         patient_id: parseInt(selectedPatientId, 10),
         reason: reason.trim(),
         triage_priority: priority,
         doctor_name: doctorName.trim(),
         consultation_fee: consultationFee === '' ? 0 : parseFloat(consultationFee) || 0
       });
-      onSuccess();
+      onSuccess(res?.visit || null);
       onClose();
     } catch (err) {
       setError(err.message || 'The patient could not be added to the queue.');
@@ -94,10 +116,9 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
   };
 
   const currency = settings?.currency_symbol || 'K';
-  const label = (p) => `${p.hospital_number || p.patient_code} — ${p.full_name} (${p.age}y, ${p.province || 'province not recorded'})`;
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="checkin-title">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-labelledby="checkin-title">
       <div className="panel w-full max-w-lg shadow-overlay">
         <div className="flex items-start justify-between gap-4 border-b border-line-soft px-4 py-3">
           <div className="flex items-start gap-2">
@@ -115,20 +136,62 @@ export default function QuickCheckInModal({ isOpen, onClose, defaultPatient, onS
         <form onSubmit={handleSubmit} className="space-y-3 px-4 py-4">
           <div>
             <label className="label" htmlFor="ci-patient">Which patient</label>
-            <select
-              id="ci-patient"
-              className="field"
-              value={selectedPatientId}
-              onChange={(e) => setSelectedPatientId(e.target.value)}
-            >
-              <option value="">Choose from the register</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>{label(p)}</option>
-              ))}
-            </select>
-            <p className="mt-1 text-2xs text-ink-3">
-              The number shown is the one printed on the patient's card.
-            </p>
+            {selected ? (
+              <div className="flex items-center gap-2.5 rounded-md border border-line bg-subtle px-3 py-2">
+                <PatientAvatar patient={selected} size={32} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-ink">{selected.full_name}</p>
+                  <p className="truncate text-2xs text-ink-3">
+                    <span className="font-mono"><Value>{selected.hospital_number || selected.patient_code}</Value></span>
+                    {selected.age ? ` · ${selected.age}y` : ''}{selected.province ? ` · ${selected.province}` : ''}
+                  </p>
+                </div>
+                <button type="button" className="btn btn-sm" onClick={() => { setSelected(null); setPatientQuery(''); }}>
+                  Change
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-3" aria-hidden="true" />
+                  <input
+                    id="ci-patient"
+                    className="field pl-8"
+                    value={patientQuery}
+                    onChange={(e) => setPatientQuery(e.target.value)}
+                    placeholder="Name, hospital number from the card, or phone"
+                    autoComplete="off"
+                    autoFocus
+                  />
+                </div>
+                {matches.length > 0 ? (
+                  <ul className="mt-1.5 max-h-56 divide-y divide-line-soft overflow-y-auto rounded-md border border-line" aria-label="Matching patients">
+                    {matches.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-subtle"
+                          onClick={() => { setSelected(p); setMatches([]); setPatientQuery(''); window.requestAnimationFrame(() => reasonRef.current?.focus()); }}
+                        >
+                          <PatientAvatar patient={p} size={28} />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-ink">{p.full_name}</span>
+                            <span className="block truncate text-2xs text-ink-3">
+                              <span className="font-mono"><Value>{p.hospital_number || p.patient_code}</Value></span>
+                              {p.age ? ` · ${p.age}y` : ''}{p.province ? ` · ${p.province}` : ''}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : patientQuery.trim().length >= 2 && !searching ? (
+                  <p className="mt-1.5 text-2xs text-ink-3">Nobody on the register matches that. Check the spelling, or register the patient first.</p>
+                ) : (
+                  <p className="mt-1 text-2xs text-ink-3">Type at least two letters of the name, or the number printed on the card.</p>
+                )}
+              </>
+            )}
           </div>
 
           <div>

@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const os = require('os');
 const https = require('https');
@@ -8,13 +7,29 @@ const https = require('https');
 const { getQuery } = require('./db');
 
 const app = express();
+// The framework's own advertisement header tells a visitor what to attack.
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 4000;
 const SECURE_PORT = process.env.HTTPS_PORT || 4443;
 
+// Browser-facing hardening first, before anything is parsed: response
+// headers and the content policy on every answer, an origin allowlist in
+// place of the open CORS this used to run with, and a per-address brake on
+// the sign-in route. See middleware/security.js.
+const security = require('./middleware/security');
+app.use(security.headers);
+// The origin allowlist guards the records, not the application's own files.
+// Same-origin script fetches carry an Origin header too, and answering them
+// with CORS headers and "Vary: Origin" would stop the offline cache on a
+// tablet from ever matching them again.
+app.use('/api', security.corsAllowlist);
+
 // Middleware
-app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// After the body parser, so the audit line can name the account being tried.
+app.use('/api/auth/login', security.loginThrottle);
 
 // Every request is checked for a session token before it reaches a route, so
 // each route can ask who is making the request instead of believing a name in
@@ -35,6 +50,7 @@ app.use('/api/cloud-sync', require('./routes/cloudSync'));
 app.use('/api/google', require('./routes/google'));
 app.use('/api/export', require('./routes/export'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/security', require('./routes/security'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -47,15 +63,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend in production
+// Serve frontend in production. Build assets carry a content hash in their
+// name, so a copy may be kept for a year; the entry page and the service
+// worker are checked on every open so a new build reaches every device.
 const clientDistPath = path.join(__dirname, '../client/dist');
-app.use(express.static(clientDistPath));
+app.use(express.static(clientDistPath, {
+  index: false,
+  setHeaders(res, filePath) {
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
   }
   const indexHtml = path.join(clientDistPath, 'index.html');
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(indexHtml, (err) => {
     if (err) {
       res.send(`
@@ -159,6 +187,8 @@ app.listen(PORT, '0.0.0.0', async () => {
   // The off-site copy sends itself whenever the computer can reach Google
   // and something has changed. Nothing about seeing patients waits on it.
   require('./lib/sync').startAutoSync();
+  // An encrypted copy of the database every evening, kept on this computer.
+  require('./lib/backup').startBackupSchedule();
   console.log(`
   ==============================================================
    LLOYDS COMMUNITY CLINIC & PHARMACY SYSTEM (PNG EDITION)

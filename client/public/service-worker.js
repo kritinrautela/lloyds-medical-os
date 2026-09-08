@@ -12,15 +12,22 @@
  * says it cannot reach the server, so this one says it cannot reach the server.
  */
 
-const CACHE = 'lloyds-clinic-shell-v1';
+// Both are filled in by the build (see vite.config.js). The cache name
+// changes with every build, so a new version never mixes with the last.
+const BUILD = '__BUILD_ID__';
+const CACHE = `lloyds-clinic-${BUILD}`;
 
-// Only the shell. Hashed build assets are added as they are requested.
+// The shell, plus every file of this build so a tablet is complete from the
+// first open rather than only after each screen has been visited once.
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const PRECACHE = /* PRECACHE */[];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(SHELL).catch(() => undefined))
+      .then((cache) => Promise.all(
+        SHELL.concat(PRECACHE).map((file) => cache.add(file).catch(() => undefined))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -55,8 +62,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Build assets are content-hashed, so a cached copy is always the right one.
+  // Matching ignores any Vary header the server may add, since a same-origin
+  // script fetch carries an Origin header that would otherwise never match.
   event.respondWith(
-    caches.match(request).then((hit) => {
+    caches.match(request, { ignoreVary: true }).then((hit) => {
       if (hit) return hit;
       return fetch(request).then((response) => {
         if (response.ok && response.type === 'basic') {

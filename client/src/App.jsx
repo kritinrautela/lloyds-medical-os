@@ -1,25 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider, useToast } from './components/toast';
+import { PageSkeleton } from './components/ui';
 import AuthModal from './components/AuthModal';
 import FirstRunSetup from './components/FirstRunSetup';
 import ChangePasswordGate from './components/ChangePasswordGate';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import Patients from './pages/Patients';
-import OPDQueue from './pages/OPDQueue';
-import Registers from './pages/Registers';
-import Pharmacy from './pages/Pharmacy';
-import DispensePOS from './pages/DispensePOS';
-import StaffManagement from './pages/StaffManagement';
-import EndOfDay from './pages/EndOfDay';
-import CloudSync from './pages/CloudSync';
 import IdleGuard from './components/IdleGuard';
-import ExcelExport from './pages/ExcelExport';
-import Settings from './pages/Settings';
+import ErrorBoundary from './components/ErrorBoundary';
+import { screen, resetFailedScreens, warmScreens } from './components/screens';
 import QuickCheckInModal from './components/QuickCheckInModal';
 import { api } from './services/api';
+
+/*
+ * Each screen is its own chunk. The desk opens on the dashboard, and the
+ * pharmacy, registers and settings code is fetched the first time somebody
+ * goes there rather than on every sign-in over the clinic's connection.
+ */
+const Dashboard = screen(() => import('./pages/Dashboard'));
+const Patients = screen(() => import('./pages/Patients'));
+const OPDQueue = screen(() => import('./pages/OPDQueue'));
+const Registers = screen(() => import('./pages/Registers'));
+const Pharmacy = screen(() => import('./pages/Pharmacy'));
+const DispensePOS = screen(() => import('./pages/DispensePOS'));
+const StaffManagement = screen(() => import('./pages/StaffManagement'));
+const EndOfDay = screen(() => import('./pages/EndOfDay'));
+const CloudSync = screen(() => import('./pages/CloudSync'));
+const ExcelExport = screen(() => import('./pages/ExcelExport'));
+const Settings = screen(() => import('./pages/Settings'));
+const QueueTicket = screen(() => import('./components/QueueTicket'));
 
 function HospitalAppContent() {
   const {
@@ -47,6 +58,14 @@ function HospitalAppContent() {
 
   // Quick Action States
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  // The visit whose queue ticket is on screen, offered right after check-in.
+  const [ticketVisit, setTicketVisit] = useState(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (currentUser) warmScreens();
+  }, [currentUser]);
+  const [queueRefresh, setQueueRefresh] = useState(0);
   const [preSelectedPatientForCheckIn, setPreSelectedPatientForCheckIn] = useState(null);
   const [preSelectedPatientForDispense, setPreSelectedPatientForDispense] = useState(null);
 
@@ -68,6 +87,30 @@ function HospitalAppContent() {
     }
   }, [currentUser, sections, landing, activeTab]);
 
+  /*
+   * A trackpad or mouse wheel over a focused number box would step the value
+   * without the user noticing. Blur the box instead, so a stray scroll can
+   * never change a recorded quantity, price or cash count.
+   */
+  useEffect(() => {
+    const onWheel = () => {
+      const el = document.activeElement;
+      if (el && el.tagName === 'INPUT' && el.type === 'number') el.blur();
+    };
+    document.addEventListener('wheel', onWheel, { passive: true });
+    return () => document.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // The screen is written to the address bar, so a reload, a reopened tablet
+  // or the "Reload the application" recovery lands on the same screen.
+  useEffect(() => {
+    if (!activeTab) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === activeTab) return;
+    url.searchParams.set('tab', activeTab);
+    window.history.replaceState(window.history.state, '', url);
+  }, [activeTab]);
+
   // Track Online / Offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -88,6 +131,24 @@ function HospitalAppContent() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // A new build takes over the moment its service worker installs. Anything
+  // already on screen keeps working; the next screen opened may be from the
+  // new build, so the person is told once and can reload when convenient.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    let hadController = !!navigator.serviceWorker.controller;
+    const onChange = () => {
+      if (!hadController) { hadController = true; return; }
+      toast.info('The clinic system has been updated', {
+        detail: 'Reload when you reach a convenient moment to pick up the new version.',
+        sticky: true,
+        action: { label: 'Reload now', onClick: () => window.location.reload() }
+      });
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onChange);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+  }, [toast]);
 
   // Presence heartbeat. Each device tells the server it is still in use so the
   // controls board can show who is actually on the system rather than who
@@ -222,6 +283,8 @@ function HospitalAppContent() {
         />
 
         <main className="mx-auto w-full max-w-[1600px] flex-1 p-4 md:p-6">
+          <ErrorBoundary resetKey={activeTab} onReset={resetFailedScreens}>
+          <Suspense fallback={<PageSkeleton />}>
           {activeTab === 'dashboard' && (
             <Dashboard
               stats={stats}
@@ -252,6 +315,7 @@ function HospitalAppContent() {
               onOpenCheckIn={() => handleOpenCheckIn(null)}
               onOpenDispenseForPatient={handleOpenDispenseForPatient}
               refreshStats={refreshAppData}
+              refreshKey={queueRefresh}
             />
           )}
 
@@ -311,6 +375,8 @@ function HospitalAppContent() {
               onUpdateSettings={(newSettings) => setSettings(newSettings)}
             />
           )}
+          </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -323,11 +389,24 @@ function HospitalAppContent() {
         }}
         defaultPatient={preSelectedPatientForCheckIn}
         settings={settings}
-        onSuccess={() => {
+        onSuccess={(visit) => {
           refreshAppData();
+          setQueueRefresh((n) => n + 1);
           setActiveTab('queue');
+          if (visit) {
+            toast.ok(`${visit.patient_name || 'Patient'} is in the queue`, {
+              detail: visit.visit_code ? `Visit ${visit.visit_code}` : '',
+              action: { label: 'Print ticket', onClick: () => setTicketVisit(visit) }
+            });
+          }
         }}
       />
+
+      {ticketVisit ? (
+        <Suspense fallback={null}>
+          <QueueTicket isOpen onClose={() => setTicketVisit(null)} settings={settings} visit={ticketVisit} />
+        </Suspense>
+      ) : null}
 
       <AuthModal facilityName={settings?.name} />
     </div>
@@ -338,7 +417,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <HospitalAppContent />
+        <ToastProvider>
+          <HospitalAppContent />
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

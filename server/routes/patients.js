@@ -26,11 +26,23 @@ async function logEvent(action, user, patientName, details, severity = 'Info') {
   }
 }
 
-// GET /api/patients (List with search and filter)
+// The columns the register may be sorted on. A name typed by a browser is
+// never placed in the SQL; it picks from this list or gets the default.
+const SORT_COLUMNS = {
+  name: 'full_name COLLATE NOCASE',
+  number: 'COALESCE(hospital_number, patient_code) COLLATE NOCASE',
+  age: 'age',
+  village: 'address_or_village COLLATE NOCASE',
+  registered: 'id'
+};
+const PAGE_DEFAULT = 25;
+const PAGE_MAX = 200;
+
+// GET /api/patients (List with search, filter, sorting and paging)
 router.get('/', async (req, res) => {
   try {
     const { q, province } = req.query;
-    let sql = 'SELECT * FROM patients WHERE 1=1';
+    let sql = ' FROM patients WHERE 1=1';
     const params = [];
 
     if (q) {
@@ -47,10 +59,29 @@ router.get('/', async (req, res) => {
       params.push(province);
     }
 
-    sql += ' ORDER BY id DESC LIMIT 100';
-    const patients = await allQuery(sql, params);
+    const limitRaw = parseInt(req.query.limit, 10);
+    const offsetRaw = parseInt(req.query.offset, 10);
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, PAGE_MAX) : PAGE_DEFAULT;
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
+    const sortKey = Object.prototype.hasOwnProperty.call(SORT_COLUMNS, req.query.sort) ? req.query.sort : 'registered';
+    const dir = String(req.query.dir || 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
-    res.json({ success: true, count: patients.length, patients });
+    const totalRow = await getQuery(`SELECT COUNT(*) AS n${sql}`, params);
+    const patients = await allQuery(
+      `SELECT *${sql} ORDER BY ${SORT_COLUMNS[sortKey]} ${dir}, id DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      success: true,
+      count: patients.length,
+      patients,
+      total: totalRow ? totalRow.n : patients.length,
+      limit,
+      offset,
+      sort: sortKey,
+      dir: dir.toLowerCase()
+    });
   } catch (err) {
     console.error('Fetch patients error:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -173,10 +204,11 @@ router.get('/:id', requireAuth, async (req, res) => {
     const dispensations = await allQuery(`
       SELECT d.*, 
         (SELECT GROUP_CONCAT(di.drug_name || ' (x' || di.quantity || ')', ', ') 
-         FROM dispensation_items di WHERE di.dispensation_id = d.id) as drugs_summary
+         FROM dispensation_items di WHERE di.dispensation_id = d.id) as drugs_summary,
+        COALESCE(d.dispensed_by, d.dispensed_by_name) AS dispensed_by
       FROM dispensations d 
       WHERE d.patient_id = ? 
-      ORDER BY d.created_at DESC
+      ORDER BY d.created_at DESC, d.id DESC
     `, [patient.id]);
 
     const referrals = await allQuery(
@@ -319,7 +351,9 @@ router.get('/:id/photo', async (req, res) => {
       return res.status(404).json({ success: false, message: 'The photograph file is missing from disk' });
     }
     res.setHeader('Content-Type', filePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-    res.setHeader('Cache-Control', 'no-cache');
+    // A face is patient data: it is not to stay in a browser cache after
+    // the person at the desk has signed out.
+    res.setHeader('Cache-Control', 'no-store');
     fs.createReadStream(filePath).pipe(res);
   } catch (err) {
     console.error('Serve patient photo error:', err);

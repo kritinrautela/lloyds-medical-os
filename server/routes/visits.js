@@ -226,11 +226,14 @@ router.put('/:id/status', requirePermission('queue.triage'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
+    // The completion time belongs to the Completed stage alone. A visit moved
+    // back out of it, because somebody pressed the wrong button, must not keep
+    // claiming a finish time it no longer has.
     const completedAt = status === 'Completed' ? new Date().toISOString() : null;
     const before = await visitContext(req.params.id);
 
     await runQuery(`
-      UPDATE visits SET status = ?, completed_at = COALESCE(?, completed_at) WHERE id = ?
+      UPDATE visits SET status = ?, completed_at = ? WHERE id = ?
     `, [status, completedAt, req.params.id]);
 
     await logEvent(

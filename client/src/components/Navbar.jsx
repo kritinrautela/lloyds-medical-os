@@ -21,10 +21,10 @@ function Clock() {
   return (
     <div className="hidden text-right xl:block">
       <p className="font-mono text-sm font-semibold leading-tight text-ink">
-        {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
       </p>
       <p className="text-2xs leading-tight text-ink-3">
-        {now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+        {now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
       </p>
     </div>
   );

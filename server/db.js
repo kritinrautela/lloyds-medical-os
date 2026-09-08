@@ -418,6 +418,17 @@ async function initDatabase() {
     await addColumnIfMissing('cloud_sync_config', 'photos_synced_count', 'INTEGER DEFAULT 0');
     await addColumnIfMissing('cloud_sync_config', 'drive_folder_url', 'TEXT');
     await addColumnIfMissing('patients', 'photo_synced_at', 'DATETIME');
+
+    // Who handed the medicine over, taken from the session that recorded the
+    // sale rather than from anything the browser typed. The older
+    // dispensed_by_* columns still carry what the counter sent for records
+    // made before this existed.
+    await addColumnIfMissing('dispensations', 'dispensed_by', 'TEXT');
+
+    // The backup data key, wrapped under an administrator's passphrase so an
+    // encrypted backup can be restored on another computer. See lib/backup.js.
+    await addColumnIfMissing('hospital_settings', 'backup_key_wrapped', 'TEXT');
+    await addColumnIfMissing('hospital_settings', 'backup_passphrase_set_at', 'DATETIME');
   await addColumnIfMissing('cloud_sync_config', 'google_client_id', 'TEXT');
   await addColumnIfMissing('cloud_sync_config', 'google_client_secret', 'TEXT');
   await addColumnIfMissing('cloud_sync_config', 'google_refresh_token', 'TEXT');

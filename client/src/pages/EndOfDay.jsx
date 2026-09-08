@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PrintableShiftReportModal from '../components/PrintableShiftReportModal';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, formatDateTime
+  EmptyState, ErrorState, formatDateTime, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value
 } from '../components/ui';
 
 /*
@@ -30,13 +30,16 @@ export default function EndOfDay({ settings, refreshStats }) {
 
   const currency = settings?.currency_symbol || 'K';
 
+  const [loadError, setLoadError] = useState(null);
+
   const load = useCallback(async () => {
+    setLoadError(null);
     try {
       const [today, past] = await Promise.all([api.getEndOfDayToday(), api.getEndOfDayHistory()]);
       setData(today);
       setHistory(past.history || []);
     } catch (err) {
-      setMessage({ tone: 'critical', text: err.message || 'The shift summary could not be loaded.' });
+      setLoadError(err.message || 'The shift summary could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -82,6 +85,19 @@ export default function EndOfDay({ settings, refreshStats }) {
       setBusy(false);
     }
   };
+
+  if (!loading && !data) {
+    return (
+      <div className="space-y-4">
+        <SectionTitle>Shift close</SectionTitle>
+        <ErrorState
+          title="The shift summary could not be read"
+          detail={loadError}
+          onRetry={() => { setLoading(true); load(); }}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -152,7 +168,7 @@ export default function EndOfDay({ settings, refreshStats }) {
                     Reduced or unpaid ({exceptions.reduced.length})
                   </p>
                   <div className="overflow-x-auto">
-                    <table className="data-table">
+                    <table className="data-table" aria-label="Points to check before closing">
                       <thead>
                         <tr>
                           <th>Invoice</th>
@@ -311,9 +327,14 @@ export default function EndOfDay({ settings, refreshStats }) {
           <EmptyState title="Nothing dispensed yet today" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" aria-label="Medicines handed over today">
               <thead>
-                <tr><th>Medicine</th><th className="num">Units</th><th className="num">Value ({currency})</th></tr>
+                <tr>
+                  <th>Medicine</th>
+                  <th className="num">Units</th>
+                  <th className="num">Value ({currency})</th>
+                  <th>Last dispensed by</th>
+                </tr>
               </thead>
               <tbody>
                 {s.dispensed_medicines.map((m) => (
@@ -321,6 +342,7 @@ export default function EndOfDay({ settings, refreshStats }) {
                     <td>{m.drug_name}</td>
                     <td className="num">{m.total_units}</td>
                     <td className="num">{(m.total_revenue || 0).toFixed(2)}</td>
+                    <td className="whitespace-nowrap"><Value>{m.last_dispensed_by}</Value></td>
                   </tr>
                 ))}
               </tbody>
@@ -335,7 +357,7 @@ export default function EndOfDay({ settings, refreshStats }) {
           <EmptyState title="No shift has been closed yet" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" aria-label="Previous days">
               <thead>
                 <tr>
                   <th>Date</th><th className="num">Patients</th>

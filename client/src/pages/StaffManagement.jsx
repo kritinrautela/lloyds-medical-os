@@ -1,9 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Lock, Search, ShieldCheck, Trash2, UserPlus, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { Lock, Search, ShieldCheck, Trash2, UserPlus, X } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value, formatDateTime
+  ConfirmDialog,
+  EmptyState,
+  formatDateTime,
+  ListSkeleton,
+  Metric,
+  MetricStrip,
+  Panel,
+  PanelHead,
+  Pill,
+  SectionTitle,
+  useEscapeKey,
+  useFocusTrap,
+  Value
 } from '../components/ui';
 
 /*
@@ -180,10 +192,7 @@ export default function StaffManagement() {
         </PanelHead>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Reading accounts
-          </div>
+          <ListSkeleton rows={5} label="Reading accounts" />
         ) : shown.length === 0 ? (
           <EmptyState title="No accounts match" detail="Clear the search to see everyone." />
         ) : (
@@ -318,6 +327,8 @@ export default function StaffManagement() {
 // ---------------------------------------------------------------------------
 
 function AccountModal({ currentUser, onClose, onSaved }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef);
   const [form, setForm] = useState({
     full_name: '', username: '', password: '', confirm: '',
     role: 'Triage Nurse', email: '', department: ''
@@ -326,6 +337,8 @@ function AccountModal({ currentUser, onClose, onSaved }) {
   const [error, setError] = useState('');
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEscapeKey(onClose);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -358,7 +371,7 @@ function AccountModal({ currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Create an account">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Create an account">
       <form onSubmit={submit} className="panel max-h-[92vh] w-full max-w-lg overflow-y-auto shadow-overlay">
         <div className="flex items-center justify-between border-b border-line-soft px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Create a staff account</h2>
@@ -436,10 +449,14 @@ function AccountModal({ currentUser, onClose, onSaved }) {
 // ---------------------------------------------------------------------------
 
 function PasswordModal({ user, currentUser, onClose, onSaved }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef);
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEscapeKey(onClose);
 
   const submit = async () => {
     setError('');
@@ -456,7 +473,7 @@ function PasswordModal({ user, currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Change a password">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Change a password">
       <div className="panel w-full max-w-sm shadow-overlay">
         <div className="flex items-center justify-between border-b border-line-soft px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Change password</h2>
@@ -498,25 +515,21 @@ function PasswordModal({ user, currentUser, onClose, onSaved }) {
 
 function ConfirmDelete({ user, onCancel, onConfirm }) {
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Remove an account">
-      <div className="panel w-full max-w-sm shadow-overlay">
-        <div className="border-b border-line-soft px-4 py-3">
-          <h2 className="text-sm font-semibold text-ink">Remove this account</h2>
-        </div>
-        <div className="space-y-3 px-4 py-4">
-          <p className="text-xs leading-relaxed text-ink-2">
-            {user.full_name} will no longer be able to sign in. Everything they already recorded
-            keeps their name against it, so the history stays complete.
-          </p>
-          <p className="text-2xs leading-relaxed text-ink-3">
-            If they are only away for a while, disable the account instead — it can be enabled again.
-          </p>
-          <div className="flex justify-end gap-2">
-            <button type="button" className="btn" onClick={onCancel}>Keep it</button>
-            <button type="button" className="btn btn-primary" onClick={onConfirm}>Remove it</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      title="Remove this account"
+      confirmLabel="Remove the account"
+      cancelLabel="Keep it"
+      danger
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    >
+      <p>
+        {user.full_name} will no longer be able to sign in. Everything they already recorded
+        keeps their name against it, so the history stays complete.
+      </p>
+      <p className="text-xs text-ink-3">
+        If they are only away for a while, disable the account instead. It can be enabled again.
+      </p>
+    </ConfirmDialog>
   );
 }

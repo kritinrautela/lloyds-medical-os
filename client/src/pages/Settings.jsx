@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Loader2, Lock, Smartphone } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Panel, PanelHead, Pill, SectionTitle } from '../components/ui';
+import SecurityPanel from '../components/SecurityPanel';
 
 /*
  * Facility settings.
@@ -181,6 +182,8 @@ export default function Settings({ settings, refreshStats }) {
           <GoLivePanel settings={settings} isAdmin={isAdmin} currentUser={currentUser} onDone={refreshStats} />
         </div>
       </div>
+
+      <SecurityPanel settings={settings} isAdmin={isAdmin} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

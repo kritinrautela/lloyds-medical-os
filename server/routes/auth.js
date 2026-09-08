@@ -379,6 +379,29 @@ router.post('/logout', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+/*
+ * POST /api/auth/logout-all
+ *
+ * Ends every session this person holds, on every device. The thing to reach
+ * for after signing in on a shared tablet and forgetting to sign out of it.
+ */
+router.post('/logout-all', requireAuth, async (req, res) => {
+  try {
+    const who = req.user;
+    const count = await getQuery('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?', [who.id]);
+    await destroyAllSessionsFor(who.id);
+    await runQuery(
+      `INSERT INTO activity_logs (action_type, user_name, user_role, location, details, severity)
+       VALUES ('Signed out everywhere', ?, ?, 'Sign in', ?, 'Info')`,
+      [who.full_name, who.role, `The account holder ended all of their sessions (${count ? count.n : 0}).`]
+    ).catch(() => {});
+    res.json({ success: true, ended: count ? count.n : 0 });
+  } catch (err) {
+    console.error('Logout-all error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/auth/users (List All Staff Accounts with End-to-End Metrics)
 router.get('/users', async (req, res) => {
   try {

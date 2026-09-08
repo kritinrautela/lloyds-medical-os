@@ -141,7 +141,7 @@ export default function ExcelExport({ settings }) {
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
         <Panel className="lg:col-span-2">
           <PanelHead title="Records workbook" note="Excel, encrypted, every sheet read-only" />
           <div className="space-y-3 px-4 py-3">

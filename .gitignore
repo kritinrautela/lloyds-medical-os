@@ -41,3 +41,6 @@ server/data/patient_photos/
 
 # Screenshots taken at the repository root during testing
 /*.png
+
+# Vite build manifest, regenerated on every build
+client/dist/.vite/

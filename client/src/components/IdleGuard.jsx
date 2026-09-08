@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusTrap } from './ui';
 import { Clock3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +21,8 @@ const WARN_SECONDS = 60;
 export default function IdleGuard() {
   const { isSignedIn, signOutIdle } = useAuth();
   const [remaining, setRemaining] = useState(null);
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, isSignedIn && remaining !== null);
   const lastActivity = useRef(Date.now());
   const warned = useRef(false);
 
@@ -61,7 +64,7 @@ export default function IdleGuard() {
   if (!isSignedIn || remaining === null) return null;
 
   return (
-    <div className="scrim" role="alertdialog" aria-modal="true" aria-label="Still there?">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="alertdialog" aria-modal="true" aria-label="Still there?">
       <div className="panel w-full max-w-sm p-5 text-center shadow-overlay">
         <Clock3 className="mx-auto h-6 w-6 text-warn" aria-hidden="true" />
         <h2 className="mt-3 text-sm font-semibold text-ink">Still there?</h2>

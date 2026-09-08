@@ -12,15 +12,22 @@
  * says it cannot reach the server, so this one says it cannot reach the server.
  */
 
-const CACHE = 'lloyds-clinic-shell-v1';
+// Both are filled in by the build (see vite.config.js). The cache name
+// changes with every build, so a new version never mixes with the last.
+const BUILD = '8e8c1bcff84e';
+const CACHE = `lloyds-clinic-${BUILD}`;
 
-// Only the shell. Hashed build assets are added as they are requested.
+// The shell, plus every file of this build so a tablet is complete from the
+// first open rather than only after each screen has been visited once.
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const PRECACHE = ["/assets/CloudSync-ayTPdPos.js","/assets/Dashboard-Drx0e21S.js","/assets/DispensePOS-FxDlHWKC.js","/assets/EndOfDay-BaIsOzp4.js","/assets/ExcelExport-syMn8e5k.js","/assets/OPDQueue-Ba48tSXr.js","/assets/Patients-CMxhPcNx.js","/assets/Pharmacy-_ZaUYBHU.js","/assets/PrescriptionLabels-HHW_fjh7.js","/assets/PrintFrame-CRZYOlUM.js","/assets/PrintableReferralLetter-C1KwWVYd.js","/assets/QueueTicket-BSbYzOwx.js","/assets/Registers-BoRZyX-7.js","/assets/ReturnSlip-B3dDoH1X.js","/assets/Settings-CEnSiDes.js","/assets/StaffManagement-B2KRBDgt.js","/assets/icons-DhNiFPlp.js","/assets/index-CpsehMA-.js","/assets/index-DknTmP_3.css","/assets/react-CVT4h-WC.js"];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(SHELL).catch(() => undefined))
+      .then((cache) => Promise.all(
+        SHELL.concat(PRECACHE).map((file) => cache.add(file).catch(() => undefined))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -55,8 +62,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Build assets are content-hashed, so a cached copy is always the right one.
+  // Matching ignores any Vary header the server may add, since a same-origin
+  // script fetch carries an Origin header that would otherwise never match.
   event.respondWith(
-    caches.match(request).then((hit) => {
+    caches.match(request, { ignoreVary: true }).then((hit) => {
       if (hit) return hit;
       return fetch(request).then((response) => {
         if (response.ok && response.type === 'basic') {

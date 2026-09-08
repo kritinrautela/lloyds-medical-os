@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
-  ArrowRight, Loader2, Printer, Send, Stethoscope, UserPlus, X
+  ArrowRight, Printer, Send, Stethoscope, Ticket, Undo2, UserPlus, X
 } from 'lucide-react';
 import ReferralModal from '../components/ReferralModal';
 import PrintableReferralLetter from '../components/PrintableReferralLetter';
@@ -9,9 +9,28 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { PatientAvatar } from '../components/PatientPhoto';
 import PrintableOPDRegisterModal from '../components/PrintableOPDRegisterModal';
+import QueueTicket from '../components/QueueTicket';
+import ReturnSlip from '../components/ReturnSlip';
+import { useToast } from '../components/toast';
 import {
-  EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, SectionTitle, Value,
-  Vital, formatDuration, hasAllergy, scoreVital, systolicOf
+  allergyState,
+  EmptyState,
+  ErrorState,
+  formatDuration,
+  hasAllergy,
+  ListSkeleton,
+  Metric,
+  MetricStrip,
+  Panel,
+  PanelHead,
+  Pill,
+  scoreVital,
+  SectionTitle,
+  systolicOf,
+  useEscapeKey,
+  useFocusTrap,
+  Value,
+  Vital
 } from '../components/ui';
 
 /*
@@ -40,6 +59,8 @@ const NEXT_STAGE = {
   'In Consultation': 'At Pharmacy',
   'At Pharmacy': 'Completed'
 };
+const PREVIOUS_STAGE = Object.fromEntries(Object.entries(NEXT_STAGE).map(([from, to]) => [to, from]));
+const STAGE_WORD = (stage) => stage === 'Completed' ? 'completed' : stage.replace(' / ', ' and ').toLowerCase();
 
 // Presentations this clinic sees most, kept as one-tap entries so a busy
 // clinician is not typing the same diagnosis twenty times a day. Selecting one
@@ -91,13 +112,19 @@ function minutesSince(iso) {
   return Math.max(0, Math.round((Date.now() - stamp.getTime()) / 60000));
 }
 
-export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPatient, refreshStats }) {
+export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPatient, refreshStats, refreshKey = 0 }) {
   const { currentUser } = useAuth();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  // While the queue cannot be read, a zero on a tile would be a false reading.
+  const unavailable = Boolean(loadError) && visits.length === 0;
   const [stage, setStage] = useState('Open');
   const [consultVisit, setConsultVisit] = useState(null);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [ticketVisit, setTicketVisit] = useState(null);
+  const [slip, setSlip] = useState(null);
+  const toast = useToast();
   const [, setTick] = useState(0);
 
   const currency = settings?.currency_symbol || 'K';
@@ -106,14 +133,18 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
     try {
       const res = await api.getTodayVisits();
       setVisits(res.visits || []);
+      setLoadError('');
     } catch (err) {
       console.error('Load queue failed:', err);
+      setLoadError(err.message || 'The server did not answer.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // A check-in made from the top bar while this page is open bumps
+  // refreshKey, so the new patient appears without waiting for the timer.
+  useEffect(() => { load(); }, [load, refreshKey]);
 
   // One timer drives both the live wait counters and a quiet reload, so a
   // second clinician moving a patient on another device shows up here.
@@ -143,16 +174,39 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
     return visits.filter((v) => v.status === stage);
   }, [visits, openVisits, stage]);
 
-  const advance = async (visit) => {
-    const next = NEXT_STAGE[visit.status];
-    if (!next) return;
+  /*
+   * Moving a patient is one tap, so a wrong tap has to be one tap to undo.
+   * The confirmation names the patient and the stage, and offers the way back
+   * for a few seconds; after that the row's own "back" control does the same.
+   */
+  const move = async (visit, to, { undoable = true } = {}) => {
+    const mover = currentUser?.full_name || '';
     try {
-      await api.updateVisitStatus(visit.id, next, currentUser?.full_name || '');
+      await api.updateVisitStatus(visit.id, to, mover);
       await load();
       refreshStats?.();
+      const title = to === 'Completed'
+        ? `${visit.patient_name} marked as completed`
+        : `${visit.patient_name} sent to ${STAGE_WORD(to)}`;
+      toast.ok(title, undoable ? {
+        action: {
+          label: 'Undo',
+          onClick: () => move(visit, visit.status, { undoable: false })
+        }
+      } : { detail: `Back in ${STAGE_WORD(to)}.` });
     } catch (err) {
-      console.error('Advance failed:', err);
+      toast.error(`${visit.patient_name} could not be moved`, { detail: err.message || 'The clinic server did not answer.' });
     }
+  };
+
+  const advance = (visit) => {
+    const next = NEXT_STAGE[visit.status];
+    if (next) move(visit, next);
+  };
+
+  const sendBack = (visit) => {
+    const previous = PREVIOUS_STAGE[visit.status];
+    if (previous) move(visit, previous);
   };
 
   return (
@@ -178,7 +232,7 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
           <Metric
             key={s.key}
             label={s.tokPisin ? `${s.label} · ${s.tokPisin}` : s.label}
-            value={counts[s.key] || 0}
+            value={unavailable ? '—' : counts[s.key] || 0}
             context={
               s.key === 'Waiting' && longestWait !== null
                 ? `Longest wait ${formatDuration(longestWait)}`
@@ -207,11 +261,20 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
           </select>
         </PanelHead>
 
+        {loadError && visits.length > 0 ? (
+          <p role="status" className="border-b border-warn-line bg-warn-wash px-4 py-2 text-2xs text-ink-2">
+            The last refresh failed, so this list may be a minute behind. It will try again shortly.
+          </p>
+        ) : null}
+
         {loading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-ink-3">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Reading the queue
-          </div>
+          <ListSkeleton rows={4} label="Reading the queue" />
+        ) : loadError && visits.length === 0 ? (
+          <ErrorState
+            title="The queue could not be read"
+            detail="The server did not answer. Check that it is running and that this device is on the clinic network."
+            onRetry={() => { setLoading(true); load(); }}
+          />
         ) : shown.length === 0 ? (
           <EmptyState
             title={stage === 'Open' ? 'Nobody is waiting' : 'No patients at this stage'}
@@ -230,7 +293,9 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
                 visit={v}
                 currency={currency}
                 onAdvance={() => advance(v)}
+                onBack={() => sendBack(v)}
                 onConsult={() => setConsultVisit(v)}
+                onTicket={() => setTicketVisit(v)}
               />
             ))}
           </ul>
@@ -242,11 +307,21 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
         settings={settings}
         currentUser={currentUser}
         onClose={() => setConsultVisit(null)}
-        onSaved={async (goToPharmacy) => {
+        onSaved={async (goToPharmacy, saved) => {
           const visit = consultVisit;
           setConsultVisit(null);
           await load();
           refreshStats?.();
+          if (visit) {
+            const returnDate = saved?.follow_up_date || '';
+            toast.ok(`Consultation saved for ${visit.patient_name}`, {
+              detail: returnDate ? `Return visit on ${returnDate}.` : '',
+              action: returnDate ? {
+                label: 'Print return slip',
+                onClick: () => setSlip({ visit: { ...visit, ...saved }, returnDate, note: saved?.follow_up_note || '' })
+              } : null
+            });
+          }
           if (goToPharmacy && visit) {
             onOpenDispenseForPatient?.({
               id: visit.patient_id,
@@ -263,19 +338,38 @@ export default function OPDQueue({ settings, onOpenCheckIn, onOpenDispenseForPat
         visits={visits}
         settings={settings}
       />
+
+      <QueueTicket
+        isOpen={Boolean(ticketVisit)}
+        onClose={() => setTicketVisit(null)}
+        settings={settings}
+        visit={ticketVisit}
+      />
+
+      <ReturnSlip
+        isOpen={Boolean(slip)}
+        onClose={() => setSlip(null)}
+        settings={settings}
+        patient={slip ? patientOf(slip.visit) : null}
+        visit={slip?.visit}
+        returnDate={slip?.returnDate}
+        note={slip?.note}
+        issuedBy={currentUser?.full_name || ''}
+      />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 
-function QueueRow({ visit, currency, onAdvance, onConsult }) {
+function QueueRow({ visit, currency, onAdvance, onBack, onConsult, onTicket }) {
   const waited = minutesSince(visit.created_at);
   const emergency = visit.triage_priority === 'Emergency';
   const urgent = visit.triage_priority === 'Urgent';
   const done = visit.status === 'Completed';
   const allergic = hasAllergy(visit.allergies);
   const nextStage = NEXT_STAGE[visit.status];
+  const previousStage = PREVIOUS_STAGE[visit.status];
 
   const hasObs = visit.bp || visit.pulse || visit.temp || visit.spo2 || visit.resp_rate;
   const waitTone = done ? 'neutral' : waited >= 120 ? 'critical' : waited >= 60 ? 'warn' : 'neutral';
@@ -307,8 +401,8 @@ function QueueRow({ visit, currency, onAdvance, onConsult }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-4">
-          <div className="text-right">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:shrink-0 sm:justify-end sm:gap-4">
+          <div className="text-left sm:text-right">
             <p className="text-2xs uppercase tracking-wide text-ink-3">
               {done ? 'Seen in' : 'Waiting'}
             </p>
@@ -319,7 +413,15 @@ function QueueRow({ visit, currency, onAdvance, onConsult }) {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" className="btn btn-sm" onClick={onTicket} aria-label={`Print queue ticket for ${visit.patient_name}`} title="Print queue ticket">
+              <Ticket className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            {previousStage ? (
+              <button type="button" className="btn btn-sm" onClick={onBack} aria-label={`Send ${visit.patient_name} back to ${STAGE_WORD(previousStage)}`} title={`Back to ${STAGE_WORD(previousStage)}`}>
+                <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            ) : null}
             <button type="button" className="btn btn-sm" onClick={onConsult}>
               <Stethoscope className="h-3.5 w-3.5" aria-hidden="true" />
               {hasObs ? 'Open notes' : 'Record vitals'}
@@ -351,6 +453,8 @@ function QueueRow({ visit, currency, onAdvance, onConsult }) {
 // ---------------------------------------------------------------------------
 
 function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef);
   const [form, setForm] = useState(null);
   const [labs, setLabs] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -388,6 +492,8 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
     });
   }, [visit, settings]);
 
+  useEscapeKey(onClose, !!visit);
+
   if (!visit || !form) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -411,7 +517,7 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
       if (goToPharmacy) {
         await api.updateVisitStatus(visit.id, 'At Pharmacy', currentUser?.full_name || '');
       }
-      onSaved(goToPharmacy);
+      onSaved(goToPharmacy, { ...form, doctor_notes: notes });
     } catch (err) {
       setError(err.message || 'The consultation could not be saved.');
     } finally {
@@ -449,7 +555,7 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Consultation">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Consultation">
       {referring ? (
         <ReferralModal
           patient={patientOf(visit)}
@@ -485,7 +591,15 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
             <p className="rounded-md border border-critical-line bg-critical-wash px-3 py-2 text-sm font-semibold text-critical">
               Allergies on record: {visit.allergies}
             </p>
-          ) : null}
+          ) : allergyState(visit.allergies) === 'none' ? (
+            <p className="rounded-md border border-ok-line bg-ok-wash px-3 py-2 text-xs text-ink-2">
+              <span className="font-semibold text-ink">No known allergies.</span> Recorded as asked and clear.
+            </p>
+          ) : (
+            <p className="rounded-md border border-line bg-subtle px-3 py-2 text-xs text-ink-2">
+              <span className="font-semibold text-ink">Allergies: not yet asked.</span> Ask before prescribing and add them to the patient record.
+            </p>
+          )}
 
           <div>
             <p className="label">Observations</p>
@@ -494,11 +608,16 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
               does not record a normal reading.
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <Obs id="bp" label="BP" hint="120/80" value={form.bp} onChange={set('bp')} />
-              <Obs id="pulse" label="Pulse" hint="bpm" value={form.pulse} onChange={set('pulse')} />
-              <Obs id="spo2" label="SpO₂" hint="%" value={form.spo2} onChange={set('spo2')} />
-              <Obs id="temp" label="Temp" hint="°C" value={form.temp} onChange={set('temp')} />
-              <Obs id="resp" label="Resp" hint="/min" value={form.resp_rate} onChange={set('resp_rate')} />
+              <Obs id="bp" label="BP" hint="120/80" value={form.bp} onChange={set('bp')} numeric={false}
+                tone={scoreVital('systolic', systolicOf(form.bp), visit.age).tone} />
+              <Obs id="pulse" label="Pulse" hint="bpm" value={form.pulse} onChange={set('pulse')}
+                tone={scoreVital('pulse', form.pulse, visit.age).tone} />
+              <Obs id="spo2" label="SpO₂" hint="%" value={form.spo2} onChange={set('spo2')}
+                tone={scoreVital('spo2', form.spo2, visit.age).tone} />
+              <Obs id="temp" label="Temp" hint="°C" value={form.temp} onChange={set('temp')}
+                tone={scoreVital('temp', form.temp, visit.age).tone} />
+              <Obs id="resp" label="Resp" hint="/min" value={form.resp_rate} onChange={set('resp_rate')}
+                tone={scoreVital('resp', form.resp_rate, visit.age).tone} />
               <Obs id="weight" label="Weight" hint="kg" value={form.weight} onChange={set('weight')} />
             </div>
             {typeof visit.age === 'number' && visit.age < 12 ? (
@@ -686,11 +805,60 @@ function ConsultationModal({ visit, settings, currentUser, onClose, onSaved }) {
   );
 }
 
-function Obs({ id, label, hint, value, onChange }) {
+/**
+ * Adult reference ranges shown beside each observation. They match the bands
+ * that scoreVital() uses, so the tint on the box and the text agree.
+ */
+const OBS_RANGES = {
+  bp: 'Adult reference: systolic 91 to 160 mmHg',
+  pulse: 'Adult reference: 51 to 110 beats per minute',
+  spo2: 'Adult reference: 95% or above',
+  temp: 'Adult reference: 35.0 to 37.9 °C',
+  resp: 'Adult reference: 9 to 20 breaths per minute'
+};
+
+const OBS_TINT = {
+  critical: 'border-critical-line bg-critical-wash',
+  warn: 'border-warn-line bg-warn-wash',
+  ok: '',
+  neutral: ''
+};
+
+/**
+ * One observation box. The whole field tints when the value sits outside the
+ * adult range, the way OpenMRS and Cerner flag abnormal vitals, and the tint
+ * lifts while the clinician is typing so it never fights the caret.
+ */
+function Obs({ id, label, hint, value, onChange, tone = 'neutral', numeric = true }) {
+  const [focused, setFocused] = useState(false);
+  const abnormal = tone === 'critical' || tone === 'warn';
+  const tint = focused ? '' : OBS_TINT[tone] || '';
   return (
     <div>
-      <label className="label" htmlFor={`obs-${id}`}>{label}</label>
-      <input id={`obs-${id}`} className="field" value={value} onChange={onChange} placeholder={hint} maxLength={20} />
+      <div className="flex items-baseline justify-between gap-2">
+        <label className="label" htmlFor={`obs-${id}`}>{label}</label>
+        {abnormal && !focused ? (
+          <span
+            className={`text-2xs font-semibold ${tone === 'critical' ? 'text-critical' : 'text-warn'}`}
+            title="Abnormal value"
+          >
+            {tone === 'critical' ? 'Out of range' : 'Watch'}
+          </span>
+        ) : null}
+      </div>
+      <input
+        id={`obs-${id}`}
+        className={`field ${tint}`}
+        value={value}
+        onChange={onChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={hint}
+        maxLength={20}
+        inputMode={numeric ? 'decimal' : 'text'}
+        title={OBS_RANGES[id] || undefined}
+        aria-invalid={tone === 'critical' ? true : undefined}
+      />
     </div>
   );
 }

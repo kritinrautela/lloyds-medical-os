@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, BadgeCheck, Loader2, Printer, Send, X } from 'lucide-react';
 import { api } from '../services/api';
 import {
   REFERRAL_DESTINATIONS, REFERRAL_TRANSPORT, REFERRAL_URGENCY
 } from '../lib/publicHealth';
+import { useEscapeKey, useFocusTrap } from './ui';
 
 /*
  * Sending a patient to another facility.
@@ -15,9 +16,13 @@ import {
  */
 export default function ReferralModal({ patient, visit, onClose, onSaved, onPrint }) {
   const [form, setForm] = useState(null);
+  const scrimRef = useRef(null);
+  useFocusTrap(scrimRef, Boolean(patient && form));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(null);
+
+  useEscapeKey(onClose);
 
   useEffect(() => {
     if (!patient) { setForm(null); return; }
@@ -82,7 +87,7 @@ export default function ReferralModal({ patient, visit, onClose, onSaved, onPrin
   };
 
   return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-label="Refer to another facility">
+    <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Refer to another facility">
       <div className="panel max-h-[92vh] w-full max-w-2xl overflow-y-auto shadow-overlay">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line-soft bg-surface px-4 py-3">
           <div className="min-w-0">

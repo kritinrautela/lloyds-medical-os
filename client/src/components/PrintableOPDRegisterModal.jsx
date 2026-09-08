@@ -1,234 +1,109 @@
 import React from 'react';
-import { Printer, X, Users, Activity, FileText, CheckCircle2 } from 'lucide-react';
+import {
+  PrintFrame, FacilityHeader, DocFigures, DocFooter, SignatureBlock, longDate, clockOf, localDateKey, money
+} from './PrintFrame';
+
+/*
+ * The day's outpatient register, one line per attendance, in the order the
+ * patients arrived. It is the paper copy the health office asks for and the
+ * one that survives a power cut.
+ */
+function priorityTone(priority) {
+  if (priority === 'Emergency') return 'pill pill-critical';
+  if (priority === 'Urgent') return 'pill pill-warn';
+  return 'pill pill-neutral';
+}
+
+function observations(v) {
+  return [
+    v.bp ? `BP ${v.bp}` : null,
+    v.pulse ? `P ${v.pulse}` : null,
+    v.temp ? `T ${v.temp}°` : null,
+    v.spo2 ? `SpO₂ ${v.spo2}%` : null
+  ].filter(Boolean).join(' · ');
+}
 
 export default function PrintableOPDRegisterModal({ isOpen, onClose, visits = [], settings }) {
   if (!isOpen) return null;
 
   const currency = settings?.currency_symbol || 'K';
-  const todayStr = new Date().toISOString().split('T')[0];
+  const today = localDateKey();
+  const reference = `OPD-${today.replace(/-/g, '')}`;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const totalPatients = visits.length;
-  const completedCount = visits.filter(v => v.status === 'Completed').length;
-  const emergencyCount = visits.filter(v => v.triage_priority === 'Immediate' || v.triage_priority === 'Very Urgent').length;
-  const totalFees = visits.reduce((acc, v) => acc + (parseFloat(v.consultation_fee) || 0), 0);
+  const completed = visits.filter((v) => v.status === 'Completed').length;
+  const priority = visits.filter((v) => v.triage_priority === 'Emergency' || v.triage_priority === 'Urgent').length;
+  const fees = visits.reduce((sum, v) => sum + (parseFloat(v.consultation_fee) || 0), 0);
 
   return (
-    <div 
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="printable-modal-overlay fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pb-12 bg-slate-900/40 backdrop-blur-xs overflow-y-auto"
-    >
-      <div className="printable-modal-card relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-4">
-        
-        {/* Top Control Bar (Hidden on Print) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/90">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-200">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-display font-black text-slate-900">Daily OPD Patient Register & Clinical Census</h3>
-              <p className="text-xs text-slate-500">Institutional health ministry format (A4 Landscape Print / PDF)</p>
-            </div>
-          </div>
+    <PrintFrame title="Outpatient register" subtitle={longDate(today)} onClose={onClose} printLabel="Print register" page="landscape">
+      <FacilityHeader
+        settings={settings}
+        documentTitle="Outpatient register"
+        reference={reference}
+        meta={[['Date', longDate(today)], ['Attendances', String(visits.length)]]}
+      />
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-display font-extrabold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer active:scale-95"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print OPD Register (A4 / PDF)</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Printable Paper Canvas */}
-        <div className="printable-area p-8 sm:p-10 bg-white text-slate-900 font-sans leading-normal">
-          
-          {/* Official Letterhead Header */}
-          <div className="border-b-2 border-slate-900 pb-5">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src="/lloyds_metals_logo.png" 
-                    alt="Lloyds Metals" 
-                    className="h-8 object-contain"
-                  />
-                  <div className="border-l-2 border-red-600 pl-3">
-                    <span className="text-[9px] font-bold tracking-widest text-red-600 uppercase font-mono block">
-                      Occupational Health & Outpatient Department
-                    </span>
-                    <h1 className="text-base font-black text-slate-950 tracking-tight leading-none uppercase">
-                      {settings?.name || 'LLOYDS METALS & ENERGY LTD'}
-                    </h1>
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-600 font-medium pt-1">
-                  {settings?.tagline || 'Community Health Centre & Emergency Trauma Post — Papua New Guinea'}
-                </p>
-                <p className="text-[10px] text-slate-500">
-                  {settings?.address || 'Mining Concession Base'} | {settings?.district || 'Lae Urban'}, {settings?.province || 'Morobe Province'}
-                </p>
-              </div>
-
-              <div className="text-right space-y-1">
-                <div className="inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded text-right">
-                  <span className="text-[9px] uppercase font-bold text-slate-500 block font-mono">Document Title</span>
-                  <span className="text-xs font-black text-slate-900 tracking-wider font-mono">OPD CLINICAL REGISTER</span>
-                </div>
-                <p className="text-[10px] text-slate-600 font-mono pt-1">
-                  Register Date: <strong>{todayStr}</strong>
-                </p>
-                <p className="text-[10px] text-slate-500">
-                  Reg No: <strong>{settings?.reg_number || 'PNG-MOH-LMEL-2026'}</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="my-4 p-3 bg-slate-50 border border-slate-300 rounded-lg grid grid-cols-4 gap-2 text-center text-xs">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Patients</span>
-              <span className="text-sm font-black text-slate-900">{totalPatients}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Discharged / Completed</span>
-              <span className="text-sm font-black text-emerald-800">{completedCount}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Immediate / High Risk</span>
-              <span className="text-sm font-black text-red-700">{emergencyCount}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Consultation Fees</span>
-              <span className="text-sm font-black text-slate-950 font-mono">{currency} {totalFees.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Patient Register Table */}
-          <div className="mb-6">
-            <table className="w-full text-left border-collapse border border-slate-300 text-[10px]">
-              <thead>
-                <tr className="bg-slate-100 text-slate-700 font-bold uppercase text-[9px]">
-                  <th className="border border-slate-300 p-1.5 text-center">#</th>
-                  <th className="border border-slate-300 p-1.5">Time</th>
-                  <th className="border border-slate-300 p-1.5">Patient ID & Name</th>
-                  <th className="border border-slate-300 p-1.5 text-center">Age / Sex</th>
-                  <th className="border border-slate-300 p-1.5 text-center">Triage Priority</th>
-                  <th className="border border-slate-300 p-1.5 text-center">Vital Signs</th>
-                  <th className="border border-slate-300 p-1.5">Diagnosis / Chief Complaint</th>
-                  <th className="border border-slate-300 p-1.5 text-right">Fee ({currency})</th>
-                  <th className="border border-slate-300 p-1.5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {visits.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="p-4 text-center text-slate-500 italic">
-                      No patients registered in today's OPD log book yet.
-                    </td>
-                  </tr>
-                ) : (
-                  visits.map((v, idx) => (
-                    <tr key={v.id || idx} className={idx % 2 === 1 ? 'bg-slate-50' : ''}>
-                      <td className="border border-slate-300 p-1.5 text-center font-mono font-bold text-slate-500">
-                        {idx + 1}
-                      </td>
-                      <td className="border border-slate-300 p-1.5 font-mono text-slate-700 whitespace-nowrap">
-                        {v.visit_time || '08:00'}
-                      </td>
-                      <td className="border border-slate-300 p-1.5">
-                        <div className="font-bold text-slate-900">{v.patient_name}</div>
-                        <div className="font-mono text-[9px] text-slate-500">{v.patient_code}</div>
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-center text-slate-700 whitespace-nowrap">
-                        {v.age}y / {v.gender ? v.gender.charAt(0) : '-'}
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-center">
-                        <span className={`px-1.5 py-0.5 rounded font-bold text-[8px] uppercase ${
-                          v.triage_priority === 'Immediate' ? 'bg-red-100 text-red-800' :
-                          v.triage_priority === 'Very Urgent' ? 'bg-amber-100 text-amber-800' :
-                          v.triage_priority === 'Urgent' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {v.triage_priority || 'Standard'}
-                        </span>
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-center font-mono text-[9px] text-slate-800">
-                        {v.bp ? `BP: ${v.bp}` : ''} {v.pulse ? `• HR: ${v.pulse}` : ''} {v.spo2 ? `• SpO2: ${v.spo2}%` : ''}
-                        {!v.bp && !v.pulse && <span className="text-slate-400 italic">Not recorded</span>}
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-slate-800 max-w-[200px]">
-                        <div className="font-semibold">{v.diagnosis || v.chief_complaint || 'General Clinical Review'}</div>
-                        {v.doctor_notes && <div className="text-[8px] text-slate-500 italic truncate">{v.doctor_notes}</div>}
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
-                        {parseFloat(v.consultation_fee || 0).toFixed(2)}
-                      </td>
-                      <td className="border border-slate-300 p-1.5 text-center whitespace-nowrap">
-                        <span className={`font-semibold text-[8px] uppercase ${
-                          v.status === 'Completed' ? 'text-emerald-700 font-bold' : 'text-slate-600'
-                        }`}>
-                          {v.status || 'Active'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Authorization Footer */}
-          <div className="pt-4 border-t-2 border-slate-900 avoid-break">
-            <div className="grid grid-cols-3 gap-6 text-center text-xs">
-              
-              <div className="flex flex-col justify-between h-24 border border-slate-300 rounded p-2 bg-white">
-                <span className="text-[9px] font-bold uppercase text-slate-600 block">Triage Nurse / Intake Officer</span>
-                <div className="border-t border-slate-400 pt-1 mt-auto">
-                  <span className="text-[9px] text-slate-500 block">Signature & Staff ID</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between h-24 border border-slate-300 rounded p-2 bg-white">
-                <span className="text-[9px] font-bold uppercase text-slate-600 block">Attending Medical Officer</span>
-                <div className="border-t border-slate-400 pt-1 mt-auto">
-                  <strong className="block text-slate-900 text-xs">
-                    {settings?.doctor_in_charge || 'Medical Officer'}
-                  </strong>
-                  <span className="text-[9px] text-slate-500 block">Signature & Stamp</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between h-24 border-2 border-dashed border-red-300 rounded p-2 bg-red-50/20">
-                <span className="text-[9px] font-bold uppercase text-red-800 block">Hospital Seal</span>
-                <div className="my-auto text-[8px] text-slate-400 italic">Official Lloyds Clinical Stamp</div>
-              </div>
-
-            </div>
-
-            <div className="mt-4 pt-2 border-t border-slate-200 text-center text-[8px] text-slate-400 flex justify-between items-center">
-              <span>Lloyds Metals & Energy Ltd • Rural Health Care Initiative</span>
-              <span>Printed: {new Date().toLocaleString()}</span>
-              <span>Confidential Patient Record • For Hospital Records Only</span>
-            </div>
-          </div>
-
-        </div>
-
+      <div className="mt-4">
+        <DocFigures items={[
+          ['Attendances', visits.length, 'Checked in today'],
+          ['Completed', completed, 'Seen and closed'],
+          ['Emergency or urgent', priority, 'Triaged above standard', priority ? 'critical' : undefined],
+          ['Consultation fees', `${currency} ${money(fees)}`, 'Recorded today']
+        ]} />
       </div>
-    </div>
+
+      <table className="doc-table mt-4">
+        <thead>
+          <tr>
+            <th className="w-8">#</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Age · Sex</th>
+            <th>Priority</th>
+            <th>Observations</th>
+            <th>Diagnosis or reason</th>
+            <th className="num">Fee ({currency})</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visits.length === 0 ? (
+            <tr><td colSpan={9} className="py-4 text-center text-ink-3">No patients have been checked in today.</td></tr>
+          ) : visits.map((v, idx) => {
+            const obs = observations(v);
+            return (
+              <tr key={v.id || idx}>
+                <td className="text-ink-3">{idx + 1}</td>
+                <td className="whitespace-nowrap font-mono">{v.visit_time || clockOf(v.created_at) || '—'}</td>
+                <td>
+                  <span className="font-semibold">{v.patient_name}</span>
+                  <span className="block font-mono text-2xs text-ink-3">{v.hospital_number || v.patient_code || 'No number'}</span>
+                </td>
+                <td className="whitespace-nowrap">{v.age ?? '—'}{v.age ? 'y' : ''} · {v.gender ? String(v.gender).charAt(0) : '—'}</td>
+                <td><span className={priorityTone(v.triage_priority)}>{v.triage_priority || 'Standard'}</span></td>
+                <td className="whitespace-nowrap font-mono text-2xs">{obs || <span className="font-sans text-ink-3">Not recorded</span>}</td>
+                <td className="max-w-[16rem]">
+                  <span className="font-semibold">{v.diagnosis || v.reason || <span className="font-normal text-ink-3">Not recorded</span>}</span>
+                  {v.doctor_notes ? <span className="block truncate text-2xs text-ink-2">{v.doctor_notes}</span> : null}
+                </td>
+                <td className="num">{money(v.consultation_fee)}</td>
+                <td className={`whitespace-nowrap ${v.status === 'Completed' ? 'font-semibold text-ok' : 'text-ink-2'}`}>{v.status || 'Waiting'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <SignatureBlock
+        className="mt-10"
+        stamp
+        lines={[
+          { label: 'Triage nurse or intake officer', hint: 'Signature and staff number' },
+          { label: 'Medical officer', name: settings?.doctor_in_charge, hint: 'Signature and date' }
+        ]}
+      />
+
+      <DocFooter settings={settings} reference={reference} />
+    </PrintFrame>
   );
 }

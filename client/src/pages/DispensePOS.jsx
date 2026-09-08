@@ -4,7 +4,11 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ReceiptModal from '../components/ReceiptModal';
 import { PatientAvatar } from '../components/PatientPhoto';
-import { EmptyState, Panel, PanelHead, Pill, SectionTitle, Value, hasAllergy } from '../components/ui';
+import {
+  allergyState, ConfirmDialog, EmptyState, ErrorState, formatDateTime, hasAllergy, Panel, PanelHead, Pill, SectionTitle, Value
+} from '../components/ui';
+import PrescriptionLabels from '../components/PrescriptionLabels';
+import { useToast } from '../components/toast';
 
 /*
  * The pharmacy counter.
@@ -121,7 +125,8 @@ function expiryState(drug) {
 
 export default function DispensePOS({ settings, preSelectedPatient, refreshStats }) {
   const { currentUser } = useAuth();
-  const [patients, setPatients] = useState([]);
+  const [patientMatches, setPatientMatches] = useState([]);
+  const [patientDetail, setPatientDetail] = useState(null);
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -144,23 +149,31 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState(null);
+  const [labels, setLabels] = useState(null);
+  // A recent dispensation of the medicine about to be added, waiting for the
+  // pharmacist to say it is meant to be repeated.
+  const [repeat, setRepeat] = useState(null);
+  const toast = useToast();
 
   const qtyRef = useRef(null);
   const currency = settings?.currency_symbol || 'K';
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [p, d] = await Promise.all([api.getPatients(), api.getDrugs()]);
-        setPatients(p.patients || []);
-        setDrugs(d.drugs || []);
-      } catch (err) {
-        setError(err.message || 'The formulary could not be loaded.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const [loadError, setLoadError] = useState(null);
+
+  const loadFormulary = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const d = await api.getDrugs();
+      setDrugs(d.drugs || []);
+    } catch (err) {
+      setLoadError(err.message || 'The formulary could not be loaded.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadFormulary(); }, []);
 
   useEffect(() => {
     if (!preSelectedPatient) return;
@@ -171,22 +184,32 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
 
   // The full patient record carries the allergy field; a patient handed over
   // from the queue may only carry a name and an id.
-  const patientRecord = useMemo(
-    () => (patient?.id ? patients.find((p) => p.id === patient.id) || patient : patient),
-    [patient, patients]
-  );
+  // A patient handed over from the queue arrives as a name and an id. The
+  // allergy line and the rest of the record are read before anything is sold.
+  useEffect(() => {
+    if (!patient?.id) { setPatientDetail(null); return undefined; }
+    if ('allergies' in patient) { setPatientDetail(patient); return undefined; }
+    let live = true;
+    api.getPatient(patient.id)
+      .then((r) => { if (live) setPatientDetail({ ...patient, ...(r.patient || {}) }); })
+      .catch(() => { if (live) setPatientDetail(patient); });
+    return () => { live = false; };
+  }, [patient]);
+  const patientRecord = patientDetail && patient?.id && patientDetail.id === patient.id ? patientDetail : patient;
 
-  const patientMatches = useMemo(() => {
-    const q = patientQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    return patients
-      .filter((p) =>
-        [p.full_name, p.hospital_number, p.patient_code, p.phone]
-          .filter(Boolean)
-          .some((f) => String(f).toLowerCase().includes(q))
-      )
-      .slice(0, 6);
-  }, [patients, patientQuery]);
+  // The register is searched on the server, which knows the check digit on a
+  // hospital number and is not limited to whatever page was loaded first.
+  useEffect(() => {
+    const q = patientQuery.trim();
+    if (q.length < 2) { setPatientMatches([]); return undefined; }
+    let live = true;
+    const id = setTimeout(() => {
+      api.getPatients({ q, limit: 8 })
+        .then((res) => { if (live) setPatientMatches(res.patients || []); })
+        .catch(() => { if (live) setPatientMatches([]); });
+    }, 180);
+    return () => { live = false; clearTimeout(id); };
+  }, [patientQuery]);
 
   const drugMatches = useMemo(() => {
     const q = drugQuery.trim().toLowerCase();
@@ -217,7 +240,32 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
     window.requestAnimationFrame(() => qtyRef.current?.focus());
   };
 
-  const addToCart = () => {
+  /*
+   * The same medicine handed to the same patient twice in a month is usually a
+   * mistake: a second course started before the first has finished, or a line
+   * added twice on two visits. So the register is asked before the line goes
+   * in, and the previous handover is shown with who gave it and when. The
+   * pharmacist can still proceed; the point is that it is a decision.
+   */
+  const addToCart = async () => {
+    setError('');
+    if (!pickedDrug) { setError('Choose a medicine from the formulary first.'); return; }
+    if (patientRecord?.id && !cart.some((c) => c.drug_id === pickedDrug.id)) {
+      try {
+        const res = await api.repeatCheck(patientRecord.id, pickedDrug.id, 30);
+        if (res?.found && res.previous) {
+          setRepeat({ drug: pickedDrug, previous: res.previous });
+          return;
+        }
+      } catch {
+        // If the register cannot be asked, the line still goes in; the check
+        // is a safeguard, not a gate on the pharmacy working.
+      }
+    }
+    commitToCart();
+  };
+
+  const commitToCart = () => {
     setError('');
     if (!pickedDrug) { setError('Choose a medicine from the formulary first.'); return; }
     const shelf = expiryState(pickedDrug);
@@ -257,7 +305,9 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
             unit_price: pickedDrug.unit_price,
             subtotal: amount * pickedDrug.unit_price,
             instructions: instructions.trim(),
-            stock_quantity: pickedDrug.stock_quantity
+            stock_quantity: pickedDrug.stock_quantity,
+            batch_number: pickedDrug.batch_number || null,
+            expiry_date: pickedDrug.expiry_date || null
           }
         ];
 
@@ -314,7 +364,14 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
         dispensed_by_role: currentUser?.role || null
       });
 
-      setReceipt({ invoice: res.invoice, items: res.items, hospital: res.hospital, patient: patientRecord });
+      // The labels carry the batch and expiry of what was on the shelf at the
+      // moment of sale, which the cart knows and the sale record does not repeat.
+      const shelfByDrug = Object.fromEntries(cart.map((c) => [c.drug_id, { batch_number: c.batch_number, expiry_date: c.expiry_date, strength: c.strength, dosage_form: c.dosage_form }]));
+      const items = (res.items || []).map((it) => ({ ...(shelfByDrug[it.drug_id] || {}), ...it }));
+      setReceipt({ invoice: res.invoice, items, hospital: res.hospital, patient: patientRecord });
+      toast.ok(`Dispensed to ${name}`, {
+        detail: res.invoice?.invoice_number ? `Invoice ${res.invoice.invoice_number} recorded and stock taken down.` : 'Recorded and stock taken down.'
+      });
       setCart([]);
       setDiscount('');
       setDiscountReason('');
@@ -338,6 +395,17 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
       <div className="flex items-center justify-center gap-2 py-20 text-sm text-ink-3">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         Opening the pharmacy counter
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <SectionTitle note="Stock is taken down and a receipt is produced when the hand-over is recorded">
+          Pharmacy counter
+        </SectionTitle>
+        <ErrorState title="The formulary could not be read" detail={loadError} onRetry={loadFormulary} />
       </div>
     );
   }
@@ -368,8 +436,10 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
                       <p className="mt-1 text-xs">
                         {hasAllergy(patientRecord.allergies) ? (
                           <span className="font-semibold text-critical">Allergies: {patientRecord.allergies}</span>
+                        ) : allergyState(patientRecord.allergies) === 'none' ? (
+                          <span className="font-medium text-ok">No known allergies, recorded as asked and clear.</span>
                         ) : (
-                          <span className="text-ink-3">No allergies recorded. Ask the patient before dispensing.</span>
+                          <span className="text-ink-3">Allergies not yet asked. Ask the patient before dispensing.</span>
                         )}
                       </p>
                     </div>
@@ -550,7 +620,7 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
               />
             ) : (
               <div className="overflow-x-auto">
-                <table className="data-table">
+                <table className="data-table" aria-label="Items to dispense">
                   <thead>
                     <tr>
                       <th>Medicine</th>
@@ -710,7 +780,41 @@ export default function DispensePOS({ settings, preSelectedPatient, refreshStats
         </Panel>
       </div>
 
-      <ReceiptModal isOpen={!!receipt} onClose={() => setReceipt(null)} data={receipt} />
+      <ReceiptModal
+        isOpen={!!receipt}
+        onClose={() => setReceipt(null)}
+        data={receipt}
+        onPrintLabels={() => setLabels(receipt)}
+      />
+      <PrescriptionLabels
+        isOpen={!!labels}
+        onClose={() => setLabels(null)}
+        data={labels}
+        dispenser={currentUser?.full_name || ''}
+      />
+
+      {repeat ? (
+        <ConfirmDialog
+          title={`${repeat.drug.name} was dispensed to this patient recently`}
+          confirmLabel="Add it anyway"
+          cancelLabel="Leave it out"
+          onCancel={() => setRepeat(null)}
+          onConfirm={() => { setRepeat(null); commitToCart(); }}
+        >
+          <p className="text-sm text-ink-2">
+            <span className="font-semibold text-ink">{repeat.previous.quantity}</span> {Number(repeat.previous.quantity) === 1 ? 'unit' : 'units'} on{' '}
+            <span className="font-semibold text-ink">{formatDateTime(repeat.previous.at)}</span>
+            {repeat.previous.dispensed_by ? <> by <span className="font-semibold text-ink">{repeat.previous.dispensed_by}</span></> : null}
+            {repeat.previous.invoice_number ? <> (invoice <span className="font-mono">{repeat.previous.invoice_number}</span>)</> : null}.
+          </p>
+          {repeat.previous.instructions ? (
+            <p className="mt-1.5 text-xs text-ink-3">Instructions then: {repeat.previous.instructions}</p>
+          ) : null}
+          <p className="mt-2 text-xs text-ink-3">
+            Add it only if the clinician meant a repeat or a longer course. The earlier handover stays on the record either way.
+          </p>
+        </ConfirmDialog>
+      ) : null}
     </div>
   );
 }

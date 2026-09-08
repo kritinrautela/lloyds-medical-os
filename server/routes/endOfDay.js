@@ -29,13 +29,19 @@ router.get('/today', async (req, res) => {
 
     // Breakdown of Medicines Dispensed Today
     const dispensedMeds = await allQuery(`
-      SELECT di.drug_name, SUM(di.quantity) as total_units, SUM(di.subtotal) as total_revenue
+      SELECT di.drug_name, SUM(di.quantity) as total_units, SUM(di.subtotal) as total_revenue,
+        (SELECT COALESCE(d2.dispensed_by, d2.dispensed_by_name)
+         FROM dispensation_items di2
+         JOIN dispensations d2 ON d2.id = di2.dispensation_id
+         WHERE di2.drug_name = di.drug_name AND date(d2.created_at) = ?
+         ORDER BY d2.created_at DESC, d2.id DESC
+         LIMIT 1) AS last_dispensed_by
       FROM dispensation_items di
       JOIN dispensations d ON di.dispensation_id = d.id
       WHERE date(d.created_at) = ?
       GROUP BY di.drug_name
       ORDER BY total_units DESC
-    `, [todayStr]);
+    `, [todayStr, todayStr]);
 
     /*
      * The exceptions of the day. These are the lines a supervisor actually
