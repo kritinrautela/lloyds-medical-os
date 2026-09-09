@@ -208,7 +208,7 @@ function HospitalAppContent() {
 
   if (IS_WAITING_ROOM) {
     return (
-      <Suspense fallback={<div className="light-theme min-h-screen sheet-ground" aria-busy="true" />}>
+      <Suspense fallback={<div className="light-theme min-h-screen bg-canvas" aria-busy="true" />}>
         <WaitingRoom />
       </Suspense>
     );
@@ -217,7 +217,7 @@ function HospitalAppContent() {
   // While the stored session is being re-checked, show nothing rather than a
   // flash of the sign-in screen for someone who is already signed in.
   if (checking) {
-    return <div className="light-theme min-h-screen sheet-ground" aria-busy="true" />;
+    return <div className="light-theme min-h-screen bg-canvas" aria-busy="true" />;
   }
 
   /*
@@ -226,7 +226,7 @@ function HospitalAppContent() {
    */
   if (needsSetup) {
     return (
-      <div className="light-theme flex min-h-screen items-center justify-center sheet-ground py-10 text-ink">
+      <div className="light-theme flex min-h-screen items-center justify-center bg-canvas py-10 text-ink">
         <FirstRunSetup facilityName={settings?.name} />
       </div>
     );
@@ -239,7 +239,7 @@ function HospitalAppContent() {
    */
   if (!currentUser) {
     return (
-      <div className="light-theme min-h-screen sheet-ground text-ink">
+      <div className="light-theme min-h-screen bg-canvas text-ink">
         <AuthModal facilityName={settings?.name} facility={settings} />
       </div>
     );
@@ -252,14 +252,14 @@ function HospitalAppContent() {
    */
   if (mustChangePassword) {
     return (
-      <div className="light-theme flex min-h-screen items-center justify-center sheet-ground py-10 text-ink">
+      <div className="light-theme flex min-h-screen items-center justify-center bg-canvas py-10 text-ink">
         <ChangePasswordGate />
       </div>
     );
   }
 
   return (
-    <div className="light-theme sheet-ground flex min-h-screen text-ink">
+    <div className="light-theme flex min-h-screen bg-canvas text-ink">
       <IdleGuard />
       {/* Navigation Sidebar with Official Lloyds Branding */}
       <Sidebar
@@ -287,7 +287,6 @@ function HospitalAppContent() {
         <Navbar
           onOpenNav={() => setIsNavOpen(true)}
           settings={settings}
-          showClock={activeTab !== 'dashboard'}
           onQuickSearch={handleQuickSearch}
           onOpenCheckIn={() => handleOpenCheckIn(null)}
           onOpenDispense={() => {

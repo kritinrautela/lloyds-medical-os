@@ -130,10 +130,10 @@ export default function AuthModal({ facilityName, facility }) {
   if (!mustSignIn) {
     return (
       <div ref={scrimRef} tabIndex={-1} className="scrim outline-none" role="dialog" aria-modal="true" aria-label="Sign in">
-        <div className="panel w-full max-w-sm overflow-hidden shadow-overlay">
-          <div className="h-1 bg-brand" aria-hidden="true" />
+        <div className="panel w-full max-w-sm shadow-overlay">
+          <div className="identity-band" />
           <div className="px-5 py-5">
-            <h1 className="text-base font-bold text-ink">Sign in as someone else</h1>
+            <h1 className="text-base font-semibold text-ink">Sign in as someone else</h1>
             <p className="mt-0.5 text-xs text-ink-3">
               {currentUser.full_name} stays responsible for everything recorded until you do.
             </p>
@@ -165,48 +165,41 @@ export default function AuthModal({ facilityName, facility }) {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-      {/* The front cover of the register: the company mark on its pasted
-          label, the facility name, and the three promises the system makes.
-          The sign-in sheet sits on the first ruled page beside it. */}
-      <section className="cover-page relative flex flex-col justify-between px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
-        <div className="cover-label inline-flex self-start p-2">
-          <LloydsLogo size="lg" framed={false} />
-        </div>
+      <section className="identity-band relative flex flex-col justify-between border-b border-line-soft px-6 py-8 sm:px-10 lg:border-b-0 lg:border-r lg:px-14 lg:py-12">
+        <LloydsLogo size="lg" showSubtitle subtitle="Papua New Guinea operations" />
 
         <div className="my-10 max-w-lg lg:my-0">
-          <h1 className="text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{name}</h1>
+          <h1 className="text-balance text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{name}</h1>
           {facility?.tagline ? (
-            <p className="cover-ink-2 mt-2 text-sm leading-relaxed">{facility.tagline}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-2">{facility.tagline}</p>
           ) : null}
-          <p className="cover-ink-2 mt-1 text-xs">
-            {['Papua New Guinea operations', place].filter(Boolean).join(' · ')}
-          </p>
+          {place ? <p className="mt-1 text-xs text-ink-3">{place}</p> : null}
 
           <dl className="mt-8 space-y-5">
             {PROMISES.map(({ icon: Icon, title, text }) => (
               <div key={title} className="flex gap-3">
-                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-white/25 bg-white/10 text-white">
+                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-brand">
                   <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
                 <div>
-                  <dt className="text-sm font-bold text-white">{title}</dt>
-                  <dd className="cover-ink-2 mt-0.5 max-w-md text-xs leading-relaxed">{text}</dd>
+                  <dt className="text-sm font-semibold text-ink">{title}</dt>
+                  <dd className="mt-0.5 max-w-md text-xs leading-relaxed text-ink-2">{text}</dd>
                 </div>
               </div>
             ))}
           </dl>
         </div>
 
-        <p className="cover-ink-2 text-2xs">
+        <p className="text-2xs text-ink-3">
           Lloyds Medical OS · version {APP_VERSION}
           {facility?.doctor_in_charge ? ` · Doctor in charge: ${facility.doctor_in_charge}` : ''}
         </p>
       </section>
 
-      <section className="order-first flex items-center justify-center px-4 py-10 sm:px-8 lg:order-none">
+      <section className="flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="panel w-full max-w-sm shadow-overlay">
           <div className="px-5 py-5">
-            <h2 className="text-base font-bold text-ink">Sign in</h2>
+            <h2 className="text-base font-semibold text-ink">Sign in</h2>
             <p className="mt-0.5 text-xs text-ink-3">
               Use your own account. Everything you record today is kept under your name.
             </p>

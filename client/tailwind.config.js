@@ -2,8 +2,8 @@
 
 /*
  * Every colour resolves through a CSS custom property, so the same class name
- * renders correctly in the day sheet used at the outpatient counter and the
- * carbon-copy night sheet used on the ward. The channel form
+ * renders correctly in the daylight theme used at the outpatient counter and
+ * the low-light theme used on the night shift. The channel form
  * `rgb(var(--x) / <alpha-value>)` keeps Tailwind's opacity modifiers working.
  */
 const token = (name) => `rgb(var(${name}) / <alpha-value>)`;
@@ -16,9 +16,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paper, sheets and rules. Everything structural is a shade of the
-        // register's blue so that red, amber and green on screen always mean
-        // a clinical or operational state.
+        // Surfaces and rules. Everything structural is neutral so that any
+        // colour on screen means a clinical state and nothing else.
         canvas: token('--c-canvas'),
         surface: token('--c-surface'),
         subtle: token('--c-subtle'),
@@ -33,18 +32,11 @@ export default {
           3: token('--c-ink-3'),
           inverse: token('--c-ink-inverse')
         },
-        // The book's own blue: cobalt ink, the deep cover, and its wash.
+        // Lloyds brand. Reserved for identity and the primary action only.
         brand: {
           DEFAULT: token('--c-brand'),
           deep: token('--c-brand-deep'),
           wash: token('--c-brand-wash')
-        },
-        // The spine that carries the navigation.
-        spine: {
-          DEFAULT: token('--c-spine'),
-          hover: token('--c-spine-hover'),
-          ink: token('--c-spine-ink'),
-          'ink-2': token('--c-spine-ink-2')
         },
         // Clinical status scale. Never decorative.
         critical: {
@@ -69,19 +61,16 @@ export default {
         }
       },
       fontFamily: {
-        // Archivo is bundled with the build (see main.jsx), so the clinic's
-        // laptops draw it with no internet. The platform stack is the fallback
-        // only while the file loads.
-        sans: ['Archivo Variable', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace']
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }]
       },
       borderRadius: {
-        DEFAULT: '4px',
-        md: '4px',
-        lg: '6px'
+        DEFAULT: '6px',
+        md: '8px',
+        lg: '10px'
       },
       boxShadow: {
         panel: 'var(--shadow-panel)',

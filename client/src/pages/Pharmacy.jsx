@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Package, Plus, Search, Trash2, X } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -136,17 +136,17 @@ export default function Pharmacy({ settings, refreshStats }) {
 
       <MetricStrip columns={5}>
         <Metric label="Out of stock" value={summary.out} context="Cannot be dispensed"
-          tone={summary.out > 0 ? 'critical' : 'neutral'}
+          tone={summary.out > 0 ? 'critical' : 'neutral'} tint="1" icon={Package}
           onClick={() => setFilter('out')} />
         <Metric label="Expired" value={summary.expired} context="Remove from the shelf"
-          tone={summary.expired > 0 ? 'critical' : 'neutral'}
+          tone={summary.expired > 0 ? 'critical' : 'neutral'} tint="2" icon={AlertTriangle}
           onClick={() => setFilter('out')} />
         <Metric label="Low stock" value={summary.low} context="At or below the reorder level"
-          tone={summary.low > 0 ? 'warn' : 'neutral'} onClick={() => setFilter('low')} />
+          tone={summary.low > 0 ? 'warn' : 'neutral'} tint="3" onClick={() => setFilter('low')} />
         <Metric label="Expiring soon" value={summary.expiring} context={`Within ${EXPIRY_WARN_DAYS} days`}
-          tone={summary.expiring > 0 ? 'warn' : 'neutral'} onClick={() => setFilter('expiring')} />
+          tone={summary.expiring > 0 ? 'warn' : 'neutral'} tint="4" onClick={() => setFilter('expiring')} />
         <Metric label="Stock value" value={`${currency} ${summary.value.toFixed(0)}`}
-          context="At recorded cost price" />
+          context="At recorded cost price" tint="5" />
       </MetricStrip>
 
       <Panel>

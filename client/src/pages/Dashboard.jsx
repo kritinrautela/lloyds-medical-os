@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
-  Activity, AlertTriangle, BedDouble, ClipboardList, Download, HardHat, Package,
-  RefreshCw, ScrollText, ShieldCheck, Stethoscope, UserPlus, Users, X
+  Activity, AlarmClock, AlertTriangle, BedDouble, ClipboardList, Coins, Download,
+  HardHat, HeartPulse, Package, PackageCheck, Receipt, RefreshCw, ScrollText,
+  ShieldCheck, Stethoscope, UserCheck, UserPlus, Users, UsersRound, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -136,45 +137,41 @@ export default function Dashboard({
 
       <SectionNav section={section} setSection={setSection} stats={stats} />
 
-      {/* The page turns once when a tab is chosen. Keying on the section
-          restarts the motion for the new page and nothing else. */}
-      <div key={section} className="page-turn">
-        {section === 'overview' ? (
-          <Overview
-            stats={stats}
-            money={money}
-            onNavigate={setActiveTab}
-            onSelectSection={setSection}
-            isAdmin={currentUser?.role === 'Administrator'}
-          />
-        ) : null}
+      {section === 'overview' ? (
+        <Overview
+          stats={stats}
+          money={money}
+          onNavigate={setActiveTab}
+          onSelectSection={setSection}
+          isAdmin={currentUser?.role === 'Administrator'}
+        />
+      ) : null}
 
-        {section === 'ward' ? (
-          <WardBoard
-            stats={stats}
-            onAdmit={(bed) => setBedModal({ bed, mode: 'admit' })}
-            onDischarge={(bed) => setBedModal({ bed, mode: 'discharge' })}
-          />
-        ) : null}
+      {section === 'ward' ? (
+        <WardBoard
+          stats={stats}
+          onAdmit={(bed) => setBedModal({ bed, mode: 'admit' })}
+          onDischarge={(bed) => setBedModal({ bed, mode: 'discharge' })}
+        />
+      ) : null}
 
-        {section === 'pharmacy' ? (
-          <PharmacyBoard stats={stats} money={money} onNavigate={setActiveTab} />
-        ) : null}
+      {section === 'pharmacy' ? (
+        <PharmacyBoard stats={stats} money={money} onNavigate={setActiveTab} />
+      ) : null}
 
-        {section === 'controls' ? (
-          <ControlsBoard stats={stats} money={money} onNavigate={setActiveTab} />
-        ) : null}
+      {section === 'controls' ? (
+        <ControlsBoard stats={stats} money={money} onNavigate={setActiveTab} />
+      ) : null}
 
-        {section === 'trends' ? <TrendsBoard stats={stats} money={money} /> : null}
+      {section === 'trends' ? <TrendsBoard stats={stats} money={money} /> : null}
 
-        {section === 'safety' ? <SafetyBoard stats={stats} /> : null}
+      {section === 'safety' ? <SafetyBoard stats={stats} /> : null}
 
-        {section === 'handover' ? (
-          <HandoverBoard stats={stats} onAddNote={() => setNoteModalOpen(true)} />
-        ) : null}
+      {section === 'handover' ? (
+        <HandoverBoard stats={stats} onAddNote={() => setNoteModalOpen(true)} />
+      ) : null}
 
-        {section === 'audit' ? <AuditBoard stats={stats} /> : null}
-      </div>
+      {section === 'audit' ? <AuditBoard stats={stats} /> : null}
 
       <ShiftNoteModal
         open={noteModalOpen}
@@ -217,7 +214,7 @@ function SampleDataNotice({ onOpenSettings }) {
             <p className="text-sm font-semibold text-ink">
               This system is showing sample records, not real patients
             </p>
-            <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-ink-2">
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
               The patients, visits, sales and incidents on screen were installed for training. Clear
               them before the clinic sees its first real patient. The drug formulary and staff
               accounts are kept.
@@ -234,58 +231,45 @@ function SampleDataNotice({ onOpenSettings }) {
 
 function FacilityBar({ settings, currentUser, clock, staleMinutes, onRefresh, refreshing }) {
   const stale = typeof staleMinutes === 'number' && staleMinutes >= 3;
-  const location = [settings?.district, settings?.province, settings?.country].filter(Boolean).join(' · ');
 
-  // The cover of the register: the facility name on cobalt cloth, the time in
-  // large tabular figures, and a stamp saying how old the figures below are.
   return (
-    <header>
-      <div className="cover overflow-hidden">
-        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 px-5 pb-4 pt-5">
-          <div className="min-w-0">
-            <h1 className="line-clamp-2 text-2xl font-extrabold leading-tight tracking-tight text-white sm:line-clamp-none sm:truncate sm:text-[28px]">
-              {settings?.name || 'Lloyds Medical OS'}
-            </h1>
-            <p className="cover-ink-2 mt-1 text-sm sm:truncate">
-              {location || <span className="italic">Facility location not set</span>}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-end gap-x-7 gap-y-3">
-            <div>
-              <p className="cover-ink-2 text-[10.5px] font-bold uppercase tracking-[0.12em]">Local time</p>
-              <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight text-white tabular-nums">
-                {clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
-              </p>
-            </div>
-            <Reading label="Date">
-              {clock.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-            </Reading>
-            <Reading label="Signed in">
-              {currentUser?.full_name || '—'}
-            </Reading>
-          </div>
+    <Panel as="header" className="overflow-hidden">
+      <div className="identity-rule" aria-hidden="true" />
+      <div className="identity-band flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-base font-semibold text-ink">
+            {settings?.name || 'Lloyds Medical OS'}
+          </h1>
+          <p className="mt-0.5 truncate text-xs text-ink-3">
+            {[settings?.district, settings?.province, settings?.country].filter(Boolean).join(' · ') || (
+              <span className="unrecorded">Facility location not set</span>
+            )}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-white/15 bg-black/10 px-5 py-2.5">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className={`stamp ${stale ? 'on-blue-warn' : 'text-white'}`}>
-              Figures as of
-              {typeof staleMinutes !== 'number'
-                ? ' —'
-                : staleMinutes < 1
-                ? ' just now'
-                : ` ${formatDuration(staleMinutes)} ago`}
-            </span>
-            <span className="cover-ink-2 inline-flex items-center gap-1.5 text-xs">
-              <span className="on-blue-ok inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
-              Records are held on this machine. The clinic keeps working with no internet.
-            </span>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <Reading label="Local time">
+            {clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+          </Reading>
+          <Reading label="Date">
+            {clock.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+          </Reading>
+          <Reading label="Signed in">
+            {currentUser?.full_name || '—'}
+          </Reading>
+          <Reading label="Figures as of">
+            {typeof staleMinutes !== 'number' ? (
+              <span className="unrecorded">—</span>
+            ) : staleMinutes < 1 ? (
+              'Just now'
+            ) : (
+              <span className={stale ? 'text-warn' : undefined}>{formatDuration(staleMinutes)} ago</span>
+            )}
+          </Reading>
 
           <button
             type="button"
-            className="btn btn-sm btn-cover"
+            className="btn btn-sm"
             onClick={onRefresh}
             disabled={refreshing}
           >
@@ -295,19 +279,25 @@ function FacilityBar({ settings, currentUser, clock, staleMinutes, onRefresh, re
         </div>
       </div>
 
-      <p className="mt-2 max-w-3xl px-1 text-2xs text-ink-3">
-        Every figure on this page is read from the clinic database. A dash means the record has no
-        value, not a value of zero.
-      </p>
-    </header>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-soft px-4 py-2 text-2xs text-ink-3">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-ok" aria-hidden="true" />
+          Records are held on this machine. The clinic keeps working with no internet.
+        </span>
+        <span>
+          Every figure below is read from the clinic database. A dash means the record has no value,
+          not a value of zero.
+        </span>
+      </div>
+    </Panel>
   );
 }
 
 function Reading({ label, children }) {
   return (
     <div>
-      <p className="cover-ink-2 text-[10.5px] font-bold uppercase tracking-[0.12em]">{label}</p>
-      <p className="mt-1 text-sm font-bold leading-none text-white">{children}</p>
+      <p className="text-2xs uppercase tracking-wide text-ink-3">{label}</p>
+      <p className="text-sm font-semibold text-ink">{children}</p>
     </div>
   );
 }
@@ -348,13 +338,9 @@ function SectionNav({ section, setSection, stats }) {
     handover: (stats?.shiftNotes || []).length
   };
 
-  // Index tabs cut along the head of the page. The open section is filled in
-  // ink; the others wait in the paper colour. A count on a tab is how many
-  // lines that page currently holds. On a narrow screen the tabs wrap into a
-  // second row rather than scrolling out of sight.
   return (
-    <nav className="pt-1" aria-label="Dashboard sections">
-      <ul className="tab-row">
+    <nav className="panel overflow-x-auto" aria-label="Dashboard sections">
+      <ul className="flex min-w-max">
         {SECTIONS.map((s) => {
           const Icon = s.icon;
           const active = section === s.id;
@@ -365,11 +351,19 @@ function SectionNav({ section, setSection, stats }) {
                 type="button"
                 onClick={() => setSection(s.id)}
                 aria-current={active ? 'page' : undefined}
-                className="tab"
+                className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  active
+                    ? 'border-brand text-ink'
+                    : 'border-transparent text-ink-3 hover:bg-subtle hover:text-ink-2'
+                }`}
               >
-                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {s.label}
-                {badge ? <span className="tab-count">{badge}</span> : null}
+                {badge ? (
+                  <span className="rounded bg-subtle px-1.5 text-2xs font-semibold text-ink-2">
+                    {badge}
+                  </span>
+                ) : null}
               </button>
             </li>
           );
@@ -389,7 +383,7 @@ function Overview({ stats, money, onNavigate, onSelectSection, isAdmin }) {
       <GettingStarted setup={stats?.setup} onNavigate={onNavigate} isAdmin={isAdmin} />
       <AttentionBoard stats={stats} onNavigate={onNavigate} onSelectSection={onSelectSection} />
 
-      <section className="space-y-2">
+      <section className="enter enter-1 space-y-2">
         <SectionTitle note="Updates every minute">In the department now</SectionTitle>
         <MetricStrip columns={6}>
           <Metric
@@ -397,6 +391,8 @@ function Overview({ stats, money, onNavigate, onSelectSection, isAdmin }) {
             value={stats.queueMap?.Waiting ?? 0}
             context="Checked in, not yet seen"
             tone={(stats.queueMap?.Waiting || 0) > 10 ? 'warn' : 'neutral'}
+            tint="2"
+            icon={UsersRound}
             onClick={() => onNavigate('queue')}
           />
           <Metric
@@ -404,51 +400,63 @@ function Overview({ stats, money, onNavigate, onSelectSection, isAdmin }) {
             value={formatDuration(stats.longest_wait_minutes)}
             context="Time the first patient has been here"
             tone={stats.longest_wait_minutes >= 90 ? 'warn' : 'neutral'}
+            tint="2"
+            icon={AlarmClock}
           />
           <Metric
             label="With a clinician"
             value={stats.queueMap?.['In Consultation'] ?? 0}
             context="In consultation right now"
+            tint="1"
+            icon={Stethoscope}
           />
           <Metric
             label="Urgent or emergency"
             value={(stats.urgentVisits || []).length}
             context="Open visits at high triage priority"
             tone={(stats.urgentVisits || []).length > 0 ? 'critical' : 'neutral'}
+            tint="4"
+            icon={HeartPulse}
           />
           <Metric
             label="Beds occupied"
             value={stats.occupied_beds ?? 0}
             context={bedTotal ? `of ${bedTotal} in the ward` : 'No beds configured'}
+            tint="4"
+            icon={BedDouble}
             onClick={() => onSelectSection('ward')}
           />
           <Metric
             label="Staff on the system"
             value={stats.staff_online ?? 0}
             context="Devices active in the last five minutes"
+            tint="5"
+            icon={UserCheck}
             onClick={() => onSelectSection('controls')}
           />
         </MetricStrip>
       </section>
 
-      <section className="space-y-2">
+      <section className="enter enter-2 space-y-2">
         <SectionTitle note="Since midnight">Recorded today</SectionTitle>
         <MetricStrip columns={6}>
-          <Metric label="Attendances" value={stats.today_visitors ?? 0} context="Visits opened today" />
-          <Metric label="New patients" value={stats.new_patients_today ?? 0} context="First registration today" />
-          <Metric label="Completed" value={stats.queueMap?.Completed ?? 0} context="Visits closed today" />
-          <Metric label="Consultation fees" value={money(stats.today_opd_fees ?? 0)} context="Collected at reception" />
-          <Metric label="Pharmacy sales" value={money(stats.today_pharmacy_revenue ?? 0)} context="Collected at the counter" />
+          <Metric label="Attendances" value={stats.today_visitors ?? 0} context="Visits opened today" tint="2" icon={Users} />
+          <Metric label="New patients" value={stats.new_patients_today ?? 0} context="First registration today" tint="1" icon={UserPlus} />
+          <Metric label="Completed" value={stats.queueMap?.Completed ?? 0} context="Visits closed today" tint="6" icon={PackageCheck} />
+          <Metric label="Consultation fees" value={money(stats.today_opd_fees ?? 0)} context="Collected at reception" tint="3" icon={Receipt} />
+          <Metric label="Pharmacy sales" value={money(stats.today_pharmacy_revenue ?? 0)} context="Collected at the counter" tint="3" icon={Coins} />
           <Metric
             label="Total collected"
             value={money(stats.total_revenue_today ?? 0)}
             context="Fees plus pharmacy"
+            tint="5"
+            icon={Wallet}
             onClick={() => onNavigate('end-of-day')}
           />
         </MetricStrip>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="enter enter-3 grid gap-4 xl:grid-cols-2">
         <PatientFlow stats={stats} onNavigate={onNavigate} />
         <PriorityPatients stats={stats} onNavigate={onNavigate} />
       </div>

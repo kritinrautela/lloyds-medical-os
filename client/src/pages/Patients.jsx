@@ -898,13 +898,13 @@ function PatientRecord({ patientId, currentUser, settings, onClose, onChanged, o
               <div className="min-w-0 space-y-4">
                 <MetricStrip columns={4}>
                   <Metric label="Visits" value={visits.length}
-                    context={visits[0] ? `Last seen ${visits[0].visit_date}` : 'Never seen'} />
+                    context={visits[0] ? `Last seen ${visits[0].visit_date}` : 'Never seen'} tint="1" />
                   <Metric label="Medicines handed over" value={dispensations.length}
-                    context={dispensations[0] ? `Last ${formatDateTime(dispensations[0].created_at)}` : 'None yet'} />
+                    context={dispensations[0] ? `Last ${formatDateTime(dispensations[0].created_at)}` : 'None yet'} tint="2" />
                   <Metric label="Paid at the counter" value={`K ${collected.toFixed(2)}`}
-                    context="Pharmacy, all visits" />
+                    context="Pharmacy, all visits" tint="3" />
                   <Metric label="Consultation fees" value={`K ${fees.toFixed(2)}`}
-                    context="Recorded at check-in" />
+                    context="Recorded at check-in" tint="4" />
                 </MetricStrip>
 
                 <Panel>

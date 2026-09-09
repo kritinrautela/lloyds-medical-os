@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
-  AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, Circle, Cloud, CloudOff,
-  FileSpreadsheet, Lock, Package, ShieldAlert, Users, Wallet, X
+  AlertTriangle, ArrowRight, BedDouble, Boxes, CalendarClock, CheckCircle2,
+  Circle, Cloud, CloudOff, CircleSlash, FileSpreadsheet, HardHat, Lock, Package,
+  PackageMinus, ScrollText, ShieldAlert, ShieldCheck, Sparkles, Users, Wallet,
+  Warehouse, X
 } from 'lucide-react';
 import {
-  Bar, EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill,
-  Value, Vital, formatDateTime, formatDuration, hasAllergy, scoreVital, systolicOf
+  Bar, Donut, EmptyState, Metric, MetricStrip, Panel, PanelHead, Pill, Value,
+  Vital, formatDateTime, formatDuration, hasAllergy, scoreVital, systolicOf
 } from './ui';
 
 /*
@@ -57,7 +59,7 @@ export function GettingStarted({ setup, onNavigate, isAdmin }) {
   };
 
   return (
-    <Panel>
+    <Panel className="enter">
       <PanelHead title="Getting started" note={`${done} of ${SETUP_STEPS.length} done. Each one ticks itself off once the records show it.`}>
         <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-subtle sm:block" aria-hidden="true">
           <div className="h-full rounded-full bg-ok transition-[width] duration-500" style={{ width: `${(done / SETUP_STEPS.length) * 100}%` }} />
@@ -479,24 +481,41 @@ export function WardBoard({ stats, onAdmit, onDischarge }) {
 
   return (
     <div className="space-y-4">
-      <MetricStrip columns={3}>
+      <div className="grid gap-4 lg:grid-cols-[auto,1fr]">
+        <Panel className="flex items-center px-5 py-4">
+          <Donut
+            value={occupied}
+            max={beds.length}
+            label="of the ward is occupied"
+            tone={beds.length && occupied / beds.length >= 0.85 ? 'warn' : 'neutral'}
+          />
+        </Panel>
+
+        <MetricStrip columns={3}>
           <Metric
             label="Beds occupied"
             value={occupied}
             context={`of ${beds.length} in the facility`}
+            tint="4"
+            icon={BedDouble}
           />
           <Metric
             label="Ready for admission"
             value={available}
             context="Cleaned and available"
             tone={available === 0 ? 'warn' : 'neutral'}
+            tint="6"
+            icon={CheckCircle2}
           />
           <Metric
             label="Off the board"
             value={other}
             context="Cleaning, isolation or maintenance"
+            tint="5"
+            icon={CircleSlash}
           />
         </MetricStrip>
+      </div>
 
       {beds.length === 0 ? (
         <Panel>
@@ -599,21 +618,27 @@ export function PharmacyBoard({ stats, money, onNavigate }) {
           value={stats?.out_of_stock_count ?? 0}
           context="Nothing left on the shelf"
           tone={(stats?.out_of_stock_count || 0) > 0 ? 'critical' : 'neutral'}
+          tint="3"
+          icon={PackageMinus}
         />
         <Metric
           label="Below reorder level"
           value={stats?.low_stock_count ?? 0}
           context="At or under the minimum"
           tone={(stats?.low_stock_count || 0) > 0 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={Package}
         />
         <Metric
           label="Expiring within 90 days"
           value={stats?.expiring_soon_count ?? 0}
           context={`${stats?.expired_count ?? 0} already past expiry`}
           tone={(stats?.expired_count || 0) > 0 ? 'critical' : (stats?.expiring_soon_count || 0) > 0 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={CalendarClock}
         />
-        <Metric label="Items dispensed today" value={stats?.items_dispensed_today ?? 0} context="Units across all transactions" />
-        <Metric label="Stock at cost" value={money(stats?.formulary_value ?? 0)} context="Whole formulary valuation" />
+        <Metric label="Items dispensed today" value={stats?.items_dispensed_today ?? 0} context="Units across all transactions" tint="6" icon={Boxes} />
+        <Metric label="Stock at cost" value={money(stats?.formulary_value ?? 0)} context="Whole formulary valuation" tint="5" icon={Warehouse} />
       </MetricStrip>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -743,6 +768,8 @@ export function ControlsBoard({ stats, money, onNavigate }) {
           label="Collected today"
           value={money(stats?.total_revenue_today ?? 0)}
           context="Consultation fees plus pharmacy sales"
+          tint="5"
+          icon={Wallet}
         />
         <Metric
           label="Discounts given"
@@ -753,23 +780,31 @@ export function ControlsBoard({ stats, money, onNavigate }) {
               : `${discountRate.toFixed(1)}% of gross pharmacy sales`
           }
           tone={discountRate !== null && discountRate > 10 ? 'warn' : 'neutral'}
+          tint="3"
+          icon={Sparkles}
         />
         <Metric
           label="Flagged transactions"
           value={flagged.length}
           context="Discounted or nothing collected"
           tone={flagged.length > 0 ? 'warn' : 'neutral'}
+          tint="4"
+          icon={AlertTriangle}
         />
         <Metric
           label="Shift close filed"
           value={eod ? 'Yes' : 'No'}
           context={eod ? `Counted by ${eod.cashier_name || 'unnamed'}` : 'Cash has not been counted yet today'}
           tone={eod ? 'ok' : 'warn'}
+          tint="6"
+          icon={ShieldCheck}
         />
         <Metric
           label="Audit entries today"
           value={stats?.audit_events_today ?? 0}
           context="Actions written to the permanent log"
+          tint="1"
+          icon={ScrollText}
         />
       </MetricStrip>
 
@@ -1194,16 +1229,10 @@ export function TrendsBoard({ stats, money }) {
 }
 
 function RevenueRow({ label, value, strong }) {
-  // The total is ruled the way a ledger rules a total: a line above it and a
-  // double line beneath.
   return (
-    <div
-      className={`flex items-baseline justify-between gap-3 px-4 py-2.5 ${
-        strong ? 'border-b-[3px] border-double border-line-strong bg-subtle/60' : ''
-      }`}
-    >
-      <dt className={strong ? 'font-bold uppercase tracking-wide text-[11px] text-brand-deep' : 'text-ink-2'}>{label}</dt>
-      <dd className={`font-bold tabular-nums ${strong ? 'text-lg text-ink' : 'text-ink'}`}>{value}</dd>
+    <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+      <dt className={strong ? 'font-semibold text-ink' : 'text-ink-2'}>{label}</dt>
+      <dd className={`font-semibold ${strong ? 'text-base text-ink' : 'text-ink'}`}>{value}</dd>
     </div>
   );
 }
@@ -1223,6 +1252,8 @@ export function SafetyBoard({ stats }) {
           value={stats?.incidents_30d ?? 0}
           context="Recorded in the occupational health register"
           tone={(stats?.incidents_30d || 0) > 0 ? 'warn' : 'ok'}
+          tint="4"
+          icon={HardHat}
         />
         <Metric
           label="Days since the last incident"

@@ -8,32 +8,27 @@ import LloydsLogo from './LloydsLogo';
 import { useAuth } from '../context/AuthContext';
 
 /*
- * Primary navigation: the spine of the register.
+ * Primary navigation.
  *
- * The whole column is bound in the book's deep blue. The company mark sits on
- * a white label pasted to the cover, each section is a line on the spine, and
- * the open section is a tab cut out in the paper colour so it joins the page
- * to its right.
- *
- * The status block at the bottom reports only what is verifiable from this
- * machine: whether the browser has a network connection, and when a copy last
- * left the building. It does not claim encryption the software does not
- * perform.
+ * The status block at the top and bottom reports only what is verifiable from
+ * this machine: whether the browser has a network connection, and whether a
+ * replication endpoint has been configured and has actually succeeded. It does
+ * not claim encryption the software does not perform.
  */
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Clinical board', icon: LayoutDashboard },
-  { id: 'patients', label: 'Patient register', icon: Users, badge: (s) => s?.total_patients },
-  { id: 'queue', label: 'Outpatient queue', icon: Activity, badge: (s) => s?.queueMap?.Waiting, badgeTone: 'warn' },
-  { id: 'registers', label: 'Clinical registers', icon: ClipboardList,
+  { id: 'dashboard', label: 'Clinical board', icon: LayoutDashboard, tint: 'brand' },
+  { id: 'patients', label: 'Patient register', icon: Users, tint: '1', badge: (s) => s?.total_patients },
+  { id: 'queue', label: 'Outpatient queue', icon: Activity, tint: '2', badge: (s) => s?.queueMap?.Waiting, badgeTone: 'warn' },
+  { id: 'registers', label: 'Clinical registers', icon: ClipboardList, tint: '2',
     badge: (s) => ((s?.follow_ups_overdue || 0) + (s?.follow_ups_due_today || 0) + (s?.open_referrals || 0)) || undefined, badgeTone: 'warn' },
-  { id: 'pharmacy', label: 'Pharmacy formulary', icon: Pill, badge: (s) => s?.low_stock_count, badgeTone: 'critical' },
-  { id: 'dispense', label: 'Dispensing counter', icon: ShoppingCart },
-  { id: 'staff', label: 'Staff and access', icon: ShieldCheck },
-  { id: 'end-of-day', label: 'Shift close', icon: FileCheck },
-  { id: 'export', label: 'Protected export', icon: FileSpreadsheet },
-  { id: 'cloud-sync', label: 'Off-site copies', icon: Cloud },
-  { id: 'settings', label: 'Facility settings', icon: Settings }
+  { id: 'pharmacy', label: 'Pharmacy formulary', icon: Pill, tint: '3', badge: (s) => s?.low_stock_count, badgeTone: 'critical' },
+  { id: 'dispense', label: 'Dispensing counter', icon: ShoppingCart, tint: '3' },
+  { id: 'staff', label: 'Staff and access', icon: ShieldCheck, tint: '5' },
+  { id: 'end-of-day', label: 'Shift close', icon: FileCheck, tint: '5' },
+  { id: 'export', label: 'Protected export', icon: FileSpreadsheet, tint: '6' },
+  { id: 'cloud-sync', label: 'Off-site copies', icon: Cloud, tint: '6' },
+  { id: 'settings', label: 'Facility settings', icon: Settings, tint: '4' }
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOpen = false, onClose }) {
@@ -59,10 +54,10 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOp
   const copyHours = latestCopy ? (Date.now() - new Date(latestCopy.at).getTime()) / 36e5 : null;
 
   const backupState = !latestCopy
-    ? { tone: 'text-spine-ink-2', label: 'No copy yet', icon: CloudOff }
+    ? { tone: 'text-ink-3', label: 'No copy yet', icon: CloudOff }
     : copyHours < 48
-    ? { tone: 'on-blue-ok', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: Cloud }
-    : { tone: 'on-blue-warn', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: CloudOff };
+    ? { tone: 'text-ok', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: Cloud }
+    : { tone: 'text-warn', label: `${latestCopy.label} ${ageLabel(latestCopy.at)}`, icon: CloudOff };
 
   const BackupIcon = backupState.icon;
 
@@ -79,35 +74,31 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOp
   return (
     <aside
       id="primary-navigation"
-      className={`spine fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 select-none flex-col justify-between transition-transform duration-200 lg:sticky lg:top-0 lg:z-30 lg:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 select-none flex-col justify-between border-r border-line bg-surface transition-transform duration-200 lg:sticky lg:top-0 lg:z-30 lg:translate-x-0 ${
         isOpen ? 'translate-x-0 shadow-overlay' : '-translate-x-full'
       }`}
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 pb-3 pt-4">
-          <div className="cover-label inline-flex p-1.5">
-            <LloydsLogo size="sm" framed={false} />
-          </div>
-          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-spine-ink-2">
-            Papua New Guinea operations
-          </p>
-          <p className="mt-1 text-2xs leading-relaxed text-spine-ink-2">
+        <div className="identity-rule" aria-hidden="true" />
+        <div className="identity-band border-b border-line-soft px-4 py-4">
+          <LloydsLogo size="sm" showSubtitle subtitle="Papua New Guinea operations" />
+          <p className="mt-2 text-2xs leading-relaxed text-ink-3">
             Occupational health centre and community hospital
           </p>
         </div>
 
-        <nav className="pb-2 pl-2 pt-1" aria-label="Primary">
+        <nav className="p-2" aria-label="Primary">
           <ul className="space-y-0.5">
             {visibleItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
               const badgeValue = item.badge ? item.badge(stats) : null;
-              const countClass =
+              const badgeToneClass =
                 item.badgeTone === 'critical'
-                  ? 'spine-count spine-count-critical'
+                  ? 'bg-critical-wash text-critical border-critical-line'
                   : item.badgeTone === 'warn'
-                  ? 'spine-count spine-count-warn'
-                  : 'spine-count';
+                  ? 'bg-warn-wash text-warn border-warn-line'
+                  : 'bg-subtle text-ink-2 border-line';
 
               return (
                 <li key={item.id}>
@@ -116,16 +107,20 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOp
                     id={`nav-btn-${item.id}`}
                     onClick={() => go(item.id)}
                     aria-current={active ? 'page' : undefined}
-                    className="spine-item flex w-full items-center justify-between gap-2 py-2 pl-2.5 pr-3 text-left text-sm font-semibold"
+                    className={`flex w-full items-center justify-between gap-2 rounded px-3 py-2 text-left text-sm transition-colors ${
+                      active
+                        ? 'bg-brand-wash font-semibold text-ink'
+                        : 'font-medium text-ink-2 hover:bg-subtle hover:text-ink'
+                    }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
-                      <span className="chip h-7 w-7" aria-hidden="true">
+                      <span className={`chip chip-${item.tint} h-7 w-7`} aria-hidden="true">
                         <Icon className="h-3.5 w-3.5" />
                       </span>
                       <span className="truncate">{item.label}</span>
                     </span>
                     {badgeValue ? (
-                      <span className={`shrink-0 rounded-[3px] px-1.5 text-2xs font-bold ${countClass}`}>
+                      <span className={`shrink-0 rounded border px-1.5 text-2xs font-semibold ${badgeToneClass}`}>
                         {badgeValue}
                       </span>
                     ) : null}
@@ -137,51 +132,51 @@ export default function Sidebar({ activeTab, setActiveTab, stats, isOnline, isOp
         </nav>
       </div>
 
-      <div className="space-y-2 border-t border-white/10 bg-black/20 p-3">
+      <div className="space-y-2 border-t border-line-soft bg-subtle p-3">
         <button
           type="button"
           onClick={() => setIsAuthModalOpen(true)}
-          className="flex w-full items-center justify-between gap-2 rounded border border-white/15 bg-white/[0.07] px-3 py-2 text-left transition-colors hover:border-white/40 hover:bg-white/[0.12]"
+          className="panel flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:border-line-strong"
           title="Hand the machine to another staff member. They sign in with their own password, so the record shows who did what."
         >
           <span className="min-w-0">
-            <span className="block truncate text-xs font-bold text-white">
+            <span className="block truncate text-xs font-semibold text-ink">
               {currentUser?.full_name || 'No staff member signed in'}
             </span>
-            <span className="mt-0.5 block truncate text-2xs text-spine-ink-2">
+            <span className="mt-0.5 block truncate text-2xs text-ink-3">
               {currentUser?.role || 'Role not set'}
               {currentUser?.staff_id ? ` · ${currentUser.staff_id}` : ''}
             </span>
           </span>
-          <span className="shrink-0 text-2xs font-bold uppercase tracking-wide text-white">
+          <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-brand">
             Hand over
           </span>
         </button>
 
         <dl className="space-y-1.5 px-1 text-2xs">
           <div className="flex items-center justify-between gap-2">
-            <dt className="inline-flex items-center gap-1.5 text-spine-ink-2">
+            <dt className="inline-flex items-center gap-1.5 text-ink-3">
               <HardDrive className="h-3 w-3" aria-hidden="true" />
               Records
             </dt>
-            <dd className="font-bold text-spine-ink">On this machine</dd>
+            <dd className="font-semibold text-ink-2">On this machine</dd>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <dt className="inline-flex items-center gap-1.5 text-spine-ink-2">
+            <dt className="inline-flex items-center gap-1.5 text-ink-3">
               <BackupIcon className="h-3 w-3" aria-hidden="true" />
               Off-site copy
             </dt>
-            <dd className={`font-bold ${backupState.tone}`}>{backupState.label}</dd>
+            <dd className={`font-semibold ${backupState.tone}`}>{backupState.label}</dd>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <dt className="text-spine-ink-2">Network</dt>
-            <dd className={`font-bold ${isOnline ? 'text-spine-ink' : 'on-blue-warn'}`}>
+            <dt className="text-ink-3">Network</dt>
+            <dd className={`font-semibold ${isOnline ? 'text-ink-2' : 'text-warn'}`}>
               {isOnline ? 'Connected' : 'No connection'}
             </dd>
           </div>
         </dl>
 
-        <p className="px-1 text-2xs leading-relaxed text-spine-ink-2">
+        <p className="px-1 text-2xs leading-relaxed text-ink-3">
           The clinic runs with no internet. A connection is only needed to send a copy off-site.
         </p>
       </div>

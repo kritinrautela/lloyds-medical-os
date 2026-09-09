@@ -134,11 +134,11 @@ export default function EndOfDay({ settings, refreshStats }) {
       ) : null}
 
       <MetricStrip columns={5}>
-        <Metric label="Patients seen" value={s?.total_patients || 0} context="Checked in today" />
-        <Metric label="Consultations finished" value={s?.completed_consultations || 0} context="Reached the end of the queue" />
-        <Metric label="Medicines handed over" value={s?.total_prescriptions || 0} context="Separate dispensing records" />
-        <Metric label={`Consultation fees (${currency})`} value={(s?.total_opd_fees || 0).toFixed(2)} context="Recorded against visits" />
-        <Metric label={`Pharmacy takings (${currency})`} value={(s?.total_pharmacy_sales || 0).toFixed(2)} context="Collected at the counter" />
+        <Metric label="Patients seen" value={s?.total_patients || 0} context="Checked in today" tint="1" />
+        <Metric label="Consultations finished" value={s?.completed_consultations || 0} context="Reached the end of the queue" tint="2" />
+        <Metric label="Medicines handed over" value={s?.total_prescriptions || 0} context="Separate dispensing records" tint="3" />
+        <Metric label={`Consultation fees (${currency})`} value={(s?.total_opd_fees || 0).toFixed(2)} context="Recorded against visits" tint="4" />
+        <Metric label={`Pharmacy takings (${currency})`} value={(s?.total_pharmacy_sales || 0).toFixed(2)} context="Collected at the counter" tint="5" />
       </MetricStrip>
 
       <div className="grid gap-4 lg:grid-cols-3">

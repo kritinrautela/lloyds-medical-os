@@ -12,7 +12,6 @@ export default function LloydsLogo({
   showSubtitle = false, 
   subtitle = 'Papua New Guinea Operations',
   className = '',
-  framed = true,
   mode = 'auto' // 'auto', 'image', 'svg'
 }) {
   const heightClasses = {
@@ -27,7 +26,7 @@ export default function LloydsLogo({
 
   return (
     <div className={`inline-flex flex-col items-start ${className}`}>
-      <div className={`flex items-stretch rounded-sm overflow-hidden ${framed ? 'shadow-sm border border-line-strong' : ''} ${hClass}`}>
+      <div className={`flex items-stretch rounded-sm overflow-hidden shadow-sm border border-line-strong ${hClass}`}>
         {/* Real PNG Asset from official upload */}
         <img 
           src="/lloyds_metals_logo.png" 
