@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-09T03:47:27Z",
+  "title": "Design System: Lloyds Medical OS",
+  "source": {
+    "tokens": "client/src/index.css (:root and [data-theme='dark'] as RGB triplets; .paper and @media print pin the paper palette)",
+    "tailwind": "client/tailwind.config.js (rgb(var(--x) / <alpha-value>) channel form)",
+    "font": "@fontsource-variable/archivo imported in client/src/main.jsx; no CDN",
+    "directionContract": "client/index.html, first child of <body>",
+    "seedKey": "8442e9b5",
+    "candidate": "5 of 7, the health-centre register book"
+  },
+  "extensions": {
+    "themes": {
+      "day": "default; :root and [data-theme='light']",
+      "night": "[data-theme='dark']; same tokens redefined, same components",
+      "paper": ".paper on screen and @media print; day values with a white canvas, whatever the screen theme",
+      "textSize": "html[data-textsize='large'] body { zoom: 1.15 }; html[data-textsize='larger'] body { zoom: 1.3 }"
+    },
+    "colorMeta": {
+      "canvas":        { "role": "neutral",  "displayName": "Ledger Paper",   "canonical": "rgb(228 237 250)", "night": "#060E22", "paper": "#FFFFFF", "tonalRamp": ["#040C22", "#060E22", "#071E58", "#142C60", "#8CA6D0", "#BFD0EA", "#D8E3F4", "#E4EDFA"] },
+      "surface":       { "role": "neutral",  "displayName": "Sheet White",    "canonical": "rgb(255 255 255)", "night": "#0B1834", "paper": "#FFFFFF", "tonalRamp": ["#060E22", "#0B1834", "#102042", "#142C60", "#DAE6FC", "#E4EDFA", "#F0F5FC", "#FFFFFF"] },
+      "subtle":        { "role": "neutral",  "displayName": "Ice Band",       "canonical": "rgb(240 245 252)", "night": "#102042", "paper": "#F4F7FB", "tonalRamp": ["#0B1834", "#102042", "#142C60", "#243A68", "#DAE6FC", "#E4EDFA", "#F0F5FC", "#F4F7FB"] },
+      "line":          { "role": "neutral",  "displayName": "Rule",           "canonical": "rgb(191 208 234)", "night": "#243A68", "paper": "#C8D2E0", "tonalRamp": ["#1A2E58", "#243A68", "#4664A0", "#8CA6D0", "#96A8C4", "#BFD0EA", "#C8D2E0", "#D8E3F4"] },
+      "line-soft":     { "role": "neutral",  "displayName": "Feint Rule",     "canonical": "rgb(216 227 244)", "night": "#1A2E58", "paper": "#DEE5F0", "tonalRamp": ["#1A2E58", "#243A68", "#4664A0", "#8CA6D0", "#BFD0EA", "#D8E3F4", "#DEE5F0", "#E4EDFA"] },
+      "line-strong":   { "role": "neutral",  "displayName": "Heavy Rule",     "canonical": "rgb(140 166 208)", "night": "#4664A0", "paper": "#96A8C4", "tonalRamp": ["#1A2E58", "#243A68", "#4664A0", "#6484BA", "#8CA6D0", "#96A8C4", "#BFD0EA", "#D8E3F4"] },
+      "ink":           { "role": "neutral",  "displayName": "Ink",            "canonical": "rgb(10 24 54)",    "night": "#E4ECFC", "paper": "#0A1836", "tonalRamp": ["#0A1836", "#30466E", "#4E648C", "#849AC4", "#B0C2E2", "#DCE6FA", "#E2EBFC", "#E4ECFC"] },
+      "ink-2":         { "role": "neutral",  "displayName": "Ink 2",          "canonical": "rgb(48 70 110)",   "night": "#B0C2E2", "paper": "#30466E", "tonalRamp": ["#0A1836", "#30466E", "#4E648C", "#849AC4", "#96ACD8", "#B0C2E2", "#DCE6FA", "#E4ECFC"] },
+      "ink-3":         { "role": "neutral",  "displayName": "Ink 3",          "canonical": "rgb(78 100 140)",  "night": "#849AC4", "paper": "#4E648C", "tonalRamp": ["#0A1836", "#30466E", "#4E648C", "#6484BA", "#849AC4", "#96ACD8", "#B0C2E2", "#E4ECFC"] },
+      "ink-inverse":   { "role": "neutral",  "displayName": "Ink Inverse",    "canonical": "rgb(255 255 255)", "night": "#060E22", "paper": "#FFFFFF", "tonalRamp": ["#060E22", "#0B1834", "#142C60", "#4664A0", "#8CA6D0", "#DAE6FC", "#F0F5FC", "#FFFFFF"] },
+      "brand":         { "role": "primary",  "displayName": "Cobalt Ink",     "canonical": "rgb(14 78 214)",   "night": "#7AA8FF", "paper": "#0E4ED6", "tonalRamp": ["#040C22", "#071E58", "#082A80", "#0A40B8", "#0E4ED6", "#4678F0", "#7AA8FF", "#DAE6FC"] },
+      "brand-deep":    { "role": "primary",  "displayName": "Deep Cover",     "canonical": "rgb(8 42 128)",    "night": "#4678F0", "paper": "#082A80", "tonalRamp": ["#040C22", "#071E58", "#082A80", "#0E2C74", "#1C3EAA", "#4678F0", "#8CA8FA", "#DAE6FC"] },
+      "brand-wash":    { "role": "primary",  "displayName": "Cobalt Wash",    "canonical": "rgb(218 230 252)", "night": "#142C60", "paper": "#DAE6FC", "tonalRamp": ["#071E58", "#142C60", "#28488C", "#4678F0", "#7AA8FF", "#B8CEF4", "#DAE6FC", "#E4EDFD"] },
+      "primary":       { "role": "primary",  "displayName": "Primary Button", "canonical": "rgb(14 78 214)",   "night": "#205CE2", "paper": "#0E4ED6", "tonalRamp": ["#071E58", "#082A80", "#0A40B8", "#184ED0", "#0E4ED6", "#205CE2", "#306CEE", "#7AA8FF"] },
+      "primary-hover": { "role": "primary",  "displayName": "Pressed Cobalt", "canonical": "rgb(10 64 184)",   "night": "#306CEE", "paper": "#0A40B8", "tonalRamp": ["#071E58", "#082A80", "#0A40B8", "#184ED0", "#0E4ED6", "#205CE2", "#306CEE", "#7AA8FF"] },
+      "primary-active":{ "role": "primary",  "displayName": "Held Cobalt",    "canonical": "rgb(8 42 128)",    "night": "#184ED0", "paper": "#082A80", "tonalRamp": ["#071E58", "#082A80", "#0A40B8", "#184ED0", "#0E4ED6", "#205CE2", "#306CEE", "#7AA8FF"] },
+      "primary-fg":    { "role": "primary",  "displayName": "Button Ink",     "canonical": "rgb(255 255 255)", "night": "#FFFFFF", "paper": "#FFFFFF", "tonalRamp": ["#0A1836", "#30466E", "#4E648C", "#849AC4", "#B0C2E2", "#DCE6FA", "#F0F5FC", "#FFFFFF"] },
+      "focus":         { "role": "primary",  "displayName": "Focus Ring",     "canonical": "rgb(14 78 214)",   "night": "#8CB8FF", "paper": "#0E4ED6", "tonalRamp": ["#071E58", "#082A80", "#0A40B8", "#0E4ED6", "#4678F0", "#7AA8FF", "#8CB8FF", "#DAE6FC"] },
+      "spine":         { "role": "secondary","displayName": "Spine Navy",     "canonical": "rgb(7 30 88)",     "night": "#040C22", "paper": "#071E58", "tonalRamp": ["#040C22", "#071E58", "#0C1A3C", "#0E2C74", "#082A80", "#142C60", "#9EB6E4", "#E2EBFC"] },
+      "spine-hover":   { "role": "secondary","displayName": "Spine Lift",     "canonical": "rgb(14 44 116)",   "night": "#0C1A3C", "paper": "#0E2C74", "tonalRamp": ["#040C22", "#071E58", "#0C1A3C", "#0E2C74", "#082A80", "#142C60", "#9EB6E4", "#E2EBFC"] },
+      "spine-ink":     { "role": "secondary","displayName": "Spine Ink",      "canonical": "rgb(226 235 252)", "night": "#DCE6FA", "paper": "#E2EBFC", "tonalRamp": ["#071E58", "#0E2C74", "#4E648C", "#849AC4", "#96ACD8", "#9EB6E4", "#DCE6FA", "#E2EBFC"] },
+      "spine-ink-2":   { "role": "secondary","displayName": "Spine Ink 2",    "canonical": "rgb(158 182 228)", "night": "#96ACD8", "paper": "#9EB6E4", "tonalRamp": ["#071E58", "#0E2C74", "#4E648C", "#849AC4", "#96ACD8", "#9EB6E4", "#DCE6FA", "#E2EBFC"] },
+      "cover-ink-2":   { "role": "secondary","displayName": "Cover Ink 2",    "canonical": "rgb(214 228 255)", "night": "#E2ECFF", "paper": "#D6E4FF", "tonalRamp": ["#082A80", "#0E4ED6", "#4678F0", "#7AA8FF", "#B8CEF4", "#D6E4FF", "#DAE6FC", "#E2ECFF"] },
+      "on-blue-ok":    { "role": "secondary","displayName": "Lifted Green",   "canonical": "rgb(126 226 178)", "night": "#7EE2B2", "paper": "#7EE2B2", "tonalRamp": ["#0C3028", "#16503E", "#086C4A", "#2E9A6E", "#56D296", "#7EE2B2", "#B4E0CA", "#ECF8F2"] },
+      "on-blue-warn":  { "role": "secondary","displayName": "Lifted Amber",   "canonical": "rgb(255 214 120)", "night": "#FFD678", "paper": "#FFD678", "tonalRamp": ["#382810", "#5C4018", "#985404", "#C07E1E", "#F0AC46", "#FFD678", "#EFD6A8", "#FDF6E8"] },
+      "critical":      { "role": "state",    "displayName": "Critical Red",   "canonical": "rgb(186 22 36)",   "night": "#FF7078", "paper": "#BA1624", "tonalRamp": ["#3C161E", "#60242E", "#96101C", "#BA1624", "#E04050", "#FF7078", "#F3C4C8", "#FDF0F1"] },
+      "critical-wash": { "role": "state",    "displayName": "Critical Wash",  "canonical": "rgb(253 240 241)", "night": "#3C161E", "paper": "#FDF0F1", "tonalRamp": ["#3C161E", "#60242E", "#96101C", "#BA1624", "#E04050", "#FF7078", "#F3C4C8", "#FDF0F1"] },
+      "critical-line": { "role": "state",    "displayName": "Critical Line",  "canonical": "rgb(243 196 200)", "night": "#60242E", "paper": "#F3C4C8", "tonalRamp": ["#3C161E", "#60242E", "#96101C", "#BA1624", "#E04050", "#FF7078", "#F3C4C8", "#FDF0F1"] },
+      "warn":          { "role": "state",    "displayName": "Warn Amber",     "canonical": "rgb(152 84 4)",    "night": "#F0AC46", "paper": "#985404", "tonalRamp": ["#382810", "#5C4018", "#985404", "#C07E1E", "#F0AC46", "#FFD678", "#EFD6A8", "#FDF6E8"] },
+      "warn-wash":     { "role": "state",    "displayName": "Warn Wash",      "canonical": "rgb(253 246 232)", "night": "#382810", "paper": "#FDF6E8", "tonalRamp": ["#382810", "#5C4018", "#985404", "#C07E1E", "#F0AC46", "#FFD678", "#EFD6A8", "#FDF6E8"] },
+      "warn-line":     { "role": "state",    "displayName": "Warn Line",      "canonical": "rgb(239 214 168)", "night": "#5C4018", "paper": "#EFD6A8", "tonalRamp": ["#382810", "#5C4018", "#985404", "#C07E1E", "#F0AC46", "#FFD678", "#EFD6A8", "#FDF6E8"] },
+      "ok":            { "role": "state",    "displayName": "OK Green",       "canonical": "rgb(8 108 74)",    "night": "#56D296", "paper": "#086C4A", "tonalRamp": ["#0C3028", "#16503E", "#086C4A", "#2E9A6E", "#56D296", "#7EE2B2", "#B4E0CA", "#ECF8F2"] },
+      "ok-wash":       { "role": "state",    "displayName": "OK Wash",        "canonical": "rgb(236 248 242)", "night": "#0C3028", "paper": "#ECF8F2", "tonalRamp": ["#0C3028", "#16503E", "#086C4A", "#2E9A6E", "#56D296", "#7EE2B2", "#B4E0CA", "#ECF8F2"] },
+      "ok-line":       { "role": "state",    "displayName": "OK Line",        "canonical": "rgb(180 224 202)", "night": "#16503E", "paper": "#B4E0CA", "tonalRamp": ["#0C3028", "#16503E", "#086C4A", "#2E9A6E", "#56D296", "#7EE2B2", "#B4E0CA", "#ECF8F2"] },
+      "info":          { "role": "state",    "displayName": "Info Ink",       "canonical": "rgb(14 78 214)",   "night": "#7AA8FF", "paper": "#0E4ED6", "tonalRamp": ["#071E58", "#082A80", "#0E4ED6", "#28488C", "#4678F0", "#7AA8FF", "#B8CEF4", "#E4EDFD"] },
+      "info-wash":     { "role": "state",    "displayName": "Info Wash",      "canonical": "rgb(228 237 253)", "night": "#142C60", "paper": "#E4EDFD", "tonalRamp": ["#071E58", "#142C60", "#28488C", "#0E4ED6", "#4678F0", "#7AA8FF", "#B8CEF4", "#E4EDFD"] },
+      "info-line":     { "role": "state",    "displayName": "Info Line",      "canonical": "rgb(184 206 244)", "night": "#28488C", "paper": "#B8CEF4", "tonalRamp": ["#071E58", "#142C60", "#28488C", "#0E4ED6", "#4678F0", "#7AA8FF", "#B8CEF4", "#E4EDFD"] },
+      "t-1":           { "role": "tertiary", "displayName": "Registry Tint",     "canonical": "rgb(8 42 128)",   "night": "#A0BAFF", "tonalRamp": ["#040C22", "#071E58", "#082A80", "#1C3EAA", "#4678F0", "#8CA8FA", "#A0BAFF", "#DAE6FC"] },
+      "t-2":           { "role": "tertiary", "displayName": "Outpatients Tint",  "canonical": "rgb(14 78 214)",  "night": "#7AA8FF", "tonalRamp": ["#040C22", "#071E58", "#082A80", "#0E4ED6", "#4678F0", "#7AA8FF", "#B8CEF4", "#DAE6FC"] },
+      "t-3":           { "role": "tertiary", "displayName": "Pharmacy Tint",     "canonical": "rgb(0 108 176)",  "night": "#5ABEF0", "tonalRamp": ["#04223A", "#06405E", "#006CB0", "#107AC4", "#3A9CD8", "#5ABEF0", "#64C4F0", "#D8EEFA"] },
+      "t-4":           { "role": "tertiary", "displayName": "Ward Tint",         "canonical": "rgb(28 62 170)",  "night": "#8CA8FA", "tonalRamp": ["#040C22", "#071E58", "#082A80", "#1C3EAA", "#4678F0", "#8CA8FA", "#A0BAFF", "#DAE6FC"] },
+      "t-5":           { "role": "tertiary", "displayName": "Governance Tint",   "canonical": "rgb(44 88 150)",  "night": "#82A0DC", "tonalRamp": ["#0A1836", "#1A2E58", "#2C5896", "#4664A0", "#6484BA", "#82A0DC", "#9EB6E4", "#D8E3F4"] },
+      "t-6":           { "role": "tertiary", "displayName": "Safety Tint",       "canonical": "rgb(16 122 196)", "night": "#64C4F0", "tonalRamp": ["#04223A", "#06405E", "#006CB0", "#107AC4", "#3A9CD8", "#5ABEF0", "#64C4F0", "#D8EEFA"] }
+    },
+    "tonalRampSource": "Ramps are assembled from the project's own day, night and paper values for that hue, ordered dark to light. Where a hue has fewer than eight shipped values the gaps are interpolated in the same hue; those interpolated steps are not tokens and are not used in the build.",
+    "tintWash": { "day": 0.09, "night": 0.18, "purpose": "Opacity of the tint behind a chip icon (--t-wash)." },
+    "typographyMeta": {
+      "display":    { "displayName": "Display",     "purpose": "The facility name on the cover band (28px; 24px on a phone) and the product name on the sign-in cover (30px to 36px)." },
+      "clock":      { "displayName": "Clock",       "purpose": "Local time on the cover band. One clock on the board." },
+      "headline":   { "displayName": "Figure",      "purpose": "The recorded figure in a metric cell; a unit beside it is 14px bold ink-3; an unrecorded value is an em dash in ink-3." },
+      "title":      { "displayName": "Panel title", "purpose": "A sheet's printed head. Dialog and toast titles are 14px/600; page-level headings inside sheets 16px/700; all headings carry -0.012em by default." },
+      "body":       { "displayName": "Body",        "purpose": "Base text at 14px; table cells at 13px in ink-2." },
+      "body-small": { "displayName": "Body small",  "purpose": "12px detail lines under a title, notice bodies, list-row descriptions. The most used size in the build." },
+      "caption":    { "displayName": "Caption",     "purpose": "The text-2xs step: metadata, footnotes, the spine's status list, the explanation under the cover." },
+      "control":    { "displayName": "Control",     "purpose": "Buttons and index tabs. btn-sm 12px, btn-lg 14px." },
+      "label":      { "displayName": "Printed head","purpose": "Over a column or a figure only: table heads 0.06em, metric labels 0.07em, stamps 0.08em, cover readings 0.12em, pills 0.04em. Never above a sentence heading." },
+      "section":    { "displayName": "Section title","purpose": "A heading on the ruled ground between sheets, with an optional caption at the baseline." },
+      "form-label": { "displayName": "Form label",  "purpose": "Above a field, sentence case, ink-2. A form is filled in, not printed." }
+    },
+    "fontFeatures": { "numerals": "tabular-nums lining-nums on body, .metric-value, .paper and every .num cell; Archivo carries tnum and equal digit widths were measured." },
+    "shadows": [
+      { "name": "panel",    "value": "0 1px 2px rgba(7,30,88,0.07), 0 1px 1px rgba(7,30,88,0.04)", "night": "0 1px 2px rgba(0,0,0,0.45)", "purpose": "Every sheet at rest. Navy-tinted so it reads as paper on blue." },
+      { "name": "raised",   "value": "0 4px 12px -2px rgba(7,30,88,0.14), 0 2px 4px -2px rgba(7,30,88,0.08)", "night": "0 4px 12px -2px rgba(0,0,0,0.6), 0 2px 4px -2px rgba(0,0,0,0.45)", "purpose": "Defined for a sheet that must sit above its neighbours; unused on the shipped board." },
+      { "name": "overlay",  "value": "0 24px 48px -12px rgba(7,30,88,0.30), 0 8px 16px -8px rgba(7,30,88,0.16)", "night": "0 24px 48px -12px rgba(0,0,0,0.72), 0 8px 16px -8px rgba(0,0,0,0.5)", "purpose": "Menus, dialogs, toasts, the navigation drawer, the sign-in sheet." },
+      { "name": "cover",    "value": "0 2px 6px -1px rgba(7,30,88,0.28), 0 1px 2px rgba(7,30,88,0.12)", "purpose": "The cover band, under a 7% white sheen from the top edge fading by 60%." },
+      { "name": "label",    "value": "0 1px 2px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)", "purpose": "The white label carrying the Lloyds Metals mark on a blue surface." },
+      { "name": "open-tab", "value": "0 1px 2px rgba(0,0,0,0.18)", "purpose": "The open section on the spine, cut in the paper colour." },
+      { "name": "scrim",    "value": "rgba(7,30,88,0.52)", "night": "rgba(2,6,18,0.66)", "purpose": "Under dialogs. Navy, not black, so the night shift is not flashed." }
+    ],
+    "motion": [
+      { "name": "page-turn",        "value": "360ms cubic-bezier(0.16, 1, 0.3, 1); opacity 0 to 1, translateY(10px) to none", "purpose": "The one authored moment: the new section turns in when an index tab is chosen. Applied to the section wrapper keyed on the section id, never per element." },
+      { "name": "rise",             "value": "220ms ease-out; opacity 0 to 1, translateY(6px) to none", "purpose": ".enter, kept only for the dialog and the toast." },
+      { "name": "tick-in",          "value": "460ms cubic-bezier(0.22, 1, 0.36, 1); scale 0.55 to 1.08 to 1", "purpose": "The off-site copy confirmation tick." },
+      { "name": "metric-underline", "value": "transform 180ms cubic-bezier(0.22, 1, 0.36, 1); scaleX(0) to scaleX(1) from the left", "purpose": "The 3px ink rule under a pressable metric cell on hover." },
+      { "name": "state",            "value": "120ms ease on background-color, border-color, color", "purpose": "Buttons, tabs, spine items." },
+      { "name": "panel",            "value": "140ms ease on border-color, box-shadow, background-color", "purpose": "Sheets and metric cells." },
+      { "name": "bar",              "value": "width 500ms ease-out", "purpose": "A comparison bar filling to its measured value." },
+      { "name": "drawer",           "value": "transform 200ms", "purpose": "The spine sliding in as a drawer below 1024px." },
+      { "name": "shimmer",          "value": "1.5s ease-in-out infinite translateX(-100%) to translateX(100%)", "purpose": "Skeleton rows while data loads; a state, not an authored moment." },
+      { "name": "reduced-motion",   "value": "@media (prefers-reduced-motion: reduce) removes every animation and transition above", "purpose": "Required for any new motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm",  "value": "640px",  "note": "Metric strips go from 2 to 3 columns; cover title from 24px to 28px; toast anchors bottom-right." },
+      { "name": "md",  "value": "768px",  "note": "Page padding 16px to 24px; theme control shows its label." },
+      { "name": "lg",  "value": "1024px", "note": "Spine becomes a persistent 256px column; top bar shows facility name and search; metric strips reach their full column count; sign-in becomes two columns with the cover on the left." },
+      { "name": "xl",  "value": "1280px", "note": "Top-bar clock, Check in label and Dispense button appear; overview boards go two-up." },
+      { "name": "2xl", "value": "1536px", "note": "Protected export label spells out." },
+      { "name": "content-max", "value": "1600px", "note": "The sheet column's maximum width." },
+      { "name": "coarse-pointer", "value": "(pointer: coarse)", "note": "btn-sm grows to 32px, tab to 40px." }
+    ],
+    "fixedSizes": { "spine": "256px", "topBar": "56px", "rulePitch": "28px", "chip": "30px (28px on the spine)", "field": "34px", "button": "32px / 26px / 38px", "tab": "36px (40px coarse)" },
+    "contrast": {
+      "floor": "4.5:1 for all text on both sheets",
+      "measured": {
+        "day":   { "metric label on sheet": "12.7:1", "section title on canvas": "10.8:1", "ink-3 on sheet": "5.96:1", "cover-ink-2 on cover": "5.33:1" },
+        "night": { "cover title on cover": "13.5:1", "cover-ink-2 on cover": "11.3:1", "primary button label": "5.69:1", "tab count": "5.69:1" }
+      }
+    },
+    "deliberateDetectorFindings": [
+      { "rule": "side-tab", "where": ".cover-page border-left: 10px solid spine", "why": "The bound edge of the register on the sign-in cover. Permitted only there; never on a card, list row, callout or alert." },
+      { "rule": "side-tab", "where": ".metric-cell::after 3px bottom rule, hover only", "why": "The ink rule that says a figure column is pressable. Hover-only, drawn from the left; not a resting border." }
+    ],
+    "assets": {
+      "mark": "client/public/lloyds_metals_logo.png, the official Lloyds Metals mark (black gear badge, red block). Never recoloured; always on a white .cover-label on blue.",
+      "favicon": "Inline SVG heartbeat line stroked in #0E4ED6 (client/index.html).",
+      "themeColor": "#071E58 light, #040C22 dark; manifest background #E4EDFA."
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action per group, in cobalt with a white label. Check in a patient, Sign in, Admit patient.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Check in a patient</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgb(var(--c-line-strong, 140 166 208)); border-radius: 4px; background: rgb(var(--c-surface, 255 255 255)); color: rgb(var(--c-brand-deep, 8 42 128)); font-family: 'Archivo Variable', system-ui, sans-serif; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; } .ds-btn-primary { background: rgb(var(--c-primary, 14 78 214)); border-color: rgb(var(--c-primary, 14 78 214)); color: rgb(var(--c-primary-fg, 255 255 255)); } .ds-btn-primary:hover { background: rgb(var(--c-primary-hover, 10 64 184)); border-color: rgb(var(--c-primary-hover, 10 64 184)); } .ds-btn-primary:active { background: rgb(var(--c-primary-active, 8 42 128)); } .ds-btn:focus-visible { outline: 2px solid rgb(var(--c-focus, 14 78 214)); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "The default control: a white sheet with a heavy-rule border and a deep-cover label.",
+      "html": "<button class=\"ds-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>Open the queue</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgb(var(--c-line-strong, 140 166 208)); border-radius: 4px; background: rgb(var(--c-surface, 255 255 255)); color: rgb(var(--c-brand-deep, 8 42 128)); font-family: 'Archivo Variable', system-ui, sans-serif; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; } .ds-btn:hover { background: rgb(var(--c-subtle, 240 245 252)); border-color: rgb(var(--c-brand, 14 78 214)); } .ds-btn:active { background: rgb(var(--c-brand-wash, 218 230 252)); } .ds-btn:focus-visible { outline: 2px solid rgb(var(--c-focus, 14 78 214)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Cover Button",
+      "kind": "button",
+      "refersTo": "button-cover",
+      "description": "A button drawn on the cover band or the spine: white outline on blue.",
+      "html": "<div class=\"ds-cover-swatch\"><button class=\"ds-btn ds-btn-cover\">Refresh</button></div>",
+      "css": ".ds-cover-swatch { display: inline-block; padding: 12px; background: rgb(var(--c-brand, 14 78 214)); border-radius: 4px; } .ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 26px; padding: 0 9px; border: 1px solid; border-radius: 4px; font-family: 'Archivo Variable', system-ui, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; } .ds-btn-cover { background: rgb(255 255 255 / 0.10); border-color: rgb(255 255 255 / 0.42); color: #ffffff; } .ds-btn-cover:hover { background: rgb(255 255 255 / 0.18); border-color: #ffffff; } .ds-btn-cover:active { background: rgb(255 255 255 / 0.26); } .ds-btn-cover:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A ruled box with a sentence-case bold label above it; focus draws the ring inside the rule.",
+      "html": "<div class=\"ds-field-wrap\"><label class=\"ds-label\" for=\"ds-field-demo\">Patient name</label><input id=\"ds-field-demo\" class=\"ds-field\" placeholder=\"Search by patient name, record number or village\"></div>",
+      "css": ".ds-field-wrap { width: 320px; max-width: 100%; font-family: 'Archivo Variable', system-ui, sans-serif; } .ds-label { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: rgb(var(--c-ink-2, 48 70 110)); } .ds-field { width: 100%; box-sizing: border-box; height: 34px; padding: 0 10px; border: 1px solid rgb(var(--c-line, 191 208 234)); border-radius: 4px; background: rgb(var(--c-surface, 255 255 255)); color: rgb(var(--c-ink, 10 24 54)); font-family: inherit; font-size: 13px; } .ds-field::placeholder { color: rgb(var(--c-ink-3, 78 100 140)); } .ds-field:focus { outline: 2px solid rgb(var(--c-focus, 14 78 214)); outline-offset: -1px; border-color: rgb(var(--c-focus, 14 78 214)); }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "pill-neutral",
+      "description": "A stamped, bordered word in the ink of its state. The text always carries the meaning.",
+      "html": "<span class=\"ds-pill ds-pill-neutral\">Waiting</span> <span class=\"ds-pill ds-pill-ok\">Available</span> <span class=\"ds-pill ds-pill-info\">Admitted</span> <span class=\"ds-pill ds-pill-warn\">Low stock</span> <span class=\"ds-pill ds-pill-critical\">Occupied</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px; border: 1px solid transparent; border-radius: 3px; font-family: 'Archivo Variable', system-ui, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 18px; white-space: nowrap; } .ds-pill-neutral { background: rgb(var(--c-subtle, 240 245 252)); color: rgb(var(--c-ink-2, 48 70 110)); border-color: rgb(var(--c-line, 191 208 234)); } .ds-pill-ok { background: rgb(var(--c-ok-wash, 236 248 242)); color: rgb(var(--c-ok, 8 108 74)); border-color: rgb(var(--c-ok-line, 180 224 202)); } .ds-pill-info { background: rgb(var(--c-info-wash, 228 237 253)); color: rgb(var(--c-info, 14 78 214)); border-color: rgb(var(--c-info-line, 184 206 244)); } .ds-pill-warn { background: rgb(var(--c-warn-wash, 253 246 232)); color: rgb(var(--c-warn, 152 84 4)); border-color: rgb(var(--c-warn-line, 239 214 168)); } .ds-pill-critical { background: rgb(var(--c-critical-wash, 253 240 241)); color: rgb(var(--c-critical, 186 22 36)); border-color: rgb(var(--c-critical-line, 243 196 200)); }"
+    },
+    {
+      "name": "Stamp",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "A bordered word in currentColor for a mark on a coloured surface, such as the figures-as-of stamp on the cover.",
+      "html": "<div class=\"ds-cover-swatch\"><span class=\"ds-stamp\">Figures as of just now</span> <span class=\"ds-stamp ds-stamp-warn\">Figures as of 12m ago</span></div>",
+      "css": ".ds-cover-swatch { display: inline-flex; gap: 12px; padding: 12px; background: rgb(var(--c-brand, 14 78 214)); border-radius: 4px; color: #ffffff; } .ds-stamp { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1.5px solid currentColor; border-radius: 3px; font-family: 'Archivo Variable', system-ui, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; } .ds-stamp-warn { color: rgb(255 214 120); }"
+    },
+    {
+      "name": "Index Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Tabs cut along the head of the page on a 2px deep-cover rule; the open one is filled in ink, and they wrap rather than scroll.",
+      "html": "<ul class=\"ds-tab-row\"><li><button class=\"ds-tab\" aria-current=\"page\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M22 12h-4l-3 9L9 3l-3 9H2\"/></svg>Overview</button></li><li><button class=\"ds-tab\">Ward <span class=\"ds-tab-count\">3</span></button></li><li><button class=\"ds-tab\">Pharmacy <span class=\"ds-tab-count\">2</span></button></li><li><button class=\"ds-tab\">Trends</button></li></ul>",
+      "css": ".ds-tab-row { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0 0 0 2px; list-style: none; border-bottom: 2px solid rgb(var(--c-brand-deep, 8 42 128)); font-family: 'Archivo Variable', system-ui, sans-serif; } .ds-tab { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; margin-bottom: -2px; border: 1px solid rgb(var(--c-line, 191 208 234)); border-bottom: 2px solid rgb(var(--c-brand-deep, 8 42 128)); border-radius: 4px 4px 0 0; background: rgb(var(--c-surface, 255 255 255)); color: rgb(var(--c-brand-deep, 8 42 128)); font-family: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease; } .ds-tab:hover { background: rgb(var(--c-subtle, 240 245 252)); } .ds-tab[aria-current='page'] { background: rgb(var(--c-brand-deep, 8 42 128)); border-color: rgb(var(--c-brand-deep, 8 42 128)); color: #ffffff; } .ds-tab:focus-visible { outline: 2px solid rgb(var(--c-focus, 14 78 214)); outline-offset: 2px; } .ds-tab-count { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 3px; background: rgb(var(--c-brand-wash, 218 230 252)); color: rgb(var(--c-brand-deep, 8 42 128)); font-size: 11px; font-weight: 700; } .ds-tab[aria-current='page'] .ds-tab-count { background: rgb(255 255 255 / 0.18); color: #ffffff; }"
+    },
+    {
+      "name": "Department Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A tinted icon square. The tint names a department; it never reports a state.",
+      "html": "<span class=\"ds-chip ds-chip-3\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z\"/><path d=\"m8.5 8.5 7 7\"/></svg></span>",
+      "css": ".ds-chip { --chip: var(--t-2, 14 78 214); display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 4px; border: 1px solid rgb(var(--chip) / 0.30); background: rgb(var(--chip) / var(--t-wash, 0.09)); color: rgb(var(--chip)); } .ds-chip-1 { --chip: var(--t-1, 8 42 128); } .ds-chip-3 { --chip: var(--t-3, 0 108 176); } .ds-chip-4 { --chip: var(--t-4, 28 62 170); } .ds-chip-5 { --chip: var(--t-5, 44 88 150); } .ds-chip-6 { --chip: var(--t-6, 16 122 196); }"
+    },
+    {
+      "name": "Spine Item",
+      "kind": "nav",
+      "refersTo": "spine-item",
+      "description": "A section on the navy spine. The open section is a tab cut in the paper colour that joins the page to its right.",
+      "html": "<nav class=\"ds-spine\"><button class=\"ds-spine-item\" aria-current=\"page\"><span class=\"ds-spine-left\"><span class=\"ds-spine-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/></svg></span>Clinical board</span></button><button class=\"ds-spine-item\"><span class=\"ds-spine-left\"><span class=\"ds-spine-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg></span>Patient register</span><span class=\"ds-spine-count\">12</span></button><button class=\"ds-spine-item\"><span class=\"ds-spine-left\"><span class=\"ds-spine-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z\"/><path d=\"m8.5 8.5 7 7\"/></svg></span>Pharmacy formulary</span><span class=\"ds-spine-count ds-spine-count-critical\">2</span></button></nav>",
+      "css": ".ds-spine { display: flex; flex-direction: column; gap: 2px; width: 256px; padding: 8px 0 8px 8px; box-sizing: border-box; background: rgb(var(--c-spine, 7 30 88)); color: rgb(var(--c-spine-ink, 226 235 252)); font-family: 'Archivo Variable', system-ui, sans-serif; } .ds-spine-item { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px 8px 10px; border: 0; border-radius: 4px 0 0 4px; background: transparent; color: rgb(var(--c-spine-ink, 226 235 252)); font-family: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; } .ds-spine-item:hover { background: rgb(var(--c-spine-hover, 14 44 116)); color: #ffffff; } .ds-spine-item[aria-current='page'] { background: rgb(var(--c-canvas, 228 237 250)); color: rgb(var(--c-ink, 10 24 54)); box-shadow: 0 1px 2px rgba(0,0,0,0.18); } .ds-spine-item:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; } .ds-spine-left { display: flex; align-items: center; gap: 10px; min-width: 0; } .ds-spine-chip { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; border: 1px solid rgb(255 255 255 / 0.16); background: rgb(255 255 255 / 0.08); color: inherit; flex: none; } .ds-spine-item[aria-current='page'] .ds-spine-chip { border-color: rgb(var(--c-brand, 14 78 214) / 0.30); background: rgb(var(--c-brand, 14 78 214) / 0.09); color: rgb(var(--c-brand, 14 78 214)); } .ds-spine-count { flex: none; padding: 0 6px; border-radius: 3px; background: rgb(255 255 255 / 0.14); color: #ffffff; font-size: 11px; line-height: 16px; font-weight: 700; } .ds-spine-count-critical { background: rgb(var(--c-critical, 186 22 36)); }"
+    },
+    {
+      "name": "Metric Strip",
+      "kind": "custom",
+      "refersTo": "metric-cell",
+      "description": "One ruled sheet cut into figure columns: printed head, tabular figure, one context line. A pressable cell draws a 3px ink rule along its foot on hover.",
+      "html": "<div class=\"ds-strip\"><button class=\"ds-metric ds-metric-press\"><p class=\"ds-metric-label\">Waiting</p><p class=\"ds-metric-value\">7</p><p class=\"ds-metric-context\">Checked in, not yet seen</p></button><div class=\"ds-metric\"><p class=\"ds-metric-label\">Longest wait</p><p class=\"ds-metric-value ds-tone-warn\">1h 32m</p><p class=\"ds-metric-context\">Time the first patient has been here</p></div><div class=\"ds-metric\"><p class=\"ds-metric-label\">Urgent or emergency</p><p class=\"ds-metric-value\"><span class=\"ds-unrecorded\" title=\"Not recorded\">&mdash;</span></p><p class=\"ds-metric-context\">Open visits at high triage priority</p></div></div>",
+      "css": ".ds-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; overflow: hidden; background: rgb(var(--c-line-soft, 216 227 244)); border: 1px solid rgb(var(--c-line, 191 208 234)); border-radius: 4px; box-shadow: 0 1px 2px rgba(7,30,88,0.07), 0 1px 1px rgba(7,30,88,0.04); font-family: 'Archivo Variable', system-ui, sans-serif; font-variant-numeric: tabular-nums lining-nums; } .ds-metric { position: relative; display: block; width: 100%; padding: 14px 16px; border: 0; background: rgb(var(--c-surface, 255 255 255)); text-align: left; font-family: inherit; transition: background-color 140ms ease; } .ds-metric p { margin: 0; } .ds-metric-press { cursor: pointer; } .ds-metric-press:hover { background: rgb(var(--c-subtle, 240 245 252)); } .ds-metric-press::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgb(var(--c-brand, 14 78 214)); transform: scaleX(0); transform-origin: left; transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-metric-press:hover::after { transform: scaleX(1); } .ds-metric-press:focus-visible { outline: 2px solid rgb(var(--c-focus, 14 78 214)); outline-offset: -2px; } .ds-metric-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgb(var(--c-brand-deep, 8 42 128)); } .ds-metric-value { margin-top: 8px !important; font-size: 30px; line-height: 1; font-weight: 800; letter-spacing: -0.025em; color: rgb(var(--c-ink, 10 24 54)); } .ds-tone-warn { color: rgb(var(--c-warn, 152 84 4)); } .ds-unrecorded { color: rgb(var(--c-ink-3, 78 100 140)); } .ds-metric-context { margin-top: 8px !important; font-size: 12px; color: rgb(var(--c-ink-3, 78 100 140)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    },
+    {
+      "name": "Cover Band",
+      "kind": "custom",
+      "refersTo": "cover",
+      "description": "The facility name on cobalt cloth at the head of the board, with the clock in tabular figures and the figures-as-of stamp on the lower strip.",
+      "html": "<header class=\"ds-cover\"><div class=\"ds-cover-top\"><div><h1 class=\"ds-cover-title\">Lloyds Metals &amp; Energy Ltd</h1><p class=\"ds-cover-sub\">Lae Mining District &middot; Morobe Province &middot; Papua New Guinea</p></div><div class=\"ds-cover-readings\"><div><p class=\"ds-cover-head\">Local time</p><p class=\"ds-cover-clock\">11:37</p></div><div><p class=\"ds-cover-head\">Signed in</p><p class=\"ds-cover-reading\">Hospital Operations Director</p></div></div></div><div class=\"ds-cover-strip\"><span class=\"ds-stamp\">Figures as of just now</span><span class=\"ds-cover-note\"><span class=\"ds-cover-dot\"></span>Records are held on this machine.</span></div></header>",
+      "css": ".ds-cover { overflow: hidden; border: 1px solid rgb(var(--c-brand-deep, 8 42 128)); border-radius: 4px; background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0) 60%), rgb(var(--c-brand, 14 78 214)); color: #ffffff; box-shadow: 0 2px 6px -1px rgba(7,30,88,0.28), 0 1px 2px rgba(7,30,88,0.12); font-family: 'Archivo Variable', system-ui, sans-serif; font-variant-numeric: tabular-nums lining-nums; } .ds-cover p, .ds-cover h1 { margin: 0; } .ds-cover-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; padding: 20px 20px 16px; } .ds-cover-title { font-size: 28px; font-weight: 800; line-height: 1.25; letter-spacing: -0.025em; color: #ffffff; } .ds-cover-sub { margin-top: 4px !important; font-size: 14px; color: rgb(214 228 255); } .ds-cover-readings { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 28px; } .ds-cover-head { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(214 228 255); } .ds-cover-clock { margin-top: 4px !important; font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.025em; } .ds-cover-reading { margin-top: 4px !important; font-size: 14px; font-weight: 700; line-height: 1; } .ds-cover-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 20px; border-top: 1px solid rgb(255 255 255 / 0.15); background: rgb(0 0 0 / 0.10); } .ds-stamp { display: inline-flex; align-items: center; padding: 3px 8px; border: 1.5px solid currentColor; border-radius: 3px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; } .ds-cover-note { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(214 228 255); } .ds-cover-dot { width: 6px; height: 6px; border-radius: 9999px; background: rgb(126 226 178); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Carbon-Copy Blue Ledger",
+    "overview": "The interface is the health-centre register book, open at today's page. A deep navy cloth spine down the left carries the sections; the facility's name sits on a cobalt cover band at the head of the page; the working surface is ice-blue ledger paper ruled at a fixed pitch, on which white sheets lie with feint blue rules, printed small-cap column heads, and figures set large in tabular numerals so a column adds up by eye. Status is stamped, not glowing: a bordered word in the ink of the surface it sits on. It refuses the analytics dashboard of floating KPI cards on grey.\n\nOne rule governs colour. Blue is the material of the book: every structural element, tint and heading is a shade of it. Red, amber and green are reserved for clinical and operational state, so a coloured mark on this screen always means someone should act. The night sheet is the same register as a carbon copy: light ink on carbon-blue paper for a ward at three in the morning, not a second design.\n\nIt is an Operate surface for staff who did not grow up with software, read on a ten-year-old laptop under a bright window and on a tablet at the foot of a bed. Density is high but ruled; every figure has a printed head above it and one line of context beneath it; every action is a labelled button. The confirmed anti-references are the previous red-branded shell, KPI cards floating on grey, decorative gradients and glass, and any colour used for identity on a clinical figure.",
+    "keyCharacteristics": [
+      "Ledger blue throughout: navy spine, cobalt cover, ice paper, white sheets, blue ink.",
+      "Red, amber and green are state words, never decoration; the text carries the meaning.",
+      "Ruled, not floated: figures live in one strip separated by hairline rules, sheets lie flat.",
+      "Printed column heads (10.5px, bold, tracked, uppercase, deep blue) over figures and columns only.",
+      "Archivo Variable, self-hosted, with tabular lining numerals everywhere by default.",
+      "Two sheets for two rooms: the day sheet at the counter, the carbon copy on the ward.",
+      "One authored motion, the page turning when a section tab is chosen.",
+      "4px corners; index tabs rounded on top; the open spine tab rounded on its page edge."
+    ],
+    "rules": [
+      { "name": "The Blue Ink Rule", "section": "colors", "body": "Everything structural is a shade of the book's blue: paper, rules, heads, tints, spine, cover. Red, amber and green appear only as critical, warn and ok, and only when the record holds that state. An element in one of those hues with no state behind it is a defect." },
+      { "name": "The Carbon Copy Rule", "section": "colors", "body": "Night is the same register printed through carbon paper. Tokens are redefined; components are not. Anything drawn differently at night (the cover's top rule, the spine's edge rule, the open tab's wash) exists only because the carbon ground removed a contrast the day sheet had." },
+      { "name": "The White Label Rule", "section": "colors", "body": "The Lloyds Metals mark (black gear badge, red block) is the company's official mark and is never recoloured, inverted or tinted. On any blue surface it sits on a white label (cover-label) with its own hairline shadow. Its red is the only red on screen that is not a state." },
+      { "name": "The Lifted State Rule", "section": "colors", "body": "A state word on navy or cobalt uses on-blue-ok or on-blue-warn, never the paper-sheet ok or warn, which would fall below 4.5:1 on blue." },
+      { "name": "The Column Head Rule", "section": "typography", "body": "A small-cap tracked head is printed over a figure, a column or a section of the ruled ground. It is never placed above a sentence heading as an eyebrow or kicker; a heading carries its own weight." },
+      { "name": "The Tabular Rule", "section": "typography", "body": "Numerals are tabular and lining everywhere, set once on body and again on .metric-value, .paper and every .num cell. A figure is always compared against the one above it." },
+      { "name": "The One Family Rule", "section": "typography", "body": "Archivo Variable carries every role. No second face, no system display face, no monospace as a costume. Hierarchy is weight (400, 600, 700, 800) and size." },
+      { "name": "The Ruled Strip Rule", "section": "layout", "body": "Related figures share one sheet separated by hairline rules. A row of individually bordered, shadowed cards is the rejected world." },
+      { "name": "The Measure Rule", "section": "layout", "body": "Explanatory prose stops at 48rem; a cell's context line at its cell, truncated with a title attribute; a list row's detail at 28rem." },
+      { "name": "The Flat Sheet Rule", "section": "elevation", "body": "A sheet gets the panel shadow and nothing more. Only an element that is not part of the page (menu, dialog, toast, drawer) gets the overlay shadow. Hover is a tone change, never a lift." },
+      { "name": "The Stamped Word Rule", "section": "components", "body": "A state is a word with a border, in the ink of its hue. A colour-only dot or bar never carries a state on its own; the dot on the cover strip sits beside its sentence." },
+      { "name": "The Unrecorded Dash Rule", "section": "components", "body": "A value the database does not hold prints an em dash in ink-3 with the title \"Not recorded\". A metric never counts up from zero and never shows a plausible default." }
+    ],
+    "dos": [
+      "Do build every structural element from the blue tokens: canvas, surface, subtle, the three rules, the three inks, brand, brand-deep, brand-wash, spine.",
+      "Do write a colour once through its token so it renders on both sheets; the night values are the same names redefined under [data-theme='dark'].",
+      "Do put related figures in one MetricStrip with gap-px on bg-line-soft, with a printed head above each figure and one context line beneath.",
+      "Do print heads in label style (10.5px, 700, 0.06em to 0.08em, uppercase, brand-deep) over columns, figures and sections only.",
+      "Do set the mark on a white cover-label on any blue surface and leave its red and black alone.",
+      "Do use on-blue-ok and on-blue-warn for a state word on navy or cobalt.",
+      "Do keep the day palette for anything printed: .paper pins it on screen and the print engine pins it for the printer.",
+      "Do give every control a name that is its action (\"Check in a patient\", \"Clear samples and go live\", \"Admit patient\"), and every failure a sentence naming the problem and the way out.",
+      "Do cap prose at 48rem and keep a figure's context to one truncated line.",
+      "Do honour prefers-reduced-motion for any new motion, and keep the page turn the only authored moment on the board."
+    ],
+    "donts": [
+      "Don't use red, amber or green for identity, emphasis, a department, a chart series or decoration. They are critical, warn and ok, and they report a recorded state.",
+      "Don't float figures in individually bordered or shadowed cards, and don't put an icon chip in a metric cell.",
+      "Don't put a tracked uppercase label above a heading. Heads go over figures and columns; headings speak for themselves.",
+      "Don't render the cover band at night as a cobalt slab; it is the brand wash with a 3px cobalt top rule.",
+      "Don't add a ring, halo, glow, zero-offset shadow, gradient text, glass or blur. Depth is the ruling and the hairline panel shadow.",
+      "Don't put a coloured border-left or border-right wider than 1px on a card, list row, callout or alert. The 10px navy bound edge on .cover-page and the 3px hover-only rule on a metric cell are the two deliberate exceptions and stay where they are.",
+      "Don't load a font, icon or asset from a CDN or any remote URL; the clinic has no internet.",
+      "Don't show a plausible default, a simulated reading or a placeholder figure; print the dash.",
+      "Don't add a second typeface, a monospace costume or a system display face; hierarchy is Archivo's weight and size.",
+      "Don't add a second clock to the board or a second authored motion to the page."
+    ]
+  }
+}

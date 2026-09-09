@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C8102E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12h4l2-5 4 10 2-5h6'/></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230E4ED6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12h4l2-5 4 10 2-5h6'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <title>Lloyds Medical OS</title>
@@ -14,8 +14,8 @@
       application. No app store, no separate build, nothing to pay for.
     -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b2545" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1520" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#071e58" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#040c22" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -24,14 +24,24 @@
     <!--
       No web-font CDN by design. This system runs in clinics with no internet;
       a remote font request would hang and then fall back silently, so the
-      typography is built on the platform UI stack (see index.css).
+      typeface (Archivo) travels inside the build (see main.jsx) with the
+      platform UI stack behind it.
     -->
-    <script type="module" crossorigin src="/assets/index-BMWiAdpK.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/icons-Cj-YZm-r.js">
-    <link rel="modulepreload" crossorigin href="/assets/react-DFxuOQef.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-edbHEm9z.css">
+    <script type="module" crossorigin src="/assets/index-ZUVBESQ1.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/icons-hphYEHg6.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-B5ooVc94.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CkDxaTuU.css">
   </head>
   <body>
+    <!--
+      DIRECTION CONTRACT
+      THESIS: The clinical board is the clinic's register book open at today's page: ruled columns of recorded figures in blue ink, bound in a deep blue spine. It refuses the analytics dashboard of floating KPI cards on grey.
+      OWN-WORLD: Ledger blue throughout. Navy cloth spine for navigation, cobalt cover band for the facility, ice-blue ruled paper as ground, white sheets with feint blue rules, printed small-cap column heads, tabular figures in Archivo, index tabs for sections, stamp-bordered status marks. Red, amber and green only as clinical state. Night is the carbon copy.
+      STORY: Staff see what needs attention, who is in the department and what was recorded today, and act with one button.
+      FIRST VIEWPORT: Left, the spine with the logo on a white label and the section list. Top, a white bar with search and check-in. Then the cobalt cover band with facility name and clock, quick actions, index tabs, the attention list and two ruled six-column figure strips.
+      FORM: The health-centre register book, candidate 5 of 7 on the ordered grounded list; seed key 8442e9b5.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
     <div id="root"></div>
     <script>
       // Registered only for a real build. Under the dev server it would cache

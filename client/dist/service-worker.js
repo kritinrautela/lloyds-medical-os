@@ -14,13 +14,13 @@
 
 // Both are filled in by the build (see vite.config.js). The cache name
 // changes with every build, so a new version never mixes with the last.
-const BUILD = '0fe5ce3c7903';
+const BUILD = '8d8b58eaa58b';
 const CACHE = `lloyds-clinic-${BUILD}`;
 
 // The shell, plus every file of this build so a tablet is complete from the
 // first open rather than only after each screen has been visited once.
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
-const PRECACHE = ["/assets/CloudSync-BBnb1rN1.js","/assets/Dashboard-sfct1Z5-.js","/assets/DispensePOS-DJ4RtLpI.js","/assets/EndOfDay-BhkgsIkO.js","/assets/ExcelExport-CmMtRWsT.js","/assets/OPDQueue-DJPJIFUx.js","/assets/Patients-DEr4kHnn.js","/assets/Pharmacy-SUYrO-2u.js","/assets/PrescriptionLabels-CqzM8FJP.js","/assets/PrintFrame-DKS2MG2O.js","/assets/PrintableReferralLetter-DqeL8ihK.js","/assets/QueueTicket-DKi2JNUM.js","/assets/Registers-OVWN_t4Z.js","/assets/ReturnSlip-DXCCCAlf.js","/assets/Settings-BIW2sVlY.js","/assets/StaffManagement-C595T19b.js","/assets/WaitingRoom-C3_K66DH.js","/assets/icons-Cj-YZm-r.js","/assets/index-BMWiAdpK.js","/assets/index-edbHEm9z.css","/assets/react-DFxuOQef.js"];
+const PRECACHE = ["/assets/CloudSync-BVu20ep0.js","/assets/Dashboard-kG0ZY2EE.js","/assets/DispensePOS-Bf8yWEB9.js","/assets/EndOfDay-CRTE-kWr.js","/assets/ExcelExport-Bh-fqzYY.js","/assets/OPDQueue-Dznlnk0j.js","/assets/Patients-BGaib7dk.js","/assets/Pharmacy-CHThIZhq.js","/assets/PrescriptionLabels-3UhKTFpK.js","/assets/PrintFrame-Dj3rmUh9.js","/assets/PrintableReferralLetter-CdqzbL8m.js","/assets/QueueTicket-B4EeKi33.js","/assets/Registers-DXGFrDOn.js","/assets/ReturnSlip-BG9QXTDn.js","/assets/Settings-BKcVzTum.js","/assets/StaffManagement-T-wjYaNZ.js","/assets/WaitingRoom-Dab93p2s.js","/assets/archivo-latin-ext-wght-normal-C4zznr8T.woff2","/assets/archivo-latin-wght-normal-E0tuGl4L.woff2","/assets/archivo-vietnamese-wght-normal-XAtsl5Q_.woff2","/assets/icons-hphYEHg6.js","/assets/index-CkDxaTuU.css","/assets/index-ZUVBESQ1.js","/assets/react-B5ooVc94.js"];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

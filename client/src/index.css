@@ -3,19 +3,23 @@
 @tailwind utilities;
 
 /*
-  Lloyds Medical OS — clinical interface foundation.
+  Lloyds Medical OS — the blue register.
 
-  One rule governs colour: neutral is the default, and every hue on screen
-  reports a clinical or operational state. Decorative colour on a ward screen
-  causes alarm fatigue, so there is none here.
+  The interface is the clinic's register book, open at today's page. A deep
+  blue cloth spine carries the navigation; the facility name sits on a cobalt
+  cover band; the working surface is ruled ledger paper, white sheets ruled
+  with feint blue lines, printed column heads, and figures set in tabular
+  numerals so every column adds up by eye.
 
-  Two themes ship, because the same screen is read in two very different
-  rooms. The day theme is built for an outpatient counter under tropical
-  daylight, where a dark screen becomes a mirror. The night theme is built for
-  the ward at three in the morning, where a white screen is the brightest
-  object in the room and wrecks the reader's dark adaptation. Both carry the
-  same meaning for the same colour, and every text pair in both clears the
-  4.5:1 contrast floor.
+  One rule governs colour: blue is the material of the book, and red, amber
+  and green are reserved for clinical and operational state, so an amber or
+  red mark on this screen always means something needs attention.
+
+  Two themes ship because the same page is read in two rooms. The day sheet is
+  for an outpatient counter under tropical daylight. The night sheet is the
+  carbon copy: light ink on carbon-blue paper for a ward at three in the
+  morning, where a white screen is the brightest object in the room. Every
+  text pair in both clears the 4.5:1 contrast floor.
 */
 
 @layer base {
@@ -23,129 +27,142 @@
   [data-theme='light'] {
     color-scheme: light;
 
-    --c-canvas: 244 246 248;
+    /* Ledger paper, sheets and rules */
+    --c-canvas: 228 237 250;
     --c-surface: 255 255 255;
-    --c-subtle: 247 249 250;
+    --c-subtle: 240 245 252;
 
-    --c-line: 223 228 233;
-    --c-line-soft: 234 238 241;
-    --c-line-strong: 196 204 212;
+    --c-line: 191 208 234;
+    --c-line-soft: 216 227 244;
+    --c-line-strong: 140 166 208;
 
-    --c-ink: 16 23 32;
-    --c-ink-2: 72 84 95;
-    --c-ink-3: 107 120 133;
+    /* Ink */
+    --c-ink: 10 24 54;
+    --c-ink-2: 48 70 110;
+    --c-ink-3: 78 100 140;
     --c-ink-inverse: 255 255 255;
 
-    --c-brand: 200 16 46;
-    --c-brand-deep: 142 11 32;
-    --c-brand-wash: 253 242 243;
+    /* The book itself: cobalt ink, deep cover, and the wash it leaves on paper */
+    --c-brand: 14 78 214;
+    --c-brand-deep: 8 42 128;
+    --c-brand-wash: 218 230 252;
 
-    --c-critical: 179 18 31;
-    --c-critical-wash: 253 241 242;
-    --c-critical-line: 243 201 205;
+    /* The spine: the bound edge that holds the navigation */
+    --c-spine: 7 30 88;
+    --c-spine-hover: 14 44 116;
+    --c-spine-ink: 226 235 252;
+    --c-spine-ink-2: 158 182 228;
 
-    --c-warn: 161 92 7;
-    --c-warn-wash: 253 246 234;
-    --c-warn-line: 239 217 174;
+    /* Clinical state. Never decorative. */
+    --c-critical: 186 22 36;
+    --c-critical-wash: 253 240 241;
+    --c-critical-line: 243 196 200;
 
-    --c-ok: 11 110 79;
-    --c-ok-wash: 239 248 243;
-    --c-ok-line: 188 224 206;
+    --c-warn: 152 84 4;
+    --c-warn-wash: 253 246 232;
+    --c-warn-line: 239 214 168;
 
-    --c-info: 27 79 160;
-    --c-info-wash: 239 244 252;
-    --c-info-line: 196 214 239;
+    --c-ok: 8 108 74;
+    --c-ok-wash: 236 248 242;
+    --c-ok-line: 180 224 202;
 
-    /* The primary action keeps the Lloyds red at full strength in daylight. */
-    --c-primary: 200 16 46;
-    --c-primary-hover: 168 13 38;
-    --c-primary-active: 142 11 32;
+    --c-info: 14 78 214;
+    --c-info-wash: 228 237 253;
+    --c-info-line: 184 206 244;
+
+    --c-primary: 14 78 214;
+    --c-primary-hover: 10 64 184;
+    --c-primary-active: 8 42 128;
     --c-primary-fg: 255 255 255;
 
-    --c-focus: 27 79 160;
-    --c-scroll-track: 237 240 243;
-    --c-scroll-thumb: 196 204 212;
-    --c-scroll-thumb-hover: 168 179 189;
+    --c-focus: 14 78 214;
+    --c-scroll-track: 228 237 250;
+    --c-scroll-thumb: 140 166 208;
+    --c-scroll-thumb-hover: 100 132 186;
 
-    /* Identity tints. These name a department, never a clinical state, and
-       appear only on icons and navigation so they cannot be mistaken for the
-       red/amber/green that means something is wrong. */
-    --t-1: 62 86 190;    /* registry     */
-    --t-2: 13 124 137;   /* outpatients  */
-    --t-3: 141 88 20;    /* pharmacy     */
-    --t-4: 158 45 92;    /* ward         */
-    --t-5: 88 62 168;    /* governance   */
-    --t-6: 30 105 92;    /* safety       */
-    --t-wash: 0.07;      /* tint strength behind an icon */
+    /* Identity tints. Six blues from the same bottle name a department on an
+       icon or a tab; none of them reports a state. */
+    --t-1: 8 42 128;     /* registry     */
+    --t-2: 14 78 214;    /* outpatients  */
+    --t-3: 0 108 176;    /* pharmacy     */
+    --t-4: 28 62 170;    /* ward         */
+    --t-5: 44 88 150;    /* governance   */
+    --t-6: 16 122 196;   /* safety       */
+    --t-wash: 0.09;
 
-    --shadow-panel: 0 1px 2px rgba(16, 23, 32, 0.04), 0 1px 1px rgba(16, 23, 32, 0.03);
-    --shadow-raised: 0 4px 12px -2px rgba(16, 23, 32, 0.10), 0 2px 4px -2px rgba(16, 23, 32, 0.06);
-    --shadow-overlay: 0 24px 48px -12px rgba(16, 23, 32, 0.24), 0 8px 16px -8px rgba(16, 23, 32, 0.12);
-    --scrim: rgba(16, 23, 32, 0.44);
+    --shadow-panel: 0 1px 2px rgba(7, 30, 88, 0.07), 0 1px 1px rgba(7, 30, 88, 0.04);
+    --shadow-raised: 0 4px 12px -2px rgba(7, 30, 88, 0.14), 0 2px 4px -2px rgba(7, 30, 88, 0.08);
+    --shadow-overlay: 0 24px 48px -12px rgba(7, 30, 88, 0.30), 0 8px 16px -8px rgba(7, 30, 88, 0.16);
+    --scrim: rgba(7, 30, 88, 0.52);
+    --rule-pitch: 28px;
   }
 
   [data-theme='dark'] {
     color-scheme: dark;
 
-    --c-canvas: 14 19 25;
-    --c-surface: 22 28 36;
-    --c-subtle: 27 34 43;
+    /* The carbon copy */
+    --c-canvas: 6 14 34;
+    --c-surface: 11 24 52;
+    --c-subtle: 16 32 66;
 
-    --c-line: 42 51 62;
-    --c-line-soft: 34 42 51;
-    --c-line-strong: 61 72 84;
+    --c-line: 36 58 104;
+    --c-line-soft: 26 46 88;
+    --c-line-strong: 70 100 160;
 
-    --c-ink: 231 236 241;
-    --c-ink-2: 169 180 192;
-    --c-ink-3: 124 136 150;
-    --c-ink-inverse: 14 19 25;
+    --c-ink: 228 236 252;
+    --c-ink-2: 176 194 226;
+    --c-ink-3: 132 154 196;
+    --c-ink-inverse: 6 14 34;
 
-    --c-brand: 240 90 110;
-    --c-brand-deep: 200 16 46;
-    --c-brand-wash: 44 21 26;
+    --c-brand: 122 168 255;
+    --c-brand-deep: 70 120 240;
+    --c-brand-wash: 20 44 96;
+
+    --c-spine: 4 12 34;
+    --c-spine-hover: 12 26 60;
+    --c-spine-ink: 220 230 250;
+    --c-spine-ink-2: 150 172 216;
 
     /* The status scale is lightened for a dark ground. Meaning is unchanged:
        red still means act now, amber still means check before the shift ends. */
-    --c-critical: 255 107 114;
-    --c-critical-wash: 44 21 24;
-    --c-critical-line: 74 35 40;
+    --c-critical: 255 112 120;
+    --c-critical-wash: 60 22 30;
+    --c-critical-line: 96 36 46;
 
-    --c-warn: 233 162 59;
-    --c-warn-wash: 43 33 19;
-    --c-warn-line: 74 58 28;
+    --c-warn: 240 172 70;
+    --c-warn-wash: 56 40 16;
+    --c-warn-line: 92 64 24;
 
-    --c-ok: 78 203 146;
-    --c-ok-wash: 16 36 28;
-    --c-ok-line: 30 69 54;
+    --c-ok: 86 210 150;
+    --c-ok-wash: 12 48 40;
+    --c-ok-line: 22 80 62;
 
-    --c-info: 111 168 245;
-    --c-info-wash: 19 31 48;
-    --c-info-line: 36 56 79;
+    --c-info: 122 168 255;
+    --c-info-wash: 20 44 96;
+    --c-info-line: 40 72 140;
 
-    /* Red is lifted just far enough to hold white text at 4.6:1 on a dark
-       ground while still reading as the Lloyds red. */
-    --c-primary: 217 30 58;
-    --c-primary-hover: 232 45 72;
-    --c-primary-active: 200 16 46;
+    --c-primary: 32 92 226;
+    --c-primary-hover: 48 108 238;
+    --c-primary-active: 24 78 208;
     --c-primary-fg: 255 255 255;
 
-    --c-focus: 111 168 245;
-    --c-scroll-track: 22 28 36;
-    --c-scroll-thumb: 61 72 84;
-    --c-scroll-thumb-hover: 82 95 110;
+    --c-focus: 140 184 255;
+    --c-scroll-track: 11 24 52;
+    --c-scroll-thumb: 70 100 160;
+    --c-scroll-thumb-hover: 100 132 186;
 
-    --t-1: 132 154 250;
-    --t-2: 79 197 208;
-    --t-3: 228 168 74;
-    --t-4: 240 130 174;
-    --t-5: 172 146 255;
-    --t-6: 92 200 178;
-    --t-wash: 0.16;
+    --t-1: 160 186 255;
+    --t-2: 122 168 255;
+    --t-3: 90 190 240;
+    --t-4: 140 168 250;
+    --t-5: 130 160 220;
+    --t-6: 100 196 240;
+    --t-wash: 0.18;
 
-    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.40);
-    --shadow-raised: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 4px -2px rgba(0, 0, 0, 0.40);
-    --shadow-overlay: 0 24px 48px -12px rgba(0, 0, 0, 0.70), 0 8px 16px -8px rgba(0, 0, 0, 0.50);
-    --scrim: rgba(0, 0, 0, 0.62);
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-raised: 0 4px 12px -2px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.45);
+    --shadow-overlay: 0 24px 48px -12px rgba(0, 0, 0, 0.72), 0 8px 16px -8px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(2, 6, 18, 0.66);
   }
 
   html { -webkit-text-size-adjust: 100%; }
@@ -162,7 +179,7 @@
     margin: 0;
     background-color: rgb(var(--c-canvas));
     color: rgb(var(--c-ink));
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     /* Every figure is compared against the one above it, so numerals are
@@ -174,7 +191,7 @@
 
   h1, h2, h3, h4 {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.012em;
     color: rgb(var(--c-ink));
   }
@@ -196,45 +213,66 @@
 }
 
 @layer components {
-  /* Panel is the only structural container. Flat, ruled, no glass. */
+  /* The ground the sheets lie on: ledger paper, ruled at a fixed pitch. The
+     rules show only in the gutters between sheets, which is where paper shows
+     on a desk. */
+  .sheet-ground {
+    background-color: rgb(var(--c-canvas));
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--rule-pitch) - 1px),
+      rgb(var(--c-line) / 0.55) calc(var(--rule-pitch) - 1px),
+      rgb(var(--c-line) / 0.55) var(--rule-pitch)
+    );
+  }
+
+  /* A sheet is the only structural container: white, ruled at the edge, square-cornered like a page. */
   .panel {
     background: rgb(var(--c-surface));
     border: 1px solid rgb(var(--c-line));
-    border-radius: 8px;
+    border-radius: 4px;
   }
 
+  /* The printed column head of a register page: an ice band under the title,
+     closed by a rule heavier than the feint rules beneath it. */
   .panel-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-    padding: 11px 16px;
-    border-bottom: 1px solid rgb(var(--c-line-soft));
+    padding: 10px 16px;
+    background: rgb(var(--c-subtle));
+    border-bottom: 1px solid rgb(var(--c-line-strong));
+    border-radius: 3px 3px 0 0;
   }
 
   .panel-title {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.005em;
     color: rgb(var(--c-ink));
   }
 
   .panel-note { font-size: 11px; color: rgb(var(--c-ink-3)); }
 
-  /* Data tables carry the clinical detail. */
+  /* Data tables carry the clinical detail, ruled like the register. */
   .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
   .data-table thead th {
     text-align: left;
     padding: 7px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgb(var(--c-ink-3));
+    color: rgb(var(--c-brand-deep));
     background: rgb(var(--c-subtle));
-    border-bottom: 1px solid rgb(var(--c-line));
+    border-bottom: 1px solid rgb(var(--c-line-strong));
     white-space: nowrap;
   }
+
+  [data-theme='dark'] .data-table thead th { color: rgb(var(--c-brand)); }
 
   .data-table tbody td {
     padding: 9px 16px;
@@ -247,16 +285,28 @@
   .data-table tbody tr:hover td { background: rgb(var(--c-subtle)); }
   .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-  /* Status pill. The text always carries the meaning; colour reinforces it. */
+  /* A totals row is closed the way a ledger closes it: a rule above, a
+     double rule beneath. */
+  .data-table tfoot td {
+    padding: 8px 16px;
+    font-weight: 700;
+    color: rgb(var(--c-ink));
+    border-top: 1px solid rgb(var(--c-line-strong));
+    border-bottom: 3px double rgb(var(--c-line-strong));
+  }
+
+  /* Status mark. A stamped, bordered word; the text always carries the meaning. */
   .pill {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 1px 7px;
     border: 1px solid transparent;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
+    border-radius: 3px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     line-height: 18px;
     white-space: nowrap;
   }
@@ -275,19 +325,22 @@
     gap: 6px;
     height: 32px;
     padding: 0 12px;
-    border: 1px solid rgb(var(--c-line));
-    border-radius: 6px;
+    border: 1px solid rgb(var(--c-line-strong));
+    border-radius: 4px;
     background: rgb(var(--c-surface));
-    color: rgb(var(--c-ink));
+    color: rgb(var(--c-brand-deep));
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
-    transition: background-color 120ms ease, border-color 120ms ease;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
   }
 
-  .btn:hover { background: rgb(var(--c-subtle)); border-color: rgb(var(--c-line-strong)); }
-  .btn:active { background: rgb(var(--c-canvas)); }
+  [data-theme='dark'] .btn { color: rgb(var(--c-ink)); }
+  [data-theme='dark'] .btn-primary, [data-theme='dark'] .btn-primary:hover { color: #ffffff; }
+
+  .btn:hover { background: rgb(var(--c-subtle)); border-color: rgb(var(--c-brand)); }
+  .btn:active { background: rgb(var(--c-brand-wash)); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-primary {
@@ -295,8 +348,17 @@
     border-color: rgb(var(--c-primary));
     color: rgb(var(--c-primary-fg));
   }
-  .btn-primary:hover { background: rgb(var(--c-primary-hover)); border-color: rgb(var(--c-primary-hover)); }
+  .btn-primary:hover { background: rgb(var(--c-primary-hover)); border-color: rgb(var(--c-primary-hover)); color: rgb(var(--c-primary-fg)); }
   .btn-primary:active { background: rgb(var(--c-primary-active)); }
+
+  /* A button drawn on the cover band or the spine: white outline on blue. */
+  .btn-cover {
+    background: rgb(255 255 255 / 0.10);
+    border-color: rgb(255 255 255 / 0.42);
+    color: #ffffff;
+  }
+  .btn-cover:hover { background: rgb(255 255 255 / 0.18); border-color: #ffffff; color: #ffffff; }
+  .btn-cover:active { background: rgb(255 255 255 / 0.26); }
 
   .btn-sm { height: 26px; padding: 0 9px; font-size: 12px; }
   .btn-lg { height: 38px; padding: 0 16px; font-size: 14px; }
@@ -306,7 +368,7 @@
     height: 34px;
     padding: 0 10px;
     border: 1px solid rgb(var(--c-line));
-    border-radius: 6px;
+    border-radius: 4px;
     background: rgb(var(--c-surface));
     color: rgb(var(--c-ink));
     font-size: 13px;
@@ -326,7 +388,7 @@
     display: block;
     margin-bottom: 4px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: rgb(var(--c-ink-2));
   }
 
@@ -424,23 +486,25 @@
     color-scheme: light;
     --c-canvas: 255 255 255;
     --c-surface: 255 255 255;
-    --c-subtle: 247 249 250;
-    --c-line: 223 228 233;
-    --c-line-soft: 234 238 241;
-    --c-line-strong: 196 204 212;
-    --c-ink: 16 23 32;
-    --c-ink-2: 72 84 95;
-    --c-ink-3: 107 120 133;
-    --c-critical: 179 18 31;
-    --c-warn: 161 92 7;
-    --c-ok: 11 110 79;
-    --c-info: 27 79 160;
+    --c-subtle: 244 247 251;
+    --c-line: 200 210 224;
+    --c-line-soft: 222 229 240;
+    --c-line-strong: 150 168 196;
+    --c-ink: 10 24 54;
+    --c-ink-2: 48 70 110;
+    --c-ink-3: 78 100 140;
+    --c-brand: 14 78 214;
+    --c-brand-deep: 8 42 128;
+    --c-critical: 186 22 36;
+    --c-warn: 152 84 4;
+    --c-ok: 8 108 74;
+    --c-info: 14 78 214;
   }
 
   html, body {
     background: #ffffff !important;
     background-image: none !important;
-    color: #0f172a !important;
+    color: #0a1836 !important;
     font-size: 11pt !important;
     line-height: 1.4 !important;
     height: auto !important;
@@ -451,6 +515,8 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  .sheet-ground { background-image: none !important; background-color: #ffffff !important; }
 
   .no-print, .no-print *, header, nav, aside, button,
   .panel:not(.printable-target) {
@@ -494,7 +560,7 @@
     margin: 0 auto !important;
     padding: 0 !important;
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #0a1836 !important;
     box-shadow: none !important;
     border: none !important;
   }
@@ -510,69 +576,6 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Accent.
-
-   The accent carries the facility's identity: the active navigation item, the
-   primary button, the header band. It is deliberately kept off every panel
-   that reports a clinical figure, so a green accent can never be misread as a
-   green "within range" reading. Lloyds red is the default.
-   --------------------------------------------------------------------------- */
-
-[data-accent='ocean'] {
-  --c-primary: 21 92 168;
-  --c-primary-hover: 17 76 141;
-  --c-primary-active: 13 60 112;
-  --c-brand: 21 92 168;
-  --c-brand-deep: 13 60 112;
-  --c-brand-wash: 238 244 251;
-}
-
-[data-theme='dark'][data-accent='ocean'] {
-  --c-primary: 42 118 204;
-  --c-primary-hover: 60 138 226;
-  --c-primary-active: 30 98 176;
-  --c-brand: 118 172 246;
-  --c-brand-deep: 42 118 204;
-  --c-brand-wash: 19 31 48;
-}
-
-[data-accent='teal'] {
-  --c-primary: 12 106 100;
-  --c-primary-hover: 9 88 83;
-  --c-primary-active: 7 71 67;
-  --c-brand: 12 106 100;
-  --c-brand-deep: 7 71 67;
-  --c-brand-wash: 237 247 246;
-}
-
-[data-theme='dark'][data-accent='teal'] {
-  --c-primary: 20 138 129;
-  --c-primary-hover: 27 160 149;
-  --c-primary-active: 16 115 107;
-  --c-brand: 82 200 188;
-  --c-brand-deep: 20 138 129;
-  --c-brand-wash: 14 37 36;
-}
-
-[data-accent='graphite'] {
-  --c-primary: 51 65 82;
-  --c-primary-hover: 39 51 65;
-  --c-primary-active: 30 40 51;
-  --c-brand: 51 65 82;
-  --c-brand-deep: 30 40 51;
-  --c-brand-wash: 241 244 247;
-}
-
-[data-theme='dark'][data-accent='graphite'] {
-  --c-primary: 84 100 119;
-  --c-primary-hover: 102 119 139;
-  --c-primary-active: 68 82 99;
-  --c-brand: 160 175 192;
-  --c-brand-deep: 84 100 119;
-  --c-brand-wash: 30 38 47;
-}
-
-/* ---------------------------------------------------------------------------
    Surface treatment and motion.
    --------------------------------------------------------------------------- */
 
@@ -581,21 +584,178 @@
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
-/* The identity band. One quiet wash of the accent behind the facility name and
-   the primary navigation header, and nowhere near a clinical figure. */
-.identity-band {
-  background-image:
-    linear-gradient(180deg, rgb(var(--c-brand) / 0.09), rgb(var(--c-brand) / 0) 78%),
-    linear-gradient(90deg, rgb(var(--c-brand) / 0.06), rgb(var(--c-brand) / 0) 55%);
+/* The spine: the bound edge of the book. Everything on it is set in the
+   spine's own ink, and the open page is a white tab cut into the edge. */
+.spine {
+  background: rgb(var(--c-spine));
+  color: rgb(var(--c-spine-ink));
 }
 
-.identity-rule {
-  height: 2px;
-  background-image: linear-gradient(90deg,
-    rgb(var(--c-brand)) 0%,
-    rgb(var(--c-brand) / 0.35) 32%,
-    rgb(var(--c-brand) / 0) 72%);
+.spine :focus-visible { outline-color: #ffffff; }
+
+/* At night the spine and the page are both carbon, so the bound edge is ruled. */
+[data-theme='dark'] .spine { border-right: 1px solid rgb(var(--c-line)); }
+
+.spine-item {
+  color: rgb(var(--c-spine-ink));
+  border-radius: 4px 0 0 4px;
+  transition: background-color 120ms ease, color 120ms ease;
 }
+
+.spine-item:hover { background: rgb(var(--c-spine-hover)); color: #ffffff; }
+
+.spine-item[aria-current='page'] {
+  background: rgb(var(--c-canvas));
+  color: rgb(var(--c-ink));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* At night the page and the spine are almost the same carbon, so the open
+   section is marked in the brand wash instead of cut to the page colour. */
+[data-theme='dark'] .spine-item[aria-current='page'] {
+  background: rgb(var(--c-brand-wash));
+  color: #ffffff;
+}
+
+.spine-item[aria-current='page'] .chip {
+  --chip: var(--c-brand);
+  background: rgb(var(--c-brand) / var(--t-wash));
+  border-color: rgb(var(--c-brand) / 0.30);
+}
+
+/* A count on the spine is printed solid so it stays legible on cloth. */
+.spine-count {
+  background: rgb(255 255 255 / 0.14);
+  color: #ffffff;
+}
+.spine-count-warn { background: rgb(var(--c-warn)); color: #ffffff; }
+.spine-count-critical { background: rgb(var(--c-critical)); color: #ffffff; }
+[data-theme='dark'] .spine-count-warn { color: rgb(var(--c-ink-inverse)); }
+[data-theme='dark'] .spine-count-critical { color: rgb(var(--c-ink-inverse)); }
+.spine-item[aria-current='page'] .spine-count { background: rgb(var(--c-brand-wash)); color: rgb(var(--c-brand-deep)); }
+[data-theme='dark'] .spine-item[aria-current='page'] .spine-count { color: rgb(var(--c-brand)); }
+
+/* State words on the spine and the cover are lifted so they read on blue cloth
+   at 4.5:1; their meaning is the same green and amber as on the page. */
+.on-blue-ok { color: rgb(126 226 178); }
+.on-blue-warn { color: rgb(255 214 120); }
+
+/* The label pasted on the cover, holding the company mark. */
+.cover-label {
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* The cover band: the facility name on cobalt cloth at the head of the page. */
+.cover {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0) 60%),
+    rgb(var(--c-brand));
+  color: #ffffff;
+  border: 1px solid rgb(var(--c-brand-deep));
+  border-radius: 4px;
+  box-shadow: 0 2px 6px -1px rgba(7, 30, 88, 0.28), 0 1px 2px rgba(7, 30, 88, 0.12);
+}
+
+[data-theme='dark'] .cover {
+  background: rgb(var(--c-brand-wash));
+  border-color: rgb(var(--c-brand));
+  border-top-width: 3px;
+}
+[data-theme='dark'] .cover-ink-2 { color: rgb(226 236 255); }
+
+/* The front cover as a whole page: the sign-in screen. A strip of the spine's
+   navy runs down its bound edge. */
+.cover-page {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0) 45%),
+    rgb(var(--c-brand));
+  color: #ffffff;
+  border-left: 10px solid rgb(var(--c-spine));
+}
+[data-theme='dark'] .cover-page { background: rgb(var(--c-brand-wash)); border-left-color: rgb(var(--c-brand)); }
+.cover-page :focus-visible { outline-color: #ffffff; }
+
+.cover :focus-visible { outline-color: #ffffff; }
+.cover-ink-2 { color: rgb(214 228 255); }
+
+/* A stamped mark: a bordered word in the ink of the surface it sits on. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Index tabs along the head of the page. The open section is filled in ink;
+   the others are cut from the same sheet and wait their turn. */
+.tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  row-gap: 4px;
+  padding: 0 0 0 2px;
+  border-bottom: 2px solid rgb(var(--c-brand-deep));
+}
+
+[data-theme='dark'] .tab-row { border-bottom-color: rgb(var(--c-brand)); }
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  margin-bottom: -2px;
+  border: 1px solid rgb(var(--c-line));
+  border-bottom: 2px solid rgb(var(--c-brand-deep));
+  border-radius: 4px 4px 0 0;
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-brand-deep));
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.tab:hover { background: rgb(var(--c-subtle)); }
+
+.tab[aria-current='page'] {
+  background: rgb(var(--c-brand-deep));
+  border-color: rgb(var(--c-brand-deep));
+  color: #ffffff;
+}
+
+[data-theme='dark'] .tab { color: rgb(var(--c-brand)); border-bottom-color: rgb(var(--c-brand)); }
+[data-theme='dark'] .tab[aria-current='page'] {
+  background: rgb(var(--c-brand));
+  border-color: rgb(var(--c-brand));
+  color: rgb(var(--c-ink-inverse));
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: rgb(var(--c-brand-wash));
+  color: rgb(var(--c-brand-deep));
+  font-size: 11px;
+  font-weight: 700;
+}
+.tab[aria-current='page'] .tab-count { background: rgb(255 255 255 / 0.18); color: #ffffff; }
+[data-theme='dark'] .tab-count { color: rgb(var(--c-brand)); }
+[data-theme='dark'] .tab[aria-current='page'] .tab-count { background: rgb(0 0 0 / 0.18); color: rgb(var(--c-ink-inverse)); }
 
 /* Tinted icon chip. The tint names a department; it never reports a state. */
 .chip {
@@ -604,8 +764,8 @@
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  border: 1px solid rgb(var(--chip) / 0.28);
+  border-radius: 4px;
+  border: 1px solid rgb(var(--chip) / 0.30);
   background: rgb(var(--chip) / var(--t-wash));
   color: rgb(var(--chip));
   flex: none;
@@ -623,8 +783,26 @@
 .chip-critical { --chip: var(--c-critical); }
 .chip-info { --chip: var(--c-info); }
 
-/* A metric cell lifts very slightly on hover so it reads as pressable without
-   the whole board floating. */
+/* On the spine a chip is drawn in the spine's ink, whatever its tint. */
+.spine-item .chip {
+  --chip: var(--c-spine-ink);
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.16);
+}
+
+/* A printed section heading on the ruled ground, in the book's deep ink. */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--c-brand-deep));
+}
+[data-theme='dark'] .section-title { color: rgb(var(--c-brand)); }
+
+/* A figure column on the register page. The head is printed small, the figure
+   is set large in tabular numerals, and the cell lifts very slightly on hover
+   so it reads as pressable without the whole page floating. */
 .metric-cell {
   position: relative;
   transition: background-color 140ms ease;
@@ -636,14 +814,41 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
+  height: 3px;
   background: rgb(var(--chip, var(--c-brand)));
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 180ms ease;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .metric-cell:hover::after { transform: scaleX(1); }
+
+.metric-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgb(var(--c-brand-deep));
+}
+[data-theme='dark'] .metric-label { color: rgb(var(--c-brand)); }
+
+.metric-value {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* The one authored moment: a page turning. The new section lifts in from
+   just below the tab row with an exponential settle, once, not on every
+   element. */
+@keyframes page-turn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.page-turn { animation: page-turn 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(6px); }
@@ -651,9 +856,6 @@
 }
 
 .enter { animation: rise 220ms ease-out both; }
-.enter-1 { animation-delay: 30ms; }
-.enter-2 { animation-delay: 60ms; }
-.enter-3 { animation-delay: 90ms; }
 
 /* The one authored moment on the off-site page: the tick that says the copy
    is on the stick or has reached head office lands with a small settle. */
@@ -667,6 +869,7 @@
 @media (prefers-reduced-motion: reduce) {
   .tick-in { animation: none; }
   .enter { animation: none; }
+  .page-turn { animation: none; }
   .metric-cell::after { transition: none; }
   .panel { transition: none; }
   * { scroll-behavior: auto !important; }
@@ -684,26 +887,29 @@
   color-scheme: light;
   --c-canvas: 255 255 255;
   --c-surface: 255 255 255;
-  --c-subtle: 247 249 250;
-  --c-line: 223 228 233;
-  --c-line-soft: 234 238 241;
-  --c-line-strong: 196 204 212;
-  --c-ink: 16 23 32;
-  --c-ink-2: 72 84 95;
-  --c-ink-3: 107 120 133;
+  --c-subtle: 244 247 251;
+  --c-line: 200 210 224;
+  --c-line-soft: 222 229 240;
+  --c-line-strong: 150 168 196;
+  --c-ink: 10 24 54;
+  --c-ink-2: 48 70 110;
+  --c-ink-3: 78 100 140;
   --c-ink-inverse: 255 255 255;
-  --c-critical: 179 18 31;
-  --c-critical-wash: 253 241 242;
-  --c-critical-line: 243 201 205;
-  --c-warn: 161 92 7;
-  --c-warn-wash: 253 246 234;
-  --c-warn-line: 239 217 174;
-  --c-ok: 11 110 79;
-  --c-ok-wash: 239 248 243;
-  --c-ok-line: 188 224 206;
-  --c-info: 27 79 160;
-  --c-info-wash: 239 244 252;
-  --c-info-line: 196 214 239;
+  --c-brand: 14 78 214;
+  --c-brand-deep: 8 42 128;
+  --c-brand-wash: 218 230 252;
+  --c-critical: 186 22 36;
+  --c-critical-wash: 253 240 241;
+  --c-critical-line: 243 196 200;
+  --c-warn: 152 84 4;
+  --c-warn-wash: 253 246 232;
+  --c-warn-line: 239 214 168;
+  --c-ok: 8 108 74;
+  --c-ok-wash: 236 248 242;
+  --c-ok-line: 180 224 202;
+  --c-info: 14 78 214;
+  --c-info-wash: 228 237 253;
+  --c-info-line: 184 206 244;
   background: rgb(var(--c-surface));
   color: rgb(var(--c-ink));
   font-variant-numeric: tabular-nums lining-nums;
@@ -724,14 +930,14 @@
 .doc-table thead th {
   background: rgb(var(--c-subtle));
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgb(var(--c-ink-2));
   white-space: nowrap;
 }
 .doc-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.doc-table tfoot td { font-weight: 600; background: rgb(var(--c-subtle)); }
+.doc-table tfoot td { font-weight: 700; background: rgb(var(--c-subtle)); }
 .doc-table-plain th, .doc-table-plain td { border-left: 0; border-right: 0; padding-left: 0; padding-right: 0; }
 .doc-table-plain thead th { background: transparent; }
 
@@ -746,9 +952,9 @@
 .btn-danger {
   background: rgb(var(--c-critical));
   border-color: rgb(var(--c-critical));
-  color: rgb(var(--c-ink-inverse));
+  color: #ffffff;
 }
-.btn-danger:hover { background: rgb(var(--c-brand-deep)); border-color: rgb(var(--c-brand-deep)); }
+.btn-danger:hover { background: rgb(150 16 28); border-color: rgb(150 16 28); color: #ffffff; }
 
 /* Skeleton rows hold the shape of the data while it loads, so the page does
    not jump when it arrives. The sheen is dropped for anyone who asked their
@@ -756,7 +962,7 @@
 .skeleton {
   position: relative;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 3px;
   background: rgb(var(--c-line-soft));
 }
 .skeleton::after {
@@ -783,4 +989,5 @@
    sized target. The desktop density is unchanged. */
 @media (pointer: coarse) {
   .btn-sm { height: 32px; padding: 0 11px; }
+  .tab { height: 40px; }
 }

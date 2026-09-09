@@ -110,46 +110,6 @@ export function Pill({ tone = 'neutral', children, title, className = '' }) {
   );
 }
 
-/**
- * Counts up to a whole number when it first appears. Purely a reading aid: it
- * draws the eye to the figure that changed since the last refresh. It is
- * skipped entirely for anyone who has asked their system to reduce motion, and
- * for anything that is not a plain integer.
- */
-export function AnimatedNumber({ value }) {
-  const numeric = typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
-  const [shown, setShown] = useState(numeric ? value : null);
-  const frame = useRef(null);
-
-  useEffect(() => {
-    if (!numeric) return undefined;
-    const reduce = typeof window !== 'undefined'
-      && window.matchMedia
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (reduce || value === 0 || Math.abs(value) > 100000) {
-      setShown(value);
-      return undefined;
-    }
-
-    const from = 0;
-    const start = performance.now();
-    const duration = 420;
-
-    const step = (now) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setShown(Math.round(from + (value - from) * eased));
-      if (t < 1) frame.current = requestAnimationFrame(step);
-    };
-
-    frame.current = requestAnimationFrame(step);
-    return () => { if (frame.current) cancelAnimationFrame(frame.current); };
-  }, [value, numeric]);
-
-  if (!numeric) return <Value>{value}</Value>;
-  return <>{shown}</>;
-}
 
 /**
  * A single measured figure. `context` is the denominator or comparison that
@@ -157,7 +117,7 @@ export function AnimatedNumber({ value }) {
  * nobody can act on. `tint` names the department the figure belongs to and
  * colours only the icon; `tone` reports clinical state and colours the figure.
  */
-export function Metric({ label, value, unit, context, tone = 'neutral', tint, icon: Icon, onClick }) {
+export function Metric({ label, value, unit, context, tone = 'neutral', onClick }) {
   const toneText = {
     neutral: 'text-ink',
     ok: 'text-ok',
@@ -166,47 +126,37 @@ export function Metric({ label, value, unit, context, tone = 'neutral', tint, ic
     info: 'text-info'
   }[tone];
 
-  const chipClass = tone === 'critical' || tone === 'warn'
-    ? `chip chip-${tone}`
-    : `chip chip-${tint || 'brand'}`;
-
+  // A register column: the printed head, the figure, and one line under it.
+  // The figure is shown as recorded; it does not count up from zero, because
+  // the values it would pass through were never recorded.
   const body = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-ink-3">{label}</p>
-        {Icon ? (
-          <span className={chipClass} aria-hidden="true">
-            <Icon className="h-3.5 w-3.5" />
-          </span>
-        ) : null}
-      </div>
-      <p className={`mt-1.5 text-[26px] leading-none font-semibold ${toneText}`}>
-        {typeof value === 'number' ? <AnimatedNumber value={value} /> : <Value>{value}</Value>}
+      <p className="metric-label">{label}</p>
+      <p className={`metric-value mt-2 ${toneText}`}>
+        <Value>{value}</Value>
         {unit && value !== null && value !== undefined ? (
-          <span className="ml-1 text-sm font-medium text-ink-3">{unit}</span>
+          <span className="ml-1 text-sm font-bold tracking-normal text-ink-3">{unit}</span>
         ) : null}
       </p>
-      <p className="mt-1.5 truncate text-xs text-ink-3" title={context || undefined}>
+      <p className="mt-2 truncate text-xs text-ink-3" title={context || undefined}>
         {context || '\u00a0'}
       </p>
     </>
   );
-
-  const chipVar = tint ? `chip-${tint}` : '';
 
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`metric-cell ${chipVar} w-full px-4 py-3.5 text-left hover:bg-subtle`}
+        className="metric-cell w-full bg-surface px-4 py-3.5 text-left hover:bg-subtle"
       >
         {body}
       </button>
     );
   }
 
-  return <div className={`metric-cell ${chipVar} px-4 py-3.5`}>{body}</div>;
+  return <div className="metric-cell bg-surface px-4 py-3.5">{body}</div>;
 }
 
 /** A ruled strip of metrics — one object, not a row of floating cards. */
@@ -219,7 +169,7 @@ export function MetricStrip({ children, columns = 6 }) {
   }[columns];
 
   return (
-    <div className={`panel grid grid-cols-2 ${cols} divide-x divide-y sm:divide-y-0 divide-line-soft overflow-hidden`}>
+    <div className={`panel grid grid-cols-2 ${cols} gap-px overflow-hidden bg-line-soft`}>
       {children}
     </div>
   );
@@ -337,17 +287,17 @@ export function EmptyState({ title, detail, action }) {
 export function Bar({ value, max, tone = 'info' }) {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
   const fill = {
-    info: 'from-info/70 to-info',
-    ok: 'from-ok/70 to-ok',
-    warn: 'from-warn/70 to-warn',
-    critical: 'from-critical/70 to-critical',
-    neutral: 'from-line-strong to-ink-3'
+    info: 'bg-info',
+    ok: 'bg-ok',
+    warn: 'bg-warn',
+    critical: 'bg-critical',
+    neutral: 'bg-ink-3'
   }[tone];
 
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-line-soft" role="presentation">
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-500 ease-out`}
+        className={`h-full rounded-full ${fill} transition-[width] duration-500 ease-out`}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -422,62 +372,12 @@ export function Vital({ label, value, unit, tone = 'neutral' }) {
   );
 }
 
-/**
- * Occupancy ring. Reads as a proportion at a glance from across a room, which
- * a number alone does not, and still prints the exact figure in the middle.
- */
-export function Donut({ value, max, label, tone = 'neutral', size = 92 }) {
-  const safeMax = max > 0 ? max : 0;
-  const pct = safeMax > 0 ? Math.min(1, value / safeMax) : 0;
-  const stroke = 9;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  const colour = {
-    neutral: 'stroke-info',
-    ok: 'stroke-ok',
-    warn: 'stroke-warn',
-    critical: 'stroke-critical'
-  }[tone];
-
-  return (
-    <div className="flex items-center gap-3">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${value} of ${max}`}>
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          className="stroke-line-soft" strokeWidth={stroke} fill="none"
-        />
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          className={`${colour} transition-[stroke-dashoffset] duration-700 ease-out`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - pct)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-        <text
-          x="50%" y="50%" dy="0.35em" textAnchor="middle"
-          className="fill-ink text-[17px] font-semibold"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          {safeMax > 0 ? `${Math.round(pct * 100)}%` : '\u2014'}
-        </text>
-      </svg>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-ink">{value} of {max}</p>
-        <p className="text-xs text-ink-3">{label}</p>
-      </div>
-    </div>
-  );
-}
 
 /** A quiet heading above a group of panels. */
 export function SectionTitle({ children, note }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-3">{children}</h2>
+      <h2 className="section-title">{children}</h2>
       {note ? <p className="text-2xs text-ink-3">{note}</p> : null}
     </div>
   );

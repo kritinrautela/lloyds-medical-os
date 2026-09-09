@@ -3,7 +3,7 @@ import {
   ChevronDown, Lock, LogOut, Maximize2, Menu, Minimize2, Moon, Plus, Search, Sun, SunMoon, UserCog
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ACCENT_OPTIONS, TEXT_OPTIONS, THEME_OPTIONS, useTheme } from '../context/ThemeContext';
+import { TEXT_OPTIONS, THEME_OPTIONS, useTheme } from '../context/ThemeContext';
 
 /*
  * Top bar. Identity on the left, the two actions the front desk uses all day
@@ -20,7 +20,7 @@ function Clock() {
 
   return (
     <div className="hidden text-right xl:block">
-      <p className="font-mono text-sm font-semibold leading-tight text-ink">
+      <p className="text-sm font-bold leading-tight tabular-nums text-ink">
         {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
       </p>
       <p className="text-2xs leading-tight text-ink-3">
@@ -64,7 +64,7 @@ function useFullscreen() {
 }
 
 function ThemeControl() {
-  const { theme, preference, setPreference, accent, setAccent, textSize, setTextSize } = useTheme();
+  const { theme, preference, setPreference, textSize, setTextSize } = useTheme();
   const fullscreen = useFullscreen();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -161,28 +161,6 @@ function ThemeControl() {
             </div>
           ) : null}
 
-          <div className="mt-1 border-t border-line-soft pt-2">
-            <p className="px-2.5 pb-1.5 text-2xs leading-relaxed text-ink-3">
-              Facility colour. Applies to navigation and buttons only, so it never changes what a
-              red or amber reading means.
-            </p>
-            <div className="flex gap-1.5 px-2.5 pb-1">
-              {ACCENT_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  title={option.label}
-                  aria-label={option.label}
-                  aria-pressed={accent === option.value}
-                  onClick={() => setAccent(option.value)}
-                  className={`h-7 w-7 rounded-md border-2 transition-transform hover:scale-105 ${
-                    accent === option.value ? 'border-ink' : 'border-line'
-                  }`}
-                  style={{ backgroundColor: option.swatch }}
-                />
-              ))}
-            </div>
-          </div>
         </div>
       ) : null}
     </div>
@@ -192,6 +170,7 @@ function ThemeControl() {
 export default function Navbar({
   onOpenNav,
   settings,
+  showClock = true,
   onQuickSearch,
   onOpenCheckIn,
   onOpenDispense,
@@ -220,7 +199,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="identity-band sticky top-0 z-20 flex h-14 select-none items-center justify-between gap-3 border-b border-line bg-surface px-4 md:px-6">
+    <header className="sticky top-0 z-20 flex h-14 select-none items-center justify-between gap-3 border-b border-line bg-surface px-4 md:px-6">
       {/* The way into the navigation on a phone or narrow tablet. On a laptop
           the navigation is always on screen, so this button is not shown. */}
       <button
@@ -234,12 +213,10 @@ export default function Navbar({
       </button>
 
       <div className="hidden w-56 min-w-0 shrink-0 lg:block">
-        <p className="truncate text-sm font-semibold text-ink">
+        <p className="truncate text-sm font-bold leading-tight text-ink">
           {settings?.name || 'Lloyds Medical OS'}
         </p>
-        <p className="truncate text-2xs text-ink-3">
-          {[settings?.district, settings?.province, settings?.country].filter(Boolean).join(' · ')}
-        </p>
+        <p className="truncate text-2xs text-ink-3">Lloyds Medical OS</p>
       </div>
 
       <form onSubmit={submitSearch} className="relative mx-2 hidden min-w-0 flex-1 lg:flex">
@@ -256,7 +233,7 @@ export default function Navbar({
       </form>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Clock />
+        {showClock ? <Clock /> : null}
 
         {/* The shortcuts follow the same permissions as the navigation. A
             button that would only produce a refusal is not offered. */}
@@ -309,7 +286,7 @@ export default function Navbar({
                   {currentUser?.full_name || 'No staff member signed in'}
                 </p>
                 <p className="text-2xs text-ink-2">{currentUser?.role || 'Role not set'}</p>
-                <p className="mt-0.5 truncate font-mono text-2xs text-ink-3">
+                <p className="mt-0.5 truncate text-2xs tabular-nums text-ink-3">
                   {currentUser?.staff_id || '—'}
                   {currentUser?.department ? ` · ${currentUser.department}` : ''}
                 </p>

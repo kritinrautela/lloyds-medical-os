@@ -6,8 +6,9 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  * The same screen is read at an outpatient counter in tropical daylight and on
  * a ward at three in the morning. "Day" is the default because that is where
  * most of the workload sits and a dark screen behaves like a mirror under a
- * bright window. "Night" exists so the ward screen stops being the brightest
- * object in an unlit room. "Auto" follows whatever the laptop is set to.
+ * bright window. "Night" is the carbon copy of the same register: light ink on
+ * carbon-blue paper, so the ward screen stops being the brightest object in an
+ * unlit room. "Auto" follows whatever the laptop is set to.
  *
  * The choice is stored on the device, not on the server, so each machine in the
  * clinic keeps its own setting. A shared reception laptop can stay on day while
@@ -15,26 +16,13 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  */
 
 const STORAGE_KEY = 'lloyds_theme_preference';
-const ACCENT_KEY = 'lloyds_theme_accent';
 const TEXT_KEY = 'lloyds_text_size';
 const ThemeContext = createContext(null);
 
 export const THEME_OPTIONS = [
   { value: 'light', label: 'Day', detail: 'Built for daylight at the counter' },
-  { value: 'dark', label: 'Night', detail: 'Built for the ward after dark' },
+  { value: 'dark', label: 'Night', detail: 'The carbon copy, for the ward after dark' },
   { value: 'auto', label: 'Auto', detail: 'Follows the device setting' }
-];
-
-/*
- * The accent carries the facility's identity. It is applied to navigation, the
- * header band and the primary button, and never to a panel reporting a
- * clinical figure, so changing it cannot change what a colour means on a chart.
- */
-export const ACCENT_OPTIONS = [
-  { value: 'lloyds', label: 'Lloyds red', swatch: '#C8102E' },
-  { value: 'ocean', label: 'Clinical blue', swatch: '#155CA8' },
-  { value: 'teal', label: 'Deep teal', swatch: '#0C6A64' },
-  { value: 'graphite', label: 'Graphite', swatch: '#334152' }
 ];
 
 /*
@@ -68,16 +56,6 @@ function readStoredPreference() {
   return 'light';
 }
 
-function readStoredAccent() {
-  try {
-    const saved = localStorage.getItem(ACCENT_KEY);
-    if (ACCENT_OPTIONS.some((o) => o.value === saved)) return saved;
-  } catch (err) {
-    // Fall through to the brand default.
-  }
-  return 'lloyds';
-}
-
 function systemPrefersDark() {
   return typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -87,7 +65,6 @@ function systemPrefersDark() {
 export function ThemeProvider({ children }) {
   const [preference, setPreferenceState] = useState(readStoredPreference);
   const [systemDark, setSystemDark] = useState(systemPrefersDark);
-  const [accent, setAccentState] = useState(readStoredAccent);
   const [textSize, setTextSizeState] = useState(readStoredTextSize);
 
   useEffect(() => {
@@ -105,10 +82,6 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   useEffect(() => {
-    document.documentElement.dataset.accent = accent;
-  }, [accent]);
-
-  useEffect(() => {
     document.documentElement.dataset.textsize = textSize;
   }, [textSize]);
 
@@ -118,15 +91,6 @@ export function ThemeProvider({ children }) {
       localStorage.setItem(TEXT_KEY, next);
     } catch (err) {
       // Applies for this session even if it cannot be saved.
-    }
-  }, []);
-
-  const setAccent = useCallback((next) => {
-    setAccentState(next);
-    try {
-      localStorage.setItem(ACCENT_KEY, next);
-    } catch (err) {
-      // The accent still applies for this session even if it cannot be saved.
     }
   }, []);
 
@@ -144,8 +108,8 @@ export function ThemeProvider({ children }) {
   }, [setPreference, theme]);
 
   const value = useMemo(
-    () => ({ theme, preference, setPreference, toggleTheme, accent, setAccent, textSize, setTextSize }),
-    [theme, preference, setPreference, toggleTheme, accent, setAccent, textSize, setTextSize]
+    () => ({ theme, preference, setPreference, toggleTheme, textSize, setTextSize }),
+    [theme, preference, setPreference, toggleTheme, textSize, setTextSize]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

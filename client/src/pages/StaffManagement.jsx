@@ -169,12 +169,12 @@ export default function StaffManagement() {
       ) : null}
 
       <MetricStrip columns={4}>
-        <Metric label="Working now" value={counts.online} context="Checked in within the last few minutes" tint="1" />
-        <Metric label="Active accounts" value={counts.active} context={`of ${counts.total} in total`} tint="2" />
+        <Metric label="Working now" value={counts.online} context="Checked in within the last few minutes" />
+        <Metric label="Active accounts" value={counts.active} context={`of ${counts.total} in total`} />
         <Metric label="Administrators" value={counts.admins}
           context={counts.admins === 1 ? 'Only one. Consider a second.' : 'Can change settings and accounts'}
-          tone={counts.admins === 1 ? 'warn' : 'neutral'} tint="3" />
-        <Metric label="Disabled" value={counts.total - counts.active} context="Cannot sign in" tint="4" />
+          tone={counts.admins === 1 ? 'warn' : 'neutral'} />
+        <Metric label="Disabled" value={counts.total - counts.active} context="Cannot sign in" />
       </MetricStrip>
 
       <Panel>

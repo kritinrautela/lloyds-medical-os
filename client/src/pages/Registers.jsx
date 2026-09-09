@@ -105,7 +105,7 @@ function ReturnsDue({ onCheckInPatient }) {
       <MetricStrip columns={3}>
         <Metric label="Overdue" value={overdue} tone={overdue ? 'critical' : 'neutral'} context="Return date passed, not seen since" />
         <Metric label="Due today" value={dueToday} tone={dueToday ? 'warn' : 'neutral'} context="Asked to come back today" />
-        <Metric label="Coming up" value={rows.length - overdue - dueToday} context={`Within the next ${days} days`} tint="1" />
+        <Metric label="Coming up" value={rows.length - overdue - dueToday} context={`Within the next ${days} days`} />
       </MetricStrip>
 
       <Panel>
