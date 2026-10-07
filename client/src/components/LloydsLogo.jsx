@@ -29,8 +29,8 @@ export default function LloydsLogo({
       <div className={`flex items-stretch rounded-sm overflow-hidden shadow-sm border border-line-strong ${hClass}`}>
         {/* Real PNG Asset from official upload */}
         <img 
-          src="/lloyds_metals_logo.png" 
-          alt="Lloyds Metals" 
+          src="/lloyds-panguna-logo.png" 
+          alt="Lloyds Panguna Metals and Energy Limited" 
           className="h-full w-auto object-contain block select-none"
           onError={(e) => {
             // Fallback to crisp SVG if image fails to load

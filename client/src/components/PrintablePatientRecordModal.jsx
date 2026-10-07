@@ -55,7 +55,7 @@ export default function PrintablePatientRecordModal({ isOpen, onClose, data, set
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <img src="/lloyds_metals_logo.png" alt="Lloyds Metals" className="h-8 object-contain" />
+                  <img src="/lloyds-panguna-logo.png" alt="Lloyds Panguna Metals and Energy Limited" className="h-8 object-contain" />
                   <div className="border-l-2 border-red-600 pl-3">
                     <span className="text-[9px] font-bold tracking-widest text-red-600 uppercase font-mono block">
                       Occupational Health & Community Clinical Services

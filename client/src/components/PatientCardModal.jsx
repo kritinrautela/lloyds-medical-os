@@ -87,7 +87,7 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
               <div className="absolute -right-8 -top-8 w-28 h-28 bg-cyan-500/10 rounded-full blur-xl pointer-events-none" />
               
               <div className="flex items-center justify-between border-b border-red-500/20 pb-2">
-                <img src="/lloyds_metals_logo.png" alt="Lloyds Metals" className="h-5 w-auto object-contain" />
+                <img src="/lloyds-panguna-logo.png" alt="Lloyds Panguna Metals and Energy Limited" className="h-5 w-auto object-contain" />
                 <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-widest px-2 py-0.5 rounded bg-red-950/60 border border-red-800/60">
                   PNG CLINIC ID
                 </span>
@@ -131,7 +131,7 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
                 {/* Header */}
                 <div className="border-b-2 border-slate-900 pb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <img src="/lloyds_metals_logo.png" alt="Lloyds Metals" className="h-6 object-contain" />
+                    <img src="/lloyds-panguna-logo.png" alt="Lloyds Panguna Metals and Energy Limited" className="h-6 object-contain" />
                     <div>
                       <span className="text-[8px] font-black uppercase text-red-600 block leading-none">LLOYDS METALS & ENERGY</span>
                       <span className="text-[7px] text-slate-600 font-bold block uppercase">OCCUPATIONAL HEALTH CENTRE</span>

@@ -1,5 +1,6 @@
 #!/bin/bash
 cd "$(dirname "$0")"
+[ -x runtime/node/bin/node ] && export PATH="$PWD/runtime/node/bin:$PATH"
 
 echo "======================================================================"
 echo "  LLOYDS MEDICAL OS — SAFE FLASH DRIVE EJECT PROTOCOL"

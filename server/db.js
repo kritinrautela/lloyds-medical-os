@@ -534,7 +534,7 @@ async function initDatabase() {
         UPDATE hospital_settings SET
           name = 'Lloyds Metals & Energy Ltd',
           tagline = 'Occupational Health Centre & Community Hospital — Papua New Guinea Operations',
-          logo_url = '/lloyds_metals_logo.png',
+          logo_url = '/lloyds-panguna-logo.png',
           address = 'Mining Operational Concession, Markham Valley Highway',
           province = 'Morobe Province',
           district = 'Lae Mining District',

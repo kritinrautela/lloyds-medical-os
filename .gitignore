@@ -50,3 +50,12 @@ server/config/install.json
 
 # Where the last USB and head office copies went
 server/data/offsite-state.json
+
+# Portable Node.js the launchers download on first run (100+ MB, per computer)
+runtime/
+
+# The clinic's live database holds patient records: never in the repository.
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+server/data/*.db.enc

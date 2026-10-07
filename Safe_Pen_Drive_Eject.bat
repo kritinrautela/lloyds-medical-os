@@ -9,6 +9,7 @@ echo ======================================================================
 echo.
 
 cd /d "%~dp0"
+if exist "%~dp0runtime\node\node.exe" set "PATH=%~dp0runtime\node;%PATH%"
 
 where node >nul 2>nul
 if %errorlevel% equ 0 (

@@ -90,7 +90,7 @@ export function FacilityHeader({ settings, documentTitle, reference, meta = [], 
   if (compact) {
     return (
       <header className="border-b-2 border-ink pb-3 text-center">
-        <img src="/lloyds_metals_logo.png" alt="" className="mx-auto h-7 w-auto object-contain" />
+        <img src="/lloyds-panguna-logo.png" alt="" className="mx-auto h-7 w-auto object-contain" />
         <p className="mt-1.5 text-sm font-bold leading-tight text-ink">{settings?.name || 'Clinic'}</p>
         {settings?.tagline ? <p className="text-2xs text-ink-2">{settings.tagline}</p> : null}
         <p className="mt-1 text-2xs text-ink-3">{address}</p>
@@ -105,7 +105,7 @@ export function FacilityHeader({ settings, documentTitle, reference, meta = [], 
     <header className="border-b-2 border-ink pb-4">
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
-          <img src="/lloyds_metals_logo.png" alt="" className="h-8 w-auto max-w-[220px] object-contain object-left" />
+          <img src="/lloyds-panguna-logo.png" alt="" className="h-8 w-auto max-w-[220px] object-contain object-left" />
           <p className="mt-2.5 text-base font-bold leading-tight text-ink">{settings?.name || 'Clinic'}</p>
           {settings?.tagline ? <p className="mt-0.5 text-xs leading-snug text-ink-2">{settings.tagline}</p> : null}
           <p className="mt-1.5 text-2xs leading-snug text-ink-3">{address}</p>

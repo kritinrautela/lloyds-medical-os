@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="client/public/lloyds-panguna-logo.png" alt="Lloyds Panguna Metals and Energy Limited" width="480" />
+
 # 🏥 Lloyds Medical OS
 
 **A complete, offline-first hospital and clinic management system built for remote worksites, mining concessions, and community health centers.**
@@ -24,34 +26,61 @@ Most modern hospital software requires constant high-speed internet, cloud subsc
 
 ---
 
-## ⚡ Quick Start: 3 Easy Steps
+## ⚡ Quick Start: How to Install (Simplest Way)
 
-Running Lloyds Medical OS on any computer takes **less than 60 seconds** with **zero configuration**:
+You only need **a Windows or Mac computer** and **internet for the first time only** (about 5 minutes).
+After the first time, it works with **no internet**.
 
-### 1️⃣ Step 1: Get the Folder
-- **Direct Download (Easiest):** Click the green **Code** button at the top of this GitHub page and select **[Download ZIP](https://github.com/kritinrautela/lloyds-medical-os/archive/refs/heads/main.zip)**, then unzip it on your computer.
-- **Or via Git:**
-  ```bash
-  git clone https://github.com/kritinrautela/lloyds-medical-os.git
-  cd lloyds-medical-os
-  ```
+### Step 1 - Download
+1. Click this link: **[Download the clinic system (ZIP)](https://github.com/kritinrautela/lloyds-medical-os/archive/refs/heads/main.zip)**
+2. Wait for the download to finish. A file called `lloyds-medical-os-main.zip` appears in your **Downloads** folder.
 
-### 2️⃣ Step 2: Double-Click the Launcher
-Open the folder and simply double-click the file for your computer:
-- **On Windows:** `Start_Hospital_Windows.bat`
-- **On Mac:** `Start_Hospital_Mac.command`
+### Step 2 - Open the ZIP (this step is important)
+- **Windows:** Right-click the ZIP file -> click **Extract All...** -> click **Extract**.
+  (Do not double-click files while they are still inside the ZIP. It will not work.)
+- **Mac:** Double-click the ZIP file. A normal folder appears next to it.
 
-> 💡 **Everything is Automatic:** You do not need to install anything beforehand. If your computer doesn't have Node.js or packages installed, the launcher automatically downloads and sets up everything in the background! It also creates a **"Lloyds Medical OS"** shortcut on your Desktop so you can launch it with 1 click anytime.
+Now **drag the new folder onto your Desktop**.
 
-### 3️⃣ Step 3: Log In & Use
-Your web browser will pop open automatically to:  
-👉 **`http://localhost:4000`**
+### Step 3 - Start it
+Open the folder and double-click **one** file:
 
-Log in using:
-- **Username:** `admin` (or `doctor`, `triage_officer`, `pharmacist`)
-- **Password:** `lloyds2026`
+| Your computer | Double-click this file |
+| :--- | :--- |
+| **Windows** | `Start_Hospital_Windows.bat` |
+| **Mac** | `Start_Hospital_Mac.command` |
 
-That's it! You are ready to manage patient check-in, triage, doctor consultations, and pharmacy sales completely offline.
+Now wait 2 to 5 minutes. A black window shows what is happening. It installs everything by itself.
+**You do not need to install anything else.**
+
+When it says **READY**, your web browser opens by itself.
+
+### Step 4 - Log in
+- **If you see "Set up this clinic system":** type your name, choose a username and a password (at least 8 letters), and click **Create the administrator account**. Write the password down.
+- **If you see a login screen:** use username `admin` (or `doctor`, `triage_officer`, `pharmacist`) and password `lloyds2026`. The system then asks you to choose a new password.
+
+### Next time
+Double-click **Lloyds Medical OS** on your Desktop. It starts in a few seconds.
+Keep the black window open while the clinic is working. Close it to stop.
+
+### If the computer shows a warning
+
+| What you see | What to do |
+| :--- | :--- |
+| **Windows:** "Windows protected your PC" | Click **More info**, then **Run anyway**. |
+| **Mac:** "cannot be opened because it is from an unidentified developer" | **Right-click** the file -> **Open** -> **Open**. You only do this once. |
+| **Mac:** still will not open | Open **System Settings** -> **Privacy & Security** -> scroll down -> click **Open Anyway**. |
+| **Mac:** "no permission" | Open **Terminal**, type `bash ` (with a space), drag `Start_Hospital_Mac.command` into the window, press **Enter**. |
+| "No internet connection" | Connect to the internet once and double-click again. |
+| Nothing opens in the browser | Open your browser and type `localhost:4000` |
+| Anything else | Take a photo of the black window and send it to support. |
+
+### Other computers and tablets in the clinic
+Connect them to the same Wi-Fi. On each one, open the browser and type the address shown in the black window
+(it looks like `http://192.168.1.50:4000`).
+
+### Before you unplug a USB drive
+Double-click `Safe_Pen_Drive_Eject.bat` (Windows) or `Safe_Pen_Drive_Eject.command` (Mac) first.
 
 ---
 

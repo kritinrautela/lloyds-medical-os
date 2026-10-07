@@ -13,21 +13,19 @@ drive on any Windows PC or Mac laptop.
 --------------------------------------------------------------------------------
 1. HOW TO START THE SYSTEM (DOUBLE-CLICK)
 --------------------------------------------------------------------------------
-• ON WINDOWS:
-  Double-click:  Start_Hospital_Windows.bat
+  STEP 1  If this is still a ZIP file, Windows: right-click it -> Extract All.
+          Mac: double-click it. Then put the folder on your Desktop.
+  STEP 2  Double-click ONE file:
+            WINDOWS : Start_Hospital_Windows.bat
+            MAC     : Start_Hospital_Mac.command
+  STEP 3  Wait 2 to 5 minutes the first time (internet needed once only).
+          It installs everything by itself. When it says READY, your browser
+          opens by itself at http://localhost:4000
 
-• ON MAC:
-  Double-click:  Start_Hospital_Mac.command
-
-NOTE: If Node.js or packages are missing on the laptop, the launcher automatically
-downloads and installs everything in the background, creates a desktop icon,
-and opens your browser automatically.
-
-Your default web browser (Google Chrome / Edge / Safari) will open automatically
-to: http://localhost:4000
-
-If it does not open automatically, open your web browser and type:
-http://localhost:4000
+  Next time: double-click "Lloyds Medical OS" on the Desktop.
+  Windows warning?  More info -> Run anyway.
+  Mac warning?      Right-click the file -> Open -> Open.
+  Full steps: see README.md
 
 --------------------------------------------------------------------------------
 2. DEFAULT CLINICAL LOGIN PASSWORDS
