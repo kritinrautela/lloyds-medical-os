@@ -529,10 +529,10 @@ async function initDatabase() {
       console.log('Seeding initial Papua New Guinea clinic dataset...');
       await seedInitialData();
     } else {
-      // Ensure company branding is updated to Lloyds Metals & Energy Ltd
+      // Ensure company branding is updated to Lloyds Panguna Metals and Energy Limited
       await runQuery(`
         UPDATE hospital_settings SET
-          name = 'Lloyds Metals & Energy Ltd',
+          name = 'Lloyds Panguna Metals and Energy Limited',
           tagline = 'Occupational Health Centre & Community Hospital — Papua New Guinea Operations',
           logo_url = '/lloyds-panguna-logo.png',
           address = 'Mining Operational Concession, Markham Valley Highway',
@@ -540,7 +540,7 @@ async function initDatabase() {
           district = 'Lae Mining District',
           email = 'health.png@lloyds.in',
           doctor_in_charge = 'Chief Medical Officer (Occupational & Tropical Medicine)',
-          receipt_footer = 'Lloyds Metals & Energy Ltd — Serving Mine Personnel & Papua New Guinea Communities'
+          receipt_footer = 'Lloyds Panguna Metals and Energy Limited — Serving Mine Personnel & Papua New Guinea Communities'
         WHERE id = ?
       `, [settings.id]);
     }

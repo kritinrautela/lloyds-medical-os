@@ -493,7 +493,7 @@ router.get('/export-drive-bundle', requirePermission('export.download'), async (
     }
 
     const driveBundle = {
-      facility: settings?.name || 'Lloyds Metals & Energy Ltd',
+      facility: settings?.name || 'Lloyds Panguna Metals and Energy Limited',
       export_date: todayStr,
       generated_at: new Date().toISOString(),
       architecture: 'Local SQLite database on the clinic computer, copied to Google Sheets when there is internet',

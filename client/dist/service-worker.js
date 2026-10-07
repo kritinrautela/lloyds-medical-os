@@ -14,13 +14,13 @@
 
 // Both are filled in by the build (see vite.config.js). The cache name
 // changes with every build, so a new version never mixes with the last.
-const BUILD = 'f74ff57a9f00';
+const BUILD = '9a9f881e9a5b';
 const CACHE = `lloyds-clinic-${BUILD}`;
 
 // The shell, plus every file of this build so a tablet is complete from the
 // first open rather than only after each screen has been visited once.
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
-const PRECACHE = ["/assets/CloudSync-BfTQobJi.js","/assets/Dashboard-DXhWzPUg.js","/assets/DispensePOS-D0EI1vI5.js","/assets/EndOfDay-CFzgIIa7.js","/assets/ExcelExport-BwYtH39p.js","/assets/OPDQueue-B3HvYHQ2.js","/assets/Patients-DsGH1IvZ.js","/assets/Pharmacy-C5I1iSNL.js","/assets/PrescriptionLabels-BXVMX0_X.js","/assets/PrintFrame-D1oWNmdD.js","/assets/PrintableReferralLetter-tPoOCk_E.js","/assets/QueueTicket-Buj8Zrw3.js","/assets/Registers-45QTsbFH.js","/assets/ReturnSlip-DQM7hH-V.js","/assets/Settings-zDozLQFr.js","/assets/StaffManagement-DqGrBLEO.js","/assets/WaitingRoom-C1NfhmwC.js","/assets/icons-Cj-YZm-r.js","/assets/index-Y75rJ0s0.js","/assets/index-edbHEm9z.css","/assets/react-DFxuOQef.js"];
+const PRECACHE = ["/assets/CloudSync-CBqUasPi.js","/assets/Dashboard-D-6JjoJj.js","/assets/DispensePOS-C6CfiWr9.js","/assets/EndOfDay-DAPy0jHS.js","/assets/ExcelExport-CQ5495Ep.js","/assets/OPDQueue-B_cral9B.js","/assets/Patients-Be7vW_8i.js","/assets/Pharmacy-BN427tuJ.js","/assets/PrescriptionLabels-C8HEKYMC.js","/assets/PrintFrame-Cc6Vz9b7.js","/assets/PrintableReferralLetter-B6Ekrpyx.js","/assets/QueueTicket-Ciel3ZC5.js","/assets/Registers-DhM846cv.js","/assets/ReturnSlip-Y8Z0Ar7p.js","/assets/Settings-BaK_7L_9.js","/assets/StaffManagement-zq2kmwWt.js","/assets/WaitingRoom-CndPIOT7.js","/assets/icons-Cj-YZm-r.js","/assets/index-DkQUqn4g.js","/assets/index-edbHEm9z.css","/assets/react-DFxuOQef.js"];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

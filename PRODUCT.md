@@ -14,7 +14,7 @@ web
 ## Users
 
 - **Clinic staff at a small occupational health centre and community hospital
-  run by Lloyds Metals & Energy in Papua New Guinea** (Lae, Morobe Province
+  run by Lloyds Panguna Metals and Energy in Papua New Guinea** (Lae, Morobe Province
   by default; the facility name and location are settings). Four roles sign
   in with their own password: Administrator, Doctor (Chief Medical Officer),
   Senior Triage Nurse, Registered Pharmacist. The same laptop is often shared
@@ -96,8 +96,8 @@ key that travels with them.
 
 ## Brand Commitments
 
-- The product is **Lloyds Medical OS**, for Lloyds Metals & Energy Ltd. The
-  official Lloyds Metals mark (black gear badge, red block, "LLOYDS METALS")
+- The product is **Lloyds Medical OS**, for Lloyds Panguna Metals and Energy Limited. The
+  official Lloyds Panguna mark (black gear badge, red block, "LLOYDS")
   is `client/public/lloyds_metals_logo.png` and stays as the company mark.
 - **Kritin's binding visual constraint (2026-09-09): the clinical board and the
   application shell are to be redesigned entirely in a bold blue world**,

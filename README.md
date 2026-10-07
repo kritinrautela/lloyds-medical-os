@@ -247,6 +247,6 @@ For formal hospital documentation, clinical protocols, and accreditation details
 
 ## 🏢 Organization & License
 
-Built for **Lloyds Metals & Energy Limited (LMEL)**  
+Built for **Lloyds Panguna Metals and Energy Limited**  
 Occupational Health, Mining Concessions & Community Health Division.  
 *All rights reserved.*

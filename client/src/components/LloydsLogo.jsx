@@ -1,10 +1,10 @@
 import React from 'react';
 
 /**
- * Official Lloyds Metals Brand Logo Component
+ * Official Lloyds Panguna Brand Logo Component
  * Matches https://lloyds.in/ and the official company identity:
  * - Left: Black badge with white industrial gear / spoked wheel emblem
- * - Right: Bold red (#E31E24) block with solid black typography "LLOYDS METALS"
+ * - Right: Bold red (#E31E24) block with solid black typography "LLOYDS"
  * - Subtitle: Papua New Guinea Operations
  */
 export default function LloydsLogo({ 
@@ -60,10 +60,10 @@ export default function LloydsLogo({
             </svg>
           </div>
 
-          {/* Red Rectangle with LLOYDS METALS in Bold Black */}
+          {/* Red Rectangle with LLOYDS in Bold Black */}
           <div className="bg-[#E31E24] px-3 flex items-center justify-center">
             <span className="font-extrabold tracking-tight text-black text-sm md:text-base uppercase font-sans whitespace-nowrap">
-              LLOYDS METALS
+              LLOYDS
             </span>
           </div>
         </div>

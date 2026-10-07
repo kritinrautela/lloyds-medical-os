@@ -56,7 +56,7 @@ prompt = no
 
 [dn]
 CN = Lloyds Clinic
-O = Lloyds Metals and Energy
+O = Lloyds Panguna Metals and Energy Limited
 OU = Community Hospital and Occupational Health Centre
 C = PG
 

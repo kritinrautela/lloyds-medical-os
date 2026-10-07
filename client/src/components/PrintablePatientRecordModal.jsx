@@ -61,7 +61,7 @@ export default function PrintablePatientRecordModal({ isOpen, onClose, data, set
                       Occupational Health & Community Clinical Services
                     </span>
                     <h1 className="text-base font-black text-slate-950 tracking-tight leading-none uppercase">
-                      {settings?.name || 'LLOYDS METALS & ENERGY LTD'}
+                      {settings?.name || 'LLOYDS PANGUNA METALS AND ENERGY LIMITED'}
                     </h1>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function PrintablePatientRecordModal({ isOpen, onClose, data, set
             </div>
 
             <div className="mt-4 pt-2 border-t border-slate-200 text-center text-[8px] text-slate-400 flex justify-between items-center">
-              <span>Lloyds Metals & Energy Ltd Healthcare Operating System</span>
+              <span>Lloyds Panguna Metals and Energy Limited Healthcare Operating System</span>
               <span>File Printed: {new Date().toLocaleString()}</span>
               <span>Reg: {settings?.reg_number || 'PNG-MOH-LMEL-2026'}</span>
             </div>

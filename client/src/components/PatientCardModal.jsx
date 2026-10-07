@@ -13,7 +13,7 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
         name: patient.full_name,
         blood: patient.blood_group || 'Unknown',
         allergies: patient.allergies || 'None',
-        clinic: hospital?.name || 'Lloyds Metals Clinic'
+        clinic: hospital?.name || 'Lloyds Medical Clinic'
       });
       QRCode.toDataURL(qrPayload, { 
         width: 160, 
@@ -133,7 +133,7 @@ export default function PatientCardModal({ isOpen, onClose, patient, hospital })
                   <div className="flex items-center gap-2">
                     <img src="/lloyds-panguna-logo.png" alt="Lloyds Panguna Metals and Energy Limited" className="h-6 object-contain" />
                     <div>
-                      <span className="text-[8px] font-black uppercase text-red-600 block leading-none">LLOYDS METALS & ENERGY</span>
+                      <span className="text-[8px] font-black uppercase text-red-600 block leading-none">LLOYDS PANGUNA METALS AND ENERGY</span>
                       <span className="text-[7px] text-slate-600 font-bold block uppercase">OCCUPATIONAL HEALTH CENTRE</span>
                     </div>
                   </div>

@@ -4,7 +4,7 @@
 ================================================================================
 
 WELCOME! This folder contains the complete, 100% offline hospital management
-and clinical telemetry system built for Lloyds Metals & Energy Limited (LMEL)
+and clinical telemetry system built for Lloyds Panguna Metals and Energy Limited
 remote exploration and mining concessions in Papua New Guinea.
 
 No internet or cloud setup is required. The system runs directly from this
@@ -76,6 +76,6 @@ At the end of the day or shift:
   Open: README_HOSPITAL_STAFF.md
 
 ================================================================================
-Lloyds Metals & Energy Limited — Mining & Occupational Health Division
+Lloyds Panguna Metals and Energy Limited — Mining & Occupational Health Division
 Concession Operations Base • Papua New Guinea • Ref: PNG-MOH-LMEL-2026
 ================================================================================

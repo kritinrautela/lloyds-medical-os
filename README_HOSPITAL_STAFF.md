@@ -1,6 +1,6 @@
 # 🏥 Lloyds Medical OS — Clinical Staff Operating Guide
 ### Standard Operating Procedures & Quick Reference Manual
-**Lloyds Metals & Energy Limited** • *Mining & Occupational Health Division*
+**Lloyds Panguna Metals and Energy Limited** • *Mining & Occupational Health Division*
 
 ---
 
@@ -126,5 +126,5 @@ To export monthly or quarterly clinic reports for corporate auditors or medical 
 
 ---
 
-*Lloyds Metals & Energy Limited — Mining & Occupational Health Division*  
+*Lloyds Panguna Metals and Energy Limited — Mining & Occupational Health Division*  
 *Concession Operations Base • Papua New Guinea • Ref: PNG-MOH-LMEL-2026*
